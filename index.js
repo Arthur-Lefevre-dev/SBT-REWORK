@@ -33,6 +33,8 @@ console.log(`Profondeur max: ${maxDepthArg === 0 ? '∞' : maxDepth} | Profils m
 const graph = await scrape(apiKey, startSteamId64, {
   maxDepth,
   maxProfiles,
+  saveInterval: 500,
+  onSave: saveGraph,
   verbose: true
 });
 

@@ -47,6 +47,8 @@ async function pLimit(tasks, limit) {
  * @param {number} options.maxProfiles - Max total profiles to fetch (default 500)
  * @param {number} options.batchSize - Profiles per batch (default 15)
  * @param {number} options.delayMs - Delay between batches in ms (default 250)
+ * @param {number} options.saveInterval - Save to DB every N profiles (default 0 = only at end)
+ * @param {Function} options.onSave - Callback(graph) called when saveInterval is reached
  * @param {boolean} options.verbose
  */
 export async function scrape(apiKey, startSteamId64, options = {}) {
@@ -55,12 +57,15 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
     maxProfiles = 500,
     batchSize = BATCH_PROFILES,
     delayMs = DELAY_MS,
+    saveInterval = 0,
+    onSave = null,
     verbose = true
   } = options;
 
   const graph = new FriendshipGraph();
   const visited = new Set();
   const queue = [{ steamId64: String(startSteamId64), depth: 0 }];
+  let lastSaveCount = 0;
 
   const log = verbose ? (...a) => console.log(...a) : () => {};
 
@@ -137,6 +142,13 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
             }
           }
         }
+      }
+
+      // Periodic save every saveInterval profiles
+      while (saveInterval > 0 && onSave && visited.size >= lastSaveCount + saveInterval) {
+        lastSaveCount += saveInterval;
+        onSave(graph);
+        log(`  → Sauvegarde DB (${visited.size} profils)`);
       }
 
       await sleep(delayMs);
