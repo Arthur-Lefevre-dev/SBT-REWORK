@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steam Ban Tracker</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <h1>Steam Ban Tracker</h1>
+    <p class="subtitle">Suivi des bannissements VAC, Game et Community sur Steam</p>
+    <button id="refresh" class="btn-refresh">Actualiser</button>
+  </header>
+
+  <main>
+    <section class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <span class="stat-value" id="total-profiles">—</span>
+        <span class="stat-label">Profils analysés</span>
+      </div>
+      <div class="stat-card stat-warn">
+        <span class="stat-value" id="vac-banned">—</span>
+        <span class="stat-label">VAC bannis</span>
+      </div>
+      <div class="stat-card stat-warn">
+        <span class="stat-value" id="game-banned">—</span>
+        <span class="stat-label">Game bannis</span>
+      </div>
+      <div class="stat-card stat-warn">
+        <span class="stat-value" id="community-banned">—</span>
+        <span class="stat-label">Community bannis</span>
+      </div>
+    </section>
+
+    <section class="tables">
+      <div class="panel">
+        <h2>Tous les bannis</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Avatar</th>
+                <th>Pseudo</th>
+                <th>SteamID64</th>
+                <th>SteamID</th>
+                <th>Type</th>
+                <th>Détails</th>
+                <th>Liens</th>
+              </tr>
+            </thead>
+            <tbody id="all-banned-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>VAC bannis</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Avatar</th>
+                <th>Pseudo</th>
+                <th>SteamID</th>
+                <th>Bans VAC</th>
+                <th>Jours depuis dernier ban</th>
+                <th>Date estimée</th>
+                <th>Liens</th>
+              </tr>
+            </thead>
+            <tbody id="vac-banned-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Game bannis</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Avatar</th>
+                <th>Pseudo</th>
+                <th>SteamID</th>
+                <th>Nb bans</th>
+                <th>Liens</th>
+              </tr>
+            </thead>
+            <tbody id="game-banned-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Community bannis</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Avatar</th>
+                <th>Pseudo</th>
+                <th>SteamID</th>
+                <th>Liens</th>
+              </tr>
+            </thead>
+            <tbody id="community-banned-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Profils récents</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Avatar</th>
+                <th>Pseudo</th>
+                <th>SteamID64</th>
+                <th>Ban</th>
+                <th>Analysé</th>
+                <th>Liens</th>
+              </tr>
+            </thead>
+            <tbody id="profiles-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Données depuis steam-data.db — Les amis servent uniquement à découvrir de nouveaux profils à analyser
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

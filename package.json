@@ -1,0 +1,22 @@
+{
+  "name": "steam-profile-scraper",
+  "version": "1.0.0",
+  "description": "Steam profile scraper - extracts profile data, bans, friends, and friendship graph statistics",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "scrape": "node index.js",
+    "stats": "node stats.js",
+    "server": "node server.js"
+  },
+  "keywords": ["steam", "scraper", "steamid64", "friends", "vac-ban"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "better-sqlite3": "^11.6.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.0"
+  }
+}

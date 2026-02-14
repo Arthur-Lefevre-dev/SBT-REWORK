@@ -1,0 +1,7 @@
+node_modules/
+output/
+.env
+*.log
+steam-data.db
+steam-data.db-wal
+steam-data.db-shm
