@@ -12,7 +12,13 @@ import {
   getGameBanned,
   getCommunityBanned,
   getAllBanned,
-  getProfiles
+  getBannedCount,
+  getProfiles,
+  getProfilesCount,
+  getBanStatsOverTime,
+  getBanStatsYears,
+  getBanStatsByBanDate,
+  getBanStatsYearsByBanDate
 } from './database.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -31,11 +37,14 @@ app.get('/api/stats', (req, res) => {
   }
 });
 
-// API: all banned (VAC, Game, Community)
+// API: all banned (VAC, Game, Community) - paginated
 app.get('/api/banned', (req, res) => {
   try {
-    const rows = getAllBanned();
-    res.json(rows);
+    const limit = parseInt(req.query.limit ?? '50', 10);
+    const offset = parseInt(req.query.offset ?? '0', 10);
+    const rows = getAllBanned(undefined, limit, offset);
+    const total = getBannedCount();
+    res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -71,13 +80,42 @@ app.get('/api/community-banned', (req, res) => {
   }
 });
 
+// API: ban stats over time (for chart), optional ?year=2024&by=ban
+// by=ban => by last_ban_date (VAC only, so bans from 135 days ago show at that date)
+app.get('/api/stats-over-time', (req, res) => {
+  try {
+    const y = req.query.year;
+    const year = y !== undefined && y !== '' ? parseInt(String(y), 10) : null;
+    const byBan = req.query.by === 'ban';
+    const rows = byBan
+      ? getBanStatsByBanDate(undefined, Number.isNaN(year) ? null : year)
+      : getBanStatsOverTime(undefined, Number.isNaN(year) ? null : year);
+    res.json(Array.isArray(rows) ? rows : []);
+  } catch (err) {
+    console.error('/api/stats-over-time', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: available years for chart filter (by=ban for years with ban dates)
+app.get('/api/stats-years', (req, res) => {
+  try {
+    const byBan = req.query.by === 'ban';
+    const years = byBan ? getBanStatsYearsByBanDate() : getBanStatsYears();
+    res.json(years);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // API: profiles (paginated)
 app.get('/api/profiles', (req, res) => {
   try {
     const limit = parseInt(req.query.limit ?? '50', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
     const rows = getProfiles(undefined, limit, offset);
-    res.json(rows);
+    const total = getProfilesCount();
+    res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

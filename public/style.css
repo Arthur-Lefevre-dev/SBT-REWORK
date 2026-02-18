@@ -117,6 +117,41 @@ main {
   border-bottom: 1px solid var(--border);
 }
 
+.panel-chart .chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.25rem 0.5rem;
+}
+
+.panel-chart .chart-controls label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.panel-chart .chart-controls select {
+  padding: 0.35rem 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.panel-chart .chart-desc {
+  margin: 0;
+  padding: 0 1.25rem 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.chart-wrap {
+  padding: 1rem 1.25rem 1.5rem;
+  min-height: 220px;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -226,4 +261,44 @@ footer code {
   padding: 2rem;
   text-align: center;
   color: var(--text-muted);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.pagination-info {
+  color: var(--text-muted);
+}
+
+.pagination-btns {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pagination-btns button {
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pagination-btns button:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.pagination-btns button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

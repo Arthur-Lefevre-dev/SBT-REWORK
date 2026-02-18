@@ -212,16 +212,147 @@ export function getCommunityBanned(database = getDb()) {
 }
 
 /**
- * Get ALL banned profiles (VAC, Game or Community) with ban type
+ * Get ALL banned profiles (VAC, Game or Community) with ban type - paginated
  */
-export function getAllBanned(database = getDb()) {
+export function getAllBanned(database = getDb(), limit = 100, offset = 0) {
   return database.prepare(`
     SELECT steamid64, steamid, persona_name, profile_url, friends_page_url, avatar,
            vac_banned, vac_count, days_since_last_ban, last_ban_date,
            game_ban_count, community_banned
     FROM profiles WHERE vac_banned = 1 OR game_ban_count > 0 OR community_banned = 1
     ORDER BY vac_banned DESC, days_since_last_ban ASC, game_ban_count DESC
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+}
+
+/**
+ * Count total banned profiles
+ */
+export function getBannedCount(database = getDb()) {
+  return database.prepare(`
+    SELECT COUNT(*) as count FROM profiles
+    WHERE vac_banned = 1 OR game_ban_count > 0 OR community_banned = 1
+  `).get().count;
+}
+
+/**
+ * Get ban counts per day (by scraped_at). All three types: VAC, Game, Community.
+ * Uses substr so any datetime format (YYYY-MM-DD...) works.
+ * @param {number|null} year - If set, only that year (all days filled); else only days with data
+ */
+export function getBanStatsOverTime(database = getDb(), year = null) {
+  const rows = database.prepare(`
+    SELECT substr(scraped_at, 1, 10) as day,
+           COALESCE(SUM(vac_banned), 0) as vac,
+           COALESCE(SUM(CASE WHEN game_ban_count > 0 THEN 1 ELSE 0 END), 0) as game,
+           COALESCE(SUM(community_banned), 0) as community
+    FROM profiles
+    WHERE scraped_at IS NOT NULL AND length(scraped_at) >= 10
+    GROUP BY substr(scraped_at, 1, 10)
+    ORDER BY day
   `).all();
+
+  const toNum = (v) => (v == null || v === '' ? 0 : Number(v));
+  const valid = rows.filter((r) => r.day && r.day.length >= 10);
+  if (valid.length === 0) return [];
+
+  if (year !== null && year !== undefined && !Number.isNaN(year)) {
+    const byDay = Object.fromEntries(
+      valid.map((r) => [r.day, { vac: toNum(r.vac), game: toNum(r.game), community: toNum(r.community) }])
+    );
+    const firstDay = `${year}-01-01`;
+    let lastDay = `${year}-12-31`;
+    const today = new Date().toISOString().slice(0, 10);
+    if (lastDay > today) lastDay = today;
+
+    const result = [];
+    const d = new Date(firstDay + 'T12:00:00Z');
+    const end = new Date(lastDay + 'T12:00:00Z');
+    while (d <= end) {
+      const day = d.toISOString().slice(0, 10);
+      const v = byDay[day] ?? { vac: 0, game: 0, community: 0 };
+      result.push({ day, vac: v.vac, game: v.game, community: v.community });
+      d.setUTCDate(d.getUTCDate() + 1);
+    }
+    return result;
+  }
+
+  return valid.map((r) => ({
+    day: String(r.day),
+    vac: toNum(r.vac),
+    game: toNum(r.game),
+    community: toNum(r.community)
+  }));
+}
+
+/**
+ * Get list of years that have scraped data (for filter dropdown)
+ * Uses substr so any datetime format works.
+ */
+export function getBanStatsYears(database = getDb()) {
+  const rows = database.prepare(`
+    SELECT DISTINCT substr(scraped_at, 1, 4) as y
+    FROM profiles
+    WHERE scraped_at IS NOT NULL AND length(scraped_at) >= 4
+    ORDER BY y DESC
+  `).all();
+  const years = rows.map((r) => parseInt(r.y, 10)).filter((y) => !Number.isNaN(y) && y >= 2000 && y <= 2100);
+  return [...new Set(years)];
+}
+
+/**
+ * Get VAC ban count per day by ban date (last_ban_date).
+ * So bans from 135 days ago appear at that date. Only VAC has last_ban_date in Steam API.
+ * @param {number|null} year - If set, only that year; else from oldest ban date to today
+ */
+export function getBanStatsByBanDate(database = getDb(), year = null) {
+  const rows = database.prepare(`
+    SELECT substr(last_ban_date, 1, 10) as day, COUNT(*) as vac
+    FROM profiles
+    WHERE vac_banned = 1 AND last_ban_date IS NOT NULL AND length(last_ban_date) >= 10
+    GROUP BY substr(last_ban_date, 1, 10)
+    ORDER BY day
+  `).all();
+
+  const valid = rows.filter((r) => r.day && r.day.length >= 10);
+  if (valid.length === 0) return [];
+
+  const byDay = Object.fromEntries(valid.map((r) => [r.day, Number(r.vac) || 0]));
+
+  const firstDay = valid[0].day;
+  const today = new Date().toISOString().slice(0, 10);
+
+  let start = firstDay;
+  let end = today;
+  if (year !== null && year !== undefined && !Number.isNaN(year)) {
+    start = `${year}-01-01`;
+    end = `${year}-12-31`;
+    if (end > today) end = today;
+  }
+
+  const result = [];
+  const d = new Date(start + 'T12:00:00Z');
+  const endDate = new Date(end + 'T12:00:00Z');
+  while (d <= endDate) {
+    const day = d.toISOString().slice(0, 10);
+    result.push({ day, vac: byDay[day] ?? 0, game: 0, community: 0 });
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return result;
+}
+
+/**
+ * Years that have ban dates (last_ban_date) for the "by ban date" chart
+ */
+export function getBanStatsYearsByBanDate(database = getDb()) {
+  const rows = database.prepare(`
+    SELECT DISTINCT substr(last_ban_date, 1, 4) as y
+    FROM profiles
+    WHERE vac_banned = 1 AND last_ban_date IS NOT NULL AND length(last_ban_date) >= 4
+    ORDER BY y DESC
+  `).all();
+  const years = rows.map((r) => parseInt(r.y, 10)).filter((y) => !Number.isNaN(y) && y >= 2000 && y <= 2100);
+  return [...new Set(years)];
 }
 
 /**
@@ -231,6 +362,13 @@ export function getProfiles(database = getDb(), limit = 100, offset = 0) {
   return database.prepare(`
     SELECT * FROM profiles ORDER BY scraped_at DESC LIMIT ? OFFSET ?
   `).all(limit, offset);
+}
+
+/**
+ * Count total profiles
+ */
+export function getProfilesCount(database = getDb()) {
+  return database.prepare('SELECT COUNT(*) as count FROM profiles').get().count;
 }
 
 /**

@@ -1,142 +1,170 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Steam Ban Tracker</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-  <header>
-    <h1>Steam Ban Tracker</h1>
-    <p class="subtitle">Suivi des bannissements VAC, Game et Community sur Steam</p>
-    <button id="refresh" class="btn-refresh">Actualiser</button>
-  </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Steam Ban Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header>
+      <h1>Steam Ban Tracker</h1>
+      <p class="subtitle">
+        Suivi des bannissements VAC, Game et Community sur Steam
+      </p>
+      <button id="refresh" class="btn-refresh">Actualiser</button>
+    </header>
 
-  <main>
-    <section class="stats-grid" id="stats-grid">
-      <div class="stat-card">
-        <span class="stat-value" id="total-profiles">—</span>
-        <span class="stat-label">Profils analysés</span>
-      </div>
-      <div class="stat-card stat-warn">
-        <span class="stat-value" id="vac-banned">—</span>
-        <span class="stat-label">VAC bannis</span>
-      </div>
-      <div class="stat-card stat-warn">
-        <span class="stat-value" id="game-banned">—</span>
-        <span class="stat-label">Game bannis</span>
-      </div>
-      <div class="stat-card stat-warn">
-        <span class="stat-value" id="community-banned">—</span>
-        <span class="stat-label">Community bannis</span>
-      </div>
-    </section>
-
-    <section class="tables">
-      <div class="panel">
-        <h2>Tous les bannis</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Pseudo</th>
-                <th>SteamID64</th>
-                <th>SteamID</th>
-                <th>Type</th>
-                <th>Détails</th>
-                <th>Liens</th>
-              </tr>
-            </thead>
-            <tbody id="all-banned-table"></tbody>
-          </table>
+    <main>
+      <section class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <span class="stat-value" id="total-profiles">—</span>
+          <span class="stat-label">Profils analysés</span>
         </div>
-      </div>
-
-      <div class="panel">
-        <h2>VAC bannis</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Pseudo</th>
-                <th>SteamID</th>
-                <th>Bans VAC</th>
-                <th>Jours depuis dernier ban</th>
-                <th>Date estimée</th>
-                <th>Liens</th>
-              </tr>
-            </thead>
-            <tbody id="vac-banned-table"></tbody>
-          </table>
+        <div class="stat-card stat-warn">
+          <span class="stat-value" id="vac-banned">—</span>
+          <span class="stat-label">VAC bannis</span>
         </div>
-      </div>
-
-      <div class="panel">
-        <h2>Game bannis</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Pseudo</th>
-                <th>SteamID</th>
-                <th>Nb bans</th>
-                <th>Liens</th>
-              </tr>
-            </thead>
-            <tbody id="game-banned-table"></tbody>
-          </table>
+        <div class="stat-card stat-warn">
+          <span class="stat-value" id="game-banned">—</span>
+          <span class="stat-label">Game bannis</span>
         </div>
-      </div>
-
-      <div class="panel">
-        <h2>Community bannis</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Pseudo</th>
-                <th>SteamID</th>
-                <th>Liens</th>
-              </tr>
-            </thead>
-            <tbody id="community-banned-table"></tbody>
-          </table>
+        <div class="stat-card stat-warn">
+          <span class="stat-value" id="community-banned">—</span>
+          <span class="stat-label">Community bannis</span>
         </div>
-      </div>
+      </section>
 
-      <div class="panel">
-        <h2>Profils récents</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Avatar</th>
-                <th>Pseudo</th>
-                <th>SteamID64</th>
-                <th>Ban</th>
-                <th>Analysé</th>
-                <th>Liens</th>
-              </tr>
-            </thead>
-            <tbody id="profiles-table"></tbody>
-          </table>
+      <section class="tables">
+      <div class="panel panel-chart">
+        <h2>Bans dans le temps</h2>
+        <div class="chart-controls">
+          <label for="chart-view">Vue :</label>
+          <select id="chart-view">
+            <option value="ban">Par date du ban (VAC)</option>
+            <option value="scrape">Par date de scraping</option>
+          </select>
+          <label for="chart-year">Année :</label>
+          <select id="chart-year">
+            <option value="">Toutes</option>
+          </select>
         </div>
-      </div>
-    </section>
-  </main>
+        <p class="chart-desc" id="chart-desc">Nombre de bans VAC par jour (date estimée du ban)</p>
+          <div class="chart-wrap">
+            <p id="chart-empty-msg" class="empty-msg" style="display: none">
+              Aucune donnée temporelle (scraper au moins une fois)
+            </p>
+            <canvas id="chart-bans-time"></canvas>
+          </div>
+        </div>
 
-  <footer>
-    Données depuis steam-data.db — Les amis servent uniquement à découvrir de nouveaux profils à analyser
-  </footer>
+        <div class="panel">
+          <h2>Tous les bannis</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Avatar</th>
+                  <th>Pseudo</th>
+                  <th>SteamID64</th>
+                  <th>SteamID</th>
+                  <th>Type</th>
+                  <th>Détails</th>
+                  <th>Liens</th>
+                </tr>
+              </thead>
+              <tbody id="all-banned-table"></tbody>
+            </table>
+          </div>
+          <div id="pagination-banned" class="pagination"></div>
+        </div>
 
-  <script src="app.js"></script>
-</body>
+        <div class="panel">
+          <h2>VAC bannis</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Avatar</th>
+                  <th>Pseudo</th>
+                  <th>SteamID</th>
+                  <th>Bans VAC</th>
+                  <th>Jours depuis dernier ban</th>
+                  <th>Date estimée</th>
+                  <th>Liens</th>
+                </tr>
+              </thead>
+              <tbody id="vac-banned-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Game bannis</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Avatar</th>
+                  <th>Pseudo</th>
+                  <th>SteamID</th>
+                  <th>Nb bans</th>
+                  <th>Liens</th>
+                </tr>
+              </thead>
+              <tbody id="game-banned-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Community bannis</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Avatar</th>
+                  <th>Pseudo</th>
+                  <th>SteamID</th>
+                  <th>Liens</th>
+                </tr>
+              </thead>
+              <tbody id="community-banned-table"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Profils récents</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Avatar</th>
+                  <th>Pseudo</th>
+                  <th>SteamID64</th>
+                  <th>Ban</th>
+                  <th>Analysé</th>
+                  <th>Liens</th>
+                </tr>
+              </thead>
+              <tbody id="profiles-table"></tbody>
+            </table>
+          </div>
+          <div id="pagination-profiles" class="pagination"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>made by Drago</footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>
