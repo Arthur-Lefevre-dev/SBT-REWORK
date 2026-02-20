@@ -136,6 +136,14 @@ export function saveGraph(graph) {
 }
 
 /**
+ * Return Set of steamid64 already in DB (to avoid re-crawling)
+ */
+export function getExistingSteamIds(database = getDb()) {
+  const rows = database.prepare("SELECT steamid64 FROM profiles").all();
+  return new Set(rows.map((r) => String(r.steamid64)));
+}
+
+/**
  * Get stats from database
  */
 export function getStats(database = getDb()) {

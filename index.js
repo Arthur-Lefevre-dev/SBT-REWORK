@@ -8,7 +8,7 @@
 import 'dotenv/config';
 import { scrape } from './steam-scraper.js';
 import { computeStats, printStats } from './stats.js';
-import { saveGraph } from './database.js';
+import { saveGraph, getExistingSteamIds } from './database.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -28,11 +28,25 @@ const maxDepth = maxDepthArg === 0 ? Infinity : maxDepthArg;
 const maxProfiles = maxProfilesArg === 0 ? Infinity : maxProfilesArg;
 
 console.log(`Démarrage du scraping depuis ${startSteamId64}`);
-console.log(`Profondeur max: ${maxDepthArg === 0 ? '∞' : maxDepth} | Profils max: ${maxProfilesArg === 0 ? '∞' : maxProfiles}\n`);
+console.log(`Profondeur max: ${maxDepthArg === 0 ? '∞' : maxDepth} | Profils max: ${maxProfilesArg === 0 ? '∞' : maxProfiles}`);
+
+let knownIds = new Set();
+try {
+  knownIds = getExistingSteamIds();
+  const startId = String(startSteamId64);
+  if (knownIds.has(startId)) knownIds.delete(startId); // Always crawl start profile for fresh data + friends
+  if (knownIds.size > 0) {
+    console.log(`${knownIds.size} profils déjà en base (seront ignorés pour éviter de re-crawler).\n`);
+  }
+} catch (e) {
+  console.log('Pas de base existante ou erreur lecture DB, tous les profils seront crawlés.\n');
+}
 
 const graph = await scrape(apiKey, startSteamId64, {
   maxDepth,
   maxProfiles,
+  knownIds,
+  parallelBatches: 3,
   saveInterval: 500,
   onSave: saveGraph,
   verbose: true
