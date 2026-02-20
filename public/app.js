@@ -28,8 +28,32 @@ function profileLink(steamid64) {
   return `https://steamcommunity.com/profiles/${steamid64}`;
 }
 
+/** Link to our site's profile page */
+function profilePageUrl(steamid64) {
+  return `/profile/${encodeURIComponent(steamid64)}`;
+}
+
 function linkCell(steamid64) {
-  return `<a href="${profileLink(steamid64)}" target="_blank">Profil Steam</a>`;
+  const steam = profileLink(steamid64);
+  const internal = profilePageUrl(steamid64);
+  return `<a href="${steam}" target="_blank" rel="noopener">Steam</a> <a href="${internal}">Profil</a>`;
+}
+
+/** Profile name as link to our site's profile page */
+function nameCell(personaName, steamid64) {
+  const name = escapeHtml(personaName || "—");
+  const url = profilePageUrl(steamid64);
+  return `<a href="${url}" class="link-profile">${name}</a>`;
+}
+
+/** Avatar, optionally linked to our profile page */
+function avatarCell(avatar, steamid64) {
+  const img = avatar
+    ? `<img src="${escapeHtml(avatar)}" alt="" class="avatar">`
+    : "—";
+  if (!img || img === "—") return img;
+  const url = steamid64 ? profilePageUrl(steamid64) : null;
+  return url ? `<a href="${url}">${img}</a>` : img;
 }
 
 async function loadStats() {
@@ -53,11 +77,6 @@ function banTypeBadges(r) {
   return badges.join(" ") || "—";
 }
 
-function avatarCell(avatar) {
-  return avatar
-    ? `<img src="${escapeHtml(avatar)}" alt="" class="avatar">`
-    : "—";
-}
 
 function renderPagination(containerId, page, total, pageSize, onPrev, onNext) {
   const el = document.getElementById(containerId);
@@ -105,8 +124,8 @@ async function loadAllBanned() {
           details.push(`${r.game_ban_count} game ban(s)`);
         return `
       <tr>
-        <td>${avatarCell(r.avatar)}</td>
-        <td>${escapeHtml(r.persona_name)}</td>
+        <td>${avatarCell(r.avatar, r.steamid64)}</td>
+        <td>${nameCell(r.persona_name, r.steamid64)}</td>
         <td class="mono">${escapeHtml(r.steamid64)}</td>
         <td class="mono">${escapeHtml(r.steamid)}</td>
         <td>${banTypeBadges(r)}</td>
@@ -146,8 +165,8 @@ async function loadVacBanned() {
     .map(
       (r) => `
     <tr>
-      <td>${avatarCell(r.avatar)}</td>
-      <td>${escapeHtml(r.persona_name)}</td>
+      <td>${avatarCell(r.avatar, r.steamid64)}</td>
+      <td>${nameCell(r.persona_name, r.steamid64)}</td>
       <td class="mono">${escapeHtml(r.steamid)}</td>
       <td>${r.vac_count}</td>
       <td>${r.days_since_last_ban ?? "—"}</td>
@@ -171,8 +190,8 @@ async function loadGameBanned() {
     .map(
       (r) => `
     <tr>
-      <td>${avatarCell(r.avatar)}</td>
-      <td>${escapeHtml(r.persona_name)}</td>
+      <td>${avatarCell(r.avatar, r.steamid64)}</td>
+      <td>${nameCell(r.persona_name, r.steamid64)}</td>
       <td class="mono">${escapeHtml(r.steamid)}</td>
       <td>${r.game_ban_count}</td>
       <td>${linkCell(r.steamid64)}</td>
@@ -194,8 +213,8 @@ async function loadCommunityBanned() {
     .map(
       (r) => `
     <tr>
-      <td>${avatarCell(r.avatar)}</td>
-      <td>${escapeHtml(r.persona_name)}</td>
+      <td>${avatarCell(r.avatar, r.steamid64)}</td>
+      <td>${nameCell(r.persona_name, r.steamid64)}</td>
       <td class="mono">${escapeHtml(r.steamid)}</td>
       <td>${linkCell(r.steamid64)}</td>
     </tr>
@@ -553,8 +572,8 @@ async function loadProfiles() {
           : "—";
         return `
       <tr>
-        <td>${avatarCell(r.avatar)}</td>
-        <td>${escapeHtml(r.persona_name)}</td>
+        <td>${avatarCell(r.avatar, r.steamid64)}</td>
+        <td>${nameCell(r.persona_name, r.steamid64)}</td>
         <td class="mono">${escapeHtml(r.steamid64)}</td>
         <td>${banBadge}</td>
         <td>${scraped}</td>
@@ -618,15 +637,31 @@ const searchInput = document.getElementById('search-input');
 const searchClear = document.getElementById('search-clear');
 
 function handleSearch() {
-  searchQuery = searchInput.value.trim();
-  searchClear.style.display = searchQuery ? 'block' : 'none';
+  searchQuery = searchInput ? searchInput.value.trim() : '';
+  if (searchClear) searchClear.style.display = searchQuery ? 'block' : 'none';
   pageBanned = 0;
   pageProfiles = 0;
   loadAllBanned();
   loadProfiles();
+  // Keep URL in sync so refresh and sharing work
+  const url = new URL(window.location.href);
+  if (searchQuery) url.searchParams.set('search', searchQuery);
+  else url.searchParams.delete('search');
+  const newUrl = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '');
+  if (window.location.pathname + window.location.search !== newUrl) {
+    window.history.replaceState(null, '', newUrl);
+  }
 }
 
 if (searchInput) {
+  // Init from URL on load (e.g. ?search=foo)
+  const urlParams = new URLSearchParams(window.location.search);
+  const q = urlParams.get('search');
+  if (q != null && q !== '') {
+    searchInput.value = q;
+    searchQuery = q;
+    if (searchClear) searchClear.style.display = 'block';
+  }
   let searchTimeout;
   searchInput.addEventListener('input', () => {
     clearTimeout(searchTimeout);
@@ -634,6 +669,7 @@ if (searchInput) {
   });
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       clearTimeout(searchTimeout);
       handleSearch();
     }
@@ -642,13 +678,14 @@ if (searchInput) {
 
 if (searchClear) {
   searchClear.addEventListener('click', () => {
-    searchInput.value = '';
+    if (searchInput) searchInput.value = '';
     searchQuery = '';
     searchClear.style.display = 'none';
     pageBanned = 0;
     pageProfiles = 0;
     loadAllBanned();
     loadProfiles();
+    window.history.replaceState(null, '', window.location.pathname);
   });
 }
 

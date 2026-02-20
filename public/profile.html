@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profil Steam – Ban Tracker</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+      <h1>Steam Ban Tracker</h1>
+      <p class="subtitle">Profil</p>
+      <a href="/" class="back-link">← Tableau de bord</a>
+    </header>
+
+    <main class="profile-page">
+      <div id="profile-loading" class="profile-loading">Chargement du profil…</div>
+      <div id="profile-error" class="profile-error" style="display: none;"></div>
+      <div id="profile-content" style="display: none;">
+        <div class="profile-panel">
+          <h2>Profil</h2>
+          <div class="profile-header-wrap">
+            <img id="profile-avatar" class="profile-avatar" src="" alt="" />
+            <div>
+              <h1 id="profile-name" class="profile-name"></h1>
+              <p id="profile-meta" class="profile-meta"></p>
+            </div>
+          </div>
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <span id="profile-friends" class="stat-value">—</span>
+              <span class="stat-label">Amis (connus)</span>
+            </div>
+            <div class="profile-stat">
+              <span id="profile-vac" class="stat-value">—</span>
+              <span class="stat-label">VAC</span>
+            </div>
+            <div class="profile-stat">
+              <span id="profile-game" class="stat-value">—</span>
+              <span class="stat-label">Game bans</span>
+            </div>
+            <div class="profile-stat">
+              <span id="profile-community" class="stat-value">—</span>
+              <span class="stat-label">Community</span>
+            </div>
+            <div class="profile-stat">
+              <span id="profile-elo" class="stat-value">—</span>
+              <span class="stat-label">ELO Faceit</span>
+            </div>
+          </div>
+          <div class="profile-links-wrap">
+            <div class="profile-links" id="profile-links"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>made by Drago</footer>
+
+    <script>
+      (function () {
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const steamid64 = pathParts[pathParts.length - 1];
+        if (!steamid64 || steamid64 === 'profile') {
+          document.getElementById('profile-loading').style.display = 'none';
+          document.getElementById('profile-error').style.display = 'block';
+          document.getElementById('profile-error').textContent = 'URL de profil invalide.';
+          return;
+        }
+
+        const loadingEl = document.getElementById('profile-loading');
+        const errorEl = document.getElementById('profile-error');
+        const contentEl = document.getElementById('profile-content');
+
+        fetch('/api/profile/' + encodeURIComponent(steamid64))
+          .then(function (res) {
+            if (!res.ok) throw new Error(res.status === 404 ? 'Profil non trouvé' : res.statusText);
+            return res.json();
+          })
+          .then(function (data) {
+            loadingEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            contentEl.style.display = 'block';
+
+            document.getElementById('profile-name').textContent = data.persona_name || 'Unknown';
+            document.getElementById('profile-meta').textContent = data.steamid64 + (data.steamid ? ' · ' + data.steamid : '');
+            const avatar = document.getElementById('profile-avatar');
+            avatar.src = data.avatar || '';
+            avatar.alt = data.persona_name || '';
+
+            document.getElementById('profile-friends').textContent = data.friend_count != null ? data.friend_count : '—';
+            document.getElementById('profile-vac').textContent = data.vac_banned ? (data.vac_count || '1') : '0';
+            document.getElementById('profile-game').textContent = data.game_ban_count != null ? data.game_ban_count : '0';
+            document.getElementById('profile-community').textContent = data.community_banned ? 'Oui' : 'Non';
+            document.getElementById('profile-elo').textContent = data.faceit_elo != null ? String(data.faceit_elo) : '—';
+
+            const steamUrl = 'https://steamcommunity.com/profiles/' + steamid64;
+            const faceitName = (data.persona_name || '').replace(/\s+/g, '_');
+            const faceitUrl = data.faceit_url || ('https://www.faceit.com/en/players/' + encodeURIComponent(faceitName));
+            const friendsUrl = data.friends_page_url || steamUrl + '/friends/';
+
+            const links = document.getElementById('profile-links');
+            links.innerHTML =
+              '<a href="' + steamUrl + '" target="_blank" rel="noopener">Profil Steam</a>' +
+              '<a href="' + friendsUrl + '" target="_blank" rel="noopener">Amis Steam</a>' +
+              '<a href="' + faceitUrl + '" target="_blank" rel="noopener">Faceit</a>';
+          })
+          .catch(function (err) {
+            loadingEl.style.display = 'none';
+            errorEl.style.display = 'block';
+            errorEl.textContent = err.message || 'Erreur de chargement.';
+          });
+      })();
+    </script>
+  </body>
+</html>

@@ -484,6 +484,36 @@ export function getProfilesCount(database = getDb(), search = null) {
 }
 
 /**
+ * Get one profile by steamid64 (for profile page)
+ */
+export function getProfile(database = getDb(), steamid64) {
+  const id = String(steamid64);
+  const row = database
+    .prepare(
+      `SELECT steamid64, steamid, persona_name, profile_url, friends_page_url, avatar,
+              time_created, vac_banned, vac_count, days_since_last_ban, last_ban_date,
+              game_ban_count, community_banned, economy_ban, scraped_at
+       FROM profiles WHERE steamid64 = ?`
+    )
+    .get(id);
+  return row || null;
+}
+
+/**
+ * Get friend count for a profile (from friendships table)
+ */
+export function getFriendCount(database = getDb(), steamid64) {
+  const id = String(steamid64);
+  const row = database
+    .prepare(
+      `SELECT COUNT(*) as count FROM friendships
+       WHERE steamid64_a = ? OR steamid64_b = ?`
+    )
+    .get(id, id);
+  return row ? row.count : 0;
+}
+
+/**
  * Get friendship pairs (who is friend with whom)
  */
 export function getFriendshipPairs(database = getDb(), limit = 500) {

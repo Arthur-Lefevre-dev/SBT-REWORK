@@ -3,6 +3,7 @@
  * Run: npm run server
  */
 
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,6 +16,8 @@ import {
   getBannedCount,
   getProfiles,
   getProfilesCount,
+  getProfile,
+  getFriendCount,
   getBanStatsOverTime,
   getBanStatsYears,
   getBanStatsByBanDate,
@@ -24,6 +27,11 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT ?? 3000;
+
+// Profile page (must be before static so /profile/:id is handled here)
+app.get('/profile/:steamid64', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -118,6 +126,42 @@ app.get('/api/profiles', (req, res) => {
     const rows = getProfiles(undefined, limit, offset, search);
     const total = getProfilesCount(undefined, search);
     res.json({ rows, total });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: single profile (for profile page), optionally with Faceit ELO
+app.get('/api/profile/:steamid64', async (req, res) => {
+  try {
+    const steamid64 = req.params.steamid64;
+    const profile = getProfile(undefined, steamid64);
+    if (!profile) {
+      return res.status(404).json({ error: 'Profil non trouvé' });
+    }
+    const friendCount = getFriendCount(undefined, steamid64);
+    const payload = { ...profile, friend_count: friendCount };
+    const faceitKey = process.env.FACEIT_API_KEY;
+    if (faceitKey) {
+      try {
+        const faceitRes = await fetch(
+          `https://open.faceit.com/data/v4/players?game=cs2&game_player_id=${encodeURIComponent(steamid64)}`,
+          { headers: { Authorization: `Bearer ${faceitKey}` } }
+        );
+        if (faceitRes.ok) {
+          const faceit = await faceitRes.json();
+          const cs2 = faceit.games?.cs2;
+          if (cs2 != null) {
+            payload.faceit_elo = cs2.faceit_elo ?? null;
+            payload.faceit_skill_level = cs2.skill_level ?? null;
+            payload.faceit_url = faceit.faceit_url ?? null;
+          }
+        }
+      } catch (_) {
+        // ignore Faceit errors
+      }
+    }
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
