@@ -22,6 +22,7 @@ import {
   getSearchProfiles,
   getProfile,
   getFriendCount,
+  getFriendBannedCount,
   getBanStatsOverTime,
   getBanStatsYears,
   getBanStatsByBanDate,
@@ -165,7 +166,17 @@ app.get('/api/profile/:steamid64', async (req, res) => {
       return res.status(404).json({ error: 'Profil non trouvé' });
     }
     const friendCount = getFriendCount(undefined, steamid64);
-    const payload = { ...profile, friend_count: friendCount };
+    const friendBannedCount = getFriendBannedCount(undefined, steamid64);
+    const friend_ban_percentage =
+      friendCount > 0
+        ? Math.round((friendBannedCount / friendCount) * 100)
+        : null;
+    const payload = {
+      ...profile,
+      friend_count: friendCount,
+      friend_banned_count: friendBannedCount,
+      friend_ban_percentage
+    };
     const faceitKey = process.env.FACEIT_API_KEY;
     if (faceitKey) {
       try {

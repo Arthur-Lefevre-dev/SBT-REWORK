@@ -35,6 +35,11 @@
               <span class="stat-label">Amis (connus)</span>
             </div>
             <div class="profile-stat">
+              <span id="profile-friends-banned" class="stat-value">—</span>
+              <span id="profile-friends-banned-detail" class="stat-detail" style="display: none;"></span>
+              <span class="stat-label">Amis bannis</span>
+            </div>
+            <div class="profile-stat">
               <span id="profile-vac" class="stat-value">—</span>
               <span class="stat-label">VAC</span>
             </div>
@@ -93,6 +98,21 @@
             avatar.alt = data.persona_name || '';
 
             document.getElementById('profile-friends').textContent = data.friend_count != null ? data.friend_count : '—';
+            var friendsBannedEl = document.getElementById('profile-friends-banned');
+            var friendsBannedDetailEl = document.getElementById('profile-friends-banned-detail');
+            if (friendsBannedEl) {
+              if (data.friend_ban_percentage != null && data.friend_count != null && data.friend_count > 0) {
+                var banned = data.friend_banned_count != null ? data.friend_banned_count : 0;
+                friendsBannedEl.textContent = data.friend_ban_percentage + ' %';
+                if (friendsBannedDetailEl) {
+                  friendsBannedDetailEl.textContent = '(' + banned + ' / ' + data.friend_count + ')';
+                  friendsBannedDetailEl.style.display = '';
+                }
+              } else {
+                friendsBannedEl.textContent = '—';
+                if (friendsBannedDetailEl) friendsBannedDetailEl.style.display = 'none';
+              }
+            }
             document.getElementById('profile-vac').textContent = data.vac_banned ? (data.vac_count || '1') : '0';
             document.getElementById('profile-game').textContent = data.game_ban_count != null ? data.game_ban_count : '0';
             document.getElementById('profile-community').textContent = data.community_banned ? 'Oui' : 'Non';

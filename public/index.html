@@ -21,10 +21,27 @@
       <div class="header-actions">
         <div class="search-box-wrap">
           <div class="search-box">
-            <input type="text" id="search-input" placeholder="Rechercher (pseudo, SteamID, SteamID64)..." autocomplete="off" />
-            <button id="search-clear" class="btn-search-clear" style="display: none;">✕</button>
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Rechercher (pseudo, SteamID, SteamID64)..."
+              autocomplete="off"
+            />
+            <button
+              id="search-clear"
+              class="btn-search-clear"
+              style="display: none"
+            >
+              ✕
+            </button>
           </div>
-          <div id="search-suggestions" class="search-suggestions" role="listbox" aria-label="Profils suggérés" style="display: none;"></div>
+          <div
+            id="search-suggestions"
+            class="search-suggestions"
+            role="listbox"
+            aria-label="Profils suggérés"
+            style="display: none"
+          ></div>
         </div>
         <button id="refresh" class="btn-refresh">Actualiser</button>
       </div>
@@ -38,15 +55,15 @@
         </div>
         <div class="stat-card stat-warn">
           <span class="stat-value" id="vac-banned">—</span>
-          <span class="stat-label">VAC bannis</span>
+          <span class="stat-label">VAC ban</span>
         </div>
         <div class="stat-card stat-warn">
           <span class="stat-value" id="game-banned">—</span>
-          <span class="stat-label">Game bannis</span>
+          <span class="stat-label">Game ban</span>
         </div>
         <div class="stat-card stat-warn">
           <span class="stat-value" id="community-banned">—</span>
-          <span class="stat-label">Community bannis</span>
+          <span class="stat-label">Community ban</span>
         </div>
       </section>
 
@@ -68,8 +85,16 @@
             Nombre de bans VAC par jour (date estimée du ban)
           </p>
           <div class="chart-actions">
-            <button id="chart-reset-zoom" class="btn-reset-zoom" style="display: none;">Réinitialiser zoom</button>
-            <span class="chart-hint">💡 Molette pour zoomer, clic-glisser pour déplacer</span>
+            <button
+              id="chart-reset-zoom"
+              class="btn-reset-zoom"
+              style="display: none"
+            >
+              Réinitialiser zoom
+            </button>
+            <span class="chart-hint"
+              >💡 Molette pour zoomer, clic-glisser pour déplacer</span
+            >
           </div>
           <div class="chart-wrap">
             <p id="chart-empty-msg" class="empty-msg" style="display: none">
@@ -101,7 +126,7 @@
         </div>
 
         <div class="panel">
-          <h2>VAC bannis</h2>
+          <h2>VAC ban</h2>
           <div class="table-wrap">
             <table>
               <thead>
@@ -122,7 +147,7 @@
         </div>
 
         <div class="panel">
-          <h2>Game bannis</h2>
+          <h2>Game ban</h2>
           <div class="table-wrap">
             <table>
               <thead>
@@ -141,7 +166,7 @@
         </div>
 
         <div class="panel">
-          <h2>Community bannis</h2>
+          <h2>Community ban</h2>
           <div class="table-wrap">
             <table>
               <thead>

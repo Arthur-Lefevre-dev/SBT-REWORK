@@ -80,12 +80,12 @@ export function getFriendshipPairs(graph) {
 export function printStats(stats) {
   console.log('\n=== BANNISSEMENTS DÉTECTÉS ===\n');
   console.log('Profils analysés:', stats.summary.totalProfiles);
-  console.log('VAC bannis:', stats.summary.vacBannedCount);
-  console.log('Game bannis:', stats.summary.gameBannedCount);
-  console.log('Community bannis:', stats.summary.communityBannedCount);
+  console.log('VAC ban:', stats.summary.vacBannedCount);
+  console.log('Game ban:', stats.summary.gameBannedCount);
+  console.log('Community ban:', stats.summary.communityBannedCount);
 
   if (stats.banDetails.length > 0) {
-    console.log('\n--- VAC bannis ---');
+    console.log('\n--- VAC ban ---');
     stats.banDetails.forEach((b) => {
       const dateInfo = b.lastBanDate ? ` (~${b.lastBanDate.slice(0, 10)})` : '';
       console.log(`  ${b.personaName} | SteamID: ${b.steamId} | Dernier ban: il y a ${b.daysSinceLastBan ?? '?'} jours${dateInfo} | ${b.numberOfVACBans} ban(s) VAC`);
