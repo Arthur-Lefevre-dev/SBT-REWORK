@@ -40,10 +40,11 @@ app.get('/api/stats', (req, res) => {
 // API: all banned (VAC, Game, Community) - paginated
 app.get('/api/banned', (req, res) => {
   try {
-    const limit = parseInt(req.query.limit ?? '50', 10);
+    const limit = parseInt(req.query.limit ?? '10', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
-    const rows = getAllBanned(undefined, limit, offset);
-    const total = getBannedCount();
+    const search = req.query.search || null;
+    const rows = getAllBanned(undefined, limit, offset, search);
+    const total = getBannedCount(undefined, search);
     res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -111,10 +112,11 @@ app.get('/api/stats-years', (req, res) => {
 // API: profiles (paginated)
 app.get('/api/profiles', (req, res) => {
   try {
-    const limit = parseInt(req.query.limit ?? '50', 10);
+    const limit = parseInt(req.query.limit ?? '10', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
-    const rows = getProfiles(undefined, limit, offset);
-    const total = getProfilesCount();
+    const search = req.query.search || null;
+    const rows = getProfiles(undefined, limit, offset, search);
+    const total = getProfilesCount(undefined, search);
     res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });

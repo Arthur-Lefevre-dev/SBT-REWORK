@@ -18,7 +18,13 @@
       <p class="subtitle">
         Suivi des bannissements VAC, Game et Community sur Steam
       </p>
-      <button id="refresh" class="btn-refresh">Actualiser</button>
+      <div class="header-actions">
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="Rechercher (pseudo, SteamID, SteamID64)..." />
+          <button id="search-clear" class="btn-search-clear" style="display: none;">✕</button>
+        </div>
+        <button id="refresh" class="btn-refresh">Actualiser</button>
+      </div>
     </header>
 
     <main>
@@ -42,20 +48,26 @@
       </section>
 
       <section class="tables">
-      <div class="panel panel-chart">
-        <h2>Bans dans le temps</h2>
-        <div class="chart-controls">
-          <label for="chart-view">Vue :</label>
-          <select id="chart-view">
-            <option value="ban">Par date du ban (VAC)</option>
-            <option value="scrape">Par date de scraping</option>
-          </select>
-          <label for="chart-year">Année :</label>
-          <select id="chart-year">
-            <option value="">Toutes</option>
-          </select>
-        </div>
-        <p class="chart-desc" id="chart-desc">Nombre de bans VAC par jour (date estimée du ban)</p>
+        <div class="panel panel-chart">
+          <h2>Bans dans le temps</h2>
+          <div class="chart-controls">
+            <label for="chart-view">Vue :</label>
+            <select id="chart-view">
+              <option value="ban">Par date du ban (VAC)</option>
+              <option value="scrape">Par date de scraping</option>
+            </select>
+            <label for="chart-year">Année :</label>
+            <select id="chart-year">
+              <option value="">Toutes</option>
+            </select>
+          </div>
+          <p class="chart-desc" id="chart-desc">
+            Nombre de bans VAC par jour (date estimée du ban)
+          </p>
+          <div class="chart-actions">
+            <button id="chart-reset-zoom" class="btn-reset-zoom" style="display: none;">Réinitialiser zoom</button>
+            <span class="chart-hint">💡 Molette pour zoomer, clic-glisser pour déplacer</span>
+          </div>
           <div class="chart-wrap">
             <p id="chart-empty-msg" class="empty-msg" style="display: none">
               Aucune donnée temporelle (scraper au moins une fois)
@@ -165,6 +177,7 @@
     <footer>made by Drago</footer>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
