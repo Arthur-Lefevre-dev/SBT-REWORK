@@ -47,6 +47,7 @@
               <span class="stat-label">Community</span>
             </div>
             <div class="profile-stat" id="profile-elo-stat">
+              <img id="profile-elo-badge" class="profile-elo-badge" src="" alt="" style="display: none;" />
               <span id="profile-elo" class="stat-value">—</span>
               <span class="stat-label">ELO Faceit</span>
             </div>
@@ -98,12 +99,24 @@
             var eloVal = data.faceit_elo != null ? String(data.faceit_elo) : '—';
             document.getElementById('profile-elo').textContent = eloVal;
             var eloStatEl = document.getElementById('profile-elo-stat');
+            var eloBadgeEl = document.getElementById('profile-elo-badge');
             if (eloStatEl) {
               eloStatEl.classList.remove('faceit-lvl-1', 'faceit-lvl-2', 'faceit-lvl-3', 'faceit-lvl-4', 'faceit-lvl-5', 'faceit-lvl-6', 'faceit-lvl-7', 'faceit-lvl-8', 'faceit-lvl-9', 'faceit-lvl-10');
               var level = null;
               if (data.faceit_skill_level != null) level = Math.max(1, Math.min(10, parseInt(data.faceit_skill_level, 10)));
               else if (data.faceit_elo != null) level = eloToLevel(data.faceit_elo);
-              if (level >= 1 && level <= 10) eloStatEl.classList.add('faceit-lvl-' + level);
+              if (level >= 1 && level <= 10) {
+                eloStatEl.classList.add('faceit-lvl-' + level);
+                if (eloBadgeEl) {
+                  eloBadgeEl.src = '/img/faceit/' + level + '.png';
+                  eloBadgeEl.alt = 'Faceit Level ' + level;
+                  eloBadgeEl.style.display = '';
+                  eloBadgeEl.onerror = function () { this.style.display = 'none'; };
+                }
+              } else if (eloBadgeEl) {
+                eloBadgeEl.src = '';
+                eloBadgeEl.style.display = 'none';
+              }
             }
 
             function eloToLevel(elo) {

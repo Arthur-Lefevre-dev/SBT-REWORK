@@ -587,6 +587,20 @@ header .back-link:hover,
 }
 
 /* Faceit level colors (CS2 level 1–10): 1 Blanc, 2–3 Vert clair, 4–7 Jaune, 8–9 Orange, 10 Rouge */
+.profile-stat#profile-elo-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.profile-elo-badge {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .profile-stat.faceit-lvl-1 {
   border-color: #e6edf3;
   background: rgba(230, 237, 243, 0.2);
