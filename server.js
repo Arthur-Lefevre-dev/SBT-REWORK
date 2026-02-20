@@ -154,7 +154,12 @@ app.get('/api/profile/:steamid64', async (req, res) => {
           if (cs2 != null) {
             payload.faceit_elo = cs2.faceit_elo ?? null;
             payload.faceit_skill_level = cs2.skill_level ?? null;
-            payload.faceit_url = faceit.faceit_url ?? null;
+            let faceitUrl = faceit.faceit_url ?? null;
+            // API returns URL with {lang} placeholder; normalize to /fr/players/ or /en/players/
+            if (typeof faceitUrl === 'string') {
+              faceitUrl = faceitUrl.replace(/\/\{lang\}\/?/g, '/').replace(/%7Blang%7D\/?/gi, '');
+            }
+            payload.faceit_url = faceitUrl;
           }
         }
       } catch (_) {
