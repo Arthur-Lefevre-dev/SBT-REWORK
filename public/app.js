@@ -677,6 +677,7 @@ document.getElementById("refresh").addEventListener("click", () => {
 // Search functionality
 const searchInput = document.getElementById('search-input');
 const searchClear = document.getElementById('search-clear');
+const searchSuggestionsEl = document.getElementById('search-suggestions');
 
 function handleSearch() {
   searchQuery = searchInput ? searchInput.value.trim() : '';
@@ -685,7 +686,6 @@ function handleSearch() {
   pageProfiles = 0;
   loadAllBanned();
   loadProfiles();
-  // Keep URL in sync so refresh and sharing work
   const url = new URL(window.location.href);
   if (searchQuery) url.searchParams.set('search', searchQuery);
   else url.searchParams.delete('search');
@@ -695,8 +695,42 @@ function handleSearch() {
   }
 }
 
+function hideSuggestions() {
+  if (searchSuggestionsEl) {
+    searchSuggestionsEl.style.display = 'none';
+    searchSuggestionsEl.innerHTML = '';
+  }
+}
+
+async function fetchSuggestions(q) {
+  if (!q || q.length < 2) return [];
+  try {
+    return await fetchJson('/api/search?q=' + encodeURIComponent(q) + '&limit=12');
+  } catch (_) {
+    return [];
+  }
+}
+
+function renderSuggestions(profiles) {
+  if (!searchSuggestionsEl) return;
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    searchSuggestionsEl.innerHTML = '';
+    searchSuggestionsEl.style.display = 'none';
+    return;
+  }
+  searchSuggestionsEl.innerHTML = profiles
+    .map(function (p) {
+      const name = escapeHtml(p.persona_name || '—');
+      const id = escapeHtml(p.steamid64 || '');
+      const avatar = p.avatar ? '<img src="' + escapeHtml(p.avatar) + '" alt="">' : '';
+      const url = '/profile/' + encodeURIComponent(p.steamid64);
+      return '<a href="' + url + '" class="search-suggestion-item" data-steamid64="' + id + '">' + avatar + '<span class="suggestion-name">' + name + '</span><span class="suggestion-id">' + escapeHtml(p.steamid || p.steamid64 || '') + '</span></a>';
+    })
+    .join('');
+  searchSuggestionsEl.style.display = 'block';
+}
+
 if (searchInput) {
-  // Init from URL on load (e.g. ?search=foo)
   const urlParams = new URLSearchParams(window.location.search);
   const q = urlParams.get('search');
   if (q != null && q !== '') {
@@ -705,26 +739,56 @@ if (searchInput) {
     if (searchClear) searchClear.style.display = 'block';
   }
   let searchTimeout;
-  searchInput.addEventListener('input', () => {
+  let suggestionsTimeout;
+  searchInput.addEventListener('input', function () {
+    const query = searchInput.value.trim();
     clearTimeout(searchTimeout);
+    clearTimeout(suggestionsTimeout);
     searchTimeout = setTimeout(handleSearch, 300);
+    if (query.length >= 2) {
+      suggestionsTimeout = setTimeout(async function () {
+        const profiles = await fetchSuggestions(query);
+        if (searchInput.value.trim() === query) renderSuggestions(profiles);
+      }, 200);
+    } else {
+      hideSuggestions();
+    }
   });
-  searchInput.addEventListener('keydown', (e) => {
+  searchInput.addEventListener('focus', function () {
+    const query = searchInput.value.trim();
+    if (query.length >= 2) fetchSuggestions(query).then(renderSuggestions);
+  });
+  searchInput.addEventListener('blur', function () {
+    setTimeout(hideSuggestions, 150);
+  });
+  searchInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
-      e.preventDefault();
       clearTimeout(searchTimeout);
       handleSearch();
+      hideSuggestions();
+    }
+    if (e.key === 'Escape') hideSuggestions();
+  });
+}
+
+if (searchSuggestionsEl) {
+  searchSuggestionsEl.addEventListener('mousedown', function (e) {
+    const a = e.target.closest('a.search-suggestion-item');
+    if (a && a.href) {
+      e.preventDefault();
+      window.location.href = a.getAttribute('href');
     }
   });
 }
 
 if (searchClear) {
-  searchClear.addEventListener('click', () => {
+  searchClear.addEventListener('click', function () {
     if (searchInput) searchInput.value = '';
     searchQuery = '';
     searchClear.style.display = 'none';
     pageBanned = 0;
     pageProfiles = 0;
+    hideSuggestions();
     loadAllBanned();
     loadProfiles();
     window.history.replaceState(null, '', window.location.pathname);

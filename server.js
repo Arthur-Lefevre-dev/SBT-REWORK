@@ -19,6 +19,7 @@ import {
   getBannedCount,
   getProfiles,
   getProfilesCount,
+  getSearchProfiles,
   getProfile,
   getFriendCount,
   getBanStatsOverTime,
@@ -124,6 +125,18 @@ app.get('/api/stats-years', (req, res) => {
     const byBan = req.query.by === 'ban';
     const years = byBan ? getBanStatsYearsByBanDate() : getBanStatsYears();
     res.json(years);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: search profiles (suggestions for search bar)
+app.get('/api/search', (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    const limit = Math.min(parseInt(req.query.limit ?? '12', 10), 20);
+    const rows = q.length >= 2 ? getSearchProfiles(undefined, q, limit) : [];
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

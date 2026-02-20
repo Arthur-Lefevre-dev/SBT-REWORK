@@ -511,6 +511,26 @@ export function getProfilesCount(database = getDb(), search = null) {
 }
 
 /**
+ * Search profiles by persona_name, steamid or steamid64 (for search suggestions)
+ */
+export function getSearchProfiles(database = getDb(), query = "", limit = 12) {
+  const q = (query || "").trim();
+  if (q.length === 0) return [];
+  const s = `%${q}%`;
+  return database
+    .prepare(
+      `
+    SELECT steamid64, steamid, persona_name, avatar
+    FROM profiles
+    WHERE persona_name LIKE ? OR steamid LIKE ? OR steamid64 LIKE ?
+    ORDER BY persona_name ASC
+    LIMIT ?
+  `
+    )
+    .all(s, s, s, limit);
+}
+
+/**
  * Get one profile by steamid64 (for profile page)
  */
 export function getProfile(database = getDb(), steamid64) {

@@ -51,12 +51,79 @@ h1 {
   margin-top: 1rem;
 }
 
+.search-box-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
 .search-box {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
+}
+
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.search-suggestions:empty {
+  display: none !important;
+}
+
+.search-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.search-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.search-suggestion-item:hover {
+  background: var(--border);
+}
+
+.search-suggestion-item img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.search-suggestion-item .suggestion-name {
+  font-weight: 600;
   flex: 1;
-  max-width: 400px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-suggestion-item .suggestion-id {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: "JetBrains Mono", monospace;
+  flex-shrink: 0;
 }
 
 #search-input {
