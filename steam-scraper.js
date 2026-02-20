@@ -10,6 +10,7 @@ import {
   getFriendList,
   steamId64ToSteamId
 } from './steam-api.js';
+import { getGameBanDaysFromProfile } from './steam-profile-scrape.js';
 import { FriendshipGraph } from './friendship-graph.js';
 
 const BATCH_PROFILES = 15;
@@ -98,6 +99,25 @@ async function processBatch(apiKey, batch) {
       friendIds: friendsResults[i].map((f) => f.steamid)
     });
   }
+
+  // Scrape profile HTML for Game ban "days since last ban" (API does not provide it)
+  for (const p of profiles) {
+    if (p.ban?.numberOfGameBans > 0) {
+      try {
+        const extra = await getGameBanDaysFromProfile(p.steamId64, {
+          delayMs: 0
+        });
+        if (extra) {
+          p.ban.gameBanDaysSinceLast = extra.gameBanDaysSinceLast;
+          p.ban.gameLastBanDate = extra.gameLastBanDate;
+        }
+      } catch (_) {
+        // ignore
+      }
+      await sleep(450);
+    }
+  }
+
   return { profiles, friendsData };
 }
 

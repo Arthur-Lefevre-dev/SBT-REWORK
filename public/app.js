@@ -126,8 +126,12 @@ async function loadAllBanned() {
           details.push(
             `${r.vac_count} VAC, dernier: il y a ${r.days_since_last_ban ?? "?"} j`,
           );
-        if (r.game_ban_count > 0 && !r.vac_banned)
-          details.push(`${r.game_ban_count} game ban(s)`);
+        if (r.game_ban_count > 0 && !r.vac_banned) {
+          let s = `${r.game_ban_count} game ban(s)`;
+          if (r.game_ban_days_since_last != null)
+            s += `, dernier: il y a ${r.game_ban_days_since_last} j`;
+          details.push(s);
+        }
         return `
       <tr>
         <td>${avatarCell(r.avatar, r.steamid64)}</td>
@@ -203,7 +207,7 @@ async function loadGameBanned() {
   const tbody = document.getElementById("game-banned-table");
   if (rows.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="5" class="empty-msg">Aucun profil Game banni</td></tr>';
+      '<tr><td colspan="6" class="empty-msg">Aucun profil Game banni</td></tr>';
   } else {
     tbody.innerHTML = rows
       .map(
@@ -213,6 +217,7 @@ async function loadGameBanned() {
       <td>${nameCell(r.persona_name, r.steamid64)}</td>
       <td class="mono">${escapeHtml(r.steamid)}</td>
       <td>${r.game_ban_count}</td>
+      <td>${r.game_ban_days_since_last != null ? r.game_ban_days_since_last + ' j' : '—'}</td>
       <td>${linkCell(r.steamid64)}</td>
     </tr>
   `,
@@ -311,7 +316,7 @@ async function loadChart() {
     const isAggregated = rows.length > THRESHOLD_DAYS && !yearParam;
     const aggregationNote = isAggregated ? " (agrégé par semaine pour lisibilité)" : "";
     desc.textContent = byBan
-      ? `Nombre de bans VAC${isAggregated ? ' par semaine' : ' par jour'}${aggregationNote} (date estimée du ban — Steam donne « jours depuis dernier ban »)`
+      ? `Nombre de bans VAC et Game${isAggregated ? ' par semaine' : ' par jour'}${aggregationNote} (date estimée du ban)`
       : `Bans détectés${isAggregated ? ' par semaine' : ' par jour'}${aggregationNote} (date du scraping)`;
   }
 
@@ -403,31 +408,17 @@ async function loadChart() {
       maxBarThickness: maxBarThickness,
       minBarLength: 3,
     },
+    {
+      label: "Game",
+      data: game,
+      backgroundColor: "rgba(210, 153, 34, 0.95)",
+      borderColor: "#d29922",
+      borderWidth: 2.5,
+      borderRadius: 4,
+      maxBarThickness: maxBarThickness,
+      minBarLength: 3,
+    },
   ];
-  if (!byBan) {
-    datasets.push(
-      {
-        label: "Game",
-        data: game,
-        backgroundColor: "rgba(210, 153, 34, 0.95)",
-        borderColor: "#d29922",
-        borderWidth: 2.5,
-        borderRadius: 4,
-        maxBarThickness: maxBarThickness,
-        minBarLength: 3,
-      },
-      {
-        label: "Community",
-        data: community,
-        backgroundColor: "rgba(139, 148, 158, 0.95)",
-        borderColor: "#8b949e",
-        borderWidth: 2.5,
-        borderRadius: 4,
-        maxBarThickness: maxBarThickness,
-        minBarLength: 3,
-      },
-    );
-  }
 
   const maxTicks = Math.min(40, Math.max(8, Math.floor(dataPoints / 2)));
   const step = Math.max(1, Math.floor(dataPoints / maxTicks));

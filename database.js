@@ -35,11 +35,21 @@ function initSchema(database) {
       days_since_last_ban INTEGER,
       last_ban_date TEXT,
       game_ban_count INTEGER DEFAULT 0,
+      game_ban_days_since_last INTEGER,
+      game_last_ban_date TEXT,
       community_banned INTEGER DEFAULT 0,
       economy_ban TEXT,
       scraped_at TEXT DEFAULT (datetime('now'))
     )
   `);
+
+  // Migration: add game ban date columns if missing
+  const cols = database.prepare("PRAGMA table_info(profiles)").all();
+  const hasGameBanDays = cols.some((c) => c.name === "game_ban_days_since_last");
+  if (!hasGameBanDays) {
+    database.exec("ALTER TABLE profiles ADD COLUMN game_ban_days_since_last INTEGER");
+    database.exec("ALTER TABLE profiles ADD COLUMN game_last_ban_date TEXT");
+  }
 
   // Migration: drop old friendships table with FK constraints (SQLite can't alter them)
   const tableExists = database
@@ -77,8 +87,9 @@ export function saveProfile(database, profile) {
     INSERT OR REPLACE INTO profiles (
       steamid64, steamid, persona_name, profile_url, friends_page_url,
       avatar, time_created, vac_banned, vac_count, days_since_last_ban,
-      last_ban_date, game_ban_count, community_banned, economy_ban
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      last_ban_date, game_ban_count, game_ban_days_since_last, game_last_ban_date,
+      community_banned, economy_ban
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const b = profile.ban;
   stmt.run(
@@ -94,6 +105,8 @@ export function saveProfile(database, profile) {
     b?.daysSinceLastBan ?? null,
     b?.lastBanDate ?? null,
     b?.numberOfGameBans ?? 0,
+    b?.gameBanDaysSinceLast ?? null,
+    b?.gameLastBanDate ?? null,
     b?.communityBanned ? 1 : 0,
     b?.economyBan ?? "none",
   );
@@ -241,7 +254,7 @@ export function getGameBanned(database = getDb(), limit = 100, offset = 0) {
     .prepare(
       `
     SELECT steamid64, steamid, persona_name, profile_url, friends_page_url, avatar,
-           game_ban_count
+           game_ban_count, game_ban_days_since_last, game_last_ban_date
     FROM profiles WHERE game_ban_count > 0 AND vac_banned = 0
     ORDER BY game_ban_count DESC
     LIMIT ? OFFSET ?
@@ -290,7 +303,7 @@ export function getAllBanned(database = getDb(), limit = 100, offset = 0, search
   let query = `
     SELECT steamid64, steamid, persona_name, profile_url, friends_page_url, avatar,
            vac_banned, vac_count, days_since_last_ban, last_ban_date,
-           game_ban_count, community_banned
+           game_ban_count, game_ban_days_since_last, game_last_ban_date, community_banned
     FROM profiles WHERE vac_banned = 1 OR game_ban_count > 0 OR community_banned = 1
   `;
   const params = [];
@@ -407,12 +420,11 @@ export function getBanStatsYears(database = getDb()) {
 }
 
 /**
- * Get VAC ban count per day by ban date (last_ban_date).
- * So bans from 135 days ago appear at that date. Only VAC has last_ban_date in Steam API.
+ * Get VAC and Game ban counts per day by ban date (last_ban_date, game_last_ban_date).
  * @param {number|null} year - If set, only that year; else from oldest ban date to today
  */
 export function getBanStatsByBanDate(database = getDb(), year = null) {
-  const rows = database
+  const vacRows = database
     .prepare(
       `
     SELECT substr(last_ban_date, 1, 10) as day, COUNT(*) as vac
@@ -420,18 +432,40 @@ export function getBanStatsByBanDate(database = getDb(), year = null) {
     WHERE vac_banned = 1 AND last_ban_date IS NOT NULL AND length(last_ban_date) >= 10
     GROUP BY substr(last_ban_date, 1, 10)
     ORDER BY day
-  `,
+  `
     )
     .all();
 
-  const valid = rows.filter((r) => r.day && r.day.length >= 10);
-  if (valid.length === 0) return [];
+  const gameRows = database
+    .prepare(
+      `
+    SELECT substr(game_last_ban_date, 1, 10) as day, COUNT(*) as game
+    FROM profiles
+    WHERE game_ban_count > 0 AND game_last_ban_date IS NOT NULL AND length(game_last_ban_date) >= 10
+    GROUP BY substr(game_last_ban_date, 1, 10)
+    ORDER BY day
+  `
+    )
+    .all();
 
-  const byDay = Object.fromEntries(
-    valid.map((r) => [r.day, Number(r.vac) || 0]),
+  const vacByDay = Object.fromEntries(
+    vacRows
+      .filter((r) => r.day && r.day.length >= 10)
+      .map((r) => [r.day, Number(r.vac) || 0])
+  );
+  const gameByDay = Object.fromEntries(
+    gameRows
+      .filter((r) => r.day && r.day.length >= 10)
+      .map((r) => [r.day, Number(r.game) || 0])
   );
 
-  const firstDay = valid[0].day;
+  const allDays = [
+    ...Object.keys(vacByDay),
+    ...Object.keys(gameByDay),
+  ].filter((d) => d && d.length >= 10);
+  if (allDays.length === 0) return [];
+
+  const firstDay = allDays.sort()[0];
   const today = new Date().toISOString().slice(0, 10);
 
   let start = firstDay;
@@ -447,30 +481,43 @@ export function getBanStatsByBanDate(database = getDb(), year = null) {
   const endDate = new Date(end + "T12:00:00Z");
   while (d <= endDate) {
     const day = d.toISOString().slice(0, 10);
-    result.push({ day, vac: byDay[day] ?? 0, game: 0, community: 0 });
+    result.push({
+      day,
+      vac: vacByDay[day] ?? 0,
+      game: gameByDay[day] ?? 0,
+      community: 0,
+    });
     d.setUTCDate(d.getUTCDate() + 1);
   }
   return result;
 }
 
 /**
- * Years that have ban dates (last_ban_date) for the "by ban date" chart
+ * Years that have ban dates (last_ban_date or game_last_ban_date) for the "by ban date" chart
  */
 export function getBanStatsYearsByBanDate(database = getDb()) {
-  const rows = database
+  const vacYears = database
     .prepare(
       `
     SELECT DISTINCT substr(last_ban_date, 1, 4) as y
     FROM profiles
     WHERE vac_banned = 1 AND last_ban_date IS NOT NULL AND length(last_ban_date) >= 4
-    ORDER BY y DESC
-  `,
+  `
     )
     .all();
-  const years = rows
+  const gameYears = database
+    .prepare(
+      `
+    SELECT DISTINCT substr(game_last_ban_date, 1, 4) as y
+    FROM profiles
+    WHERE game_ban_count > 0 AND game_last_ban_date IS NOT NULL AND length(game_last_ban_date) >= 4
+  `
+    )
+    .all();
+  const years = [...vacYears, ...gameYears]
     .map((r) => parseInt(r.y, 10))
     .filter((y) => !Number.isNaN(y) && y >= 2000 && y <= 2100);
-  return [...new Set(years)];
+  return [...new Set(years)].sort((a, b) => b - a);
 }
 
 /**
@@ -539,7 +586,8 @@ export function getProfile(database = getDb(), steamid64) {
     .prepare(
       `SELECT steamid64, steamid, persona_name, profile_url, friends_page_url, avatar,
               time_created, vac_banned, vac_count, days_since_last_ban, last_ban_date,
-              game_ban_count, community_banned, economy_ban, scraped_at
+              game_ban_count, game_ban_days_since_last, game_last_ban_date,
+              community_banned, economy_ban, scraped_at
        FROM profiles WHERE steamid64 = ?`
     )
     .get(id);

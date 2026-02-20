@@ -45,6 +45,7 @@
             </div>
             <div class="profile-stat">
               <span id="profile-game" class="stat-value">—</span>
+              <span id="profile-game-detail" class="stat-detail" style="display: none;"></span>
               <span class="stat-label">Game bans</span>
             </div>
             <div class="profile-stat">
@@ -115,6 +116,15 @@
             }
             document.getElementById('profile-vac').textContent = data.vac_banned ? (data.vac_count || '1') : '0';
             document.getElementById('profile-game').textContent = data.game_ban_count != null ? data.game_ban_count : '0';
+            var gameDetailEl = document.getElementById('profile-game-detail');
+            if (gameDetailEl) {
+              if (data.game_ban_days_since_last != null) {
+                gameDetailEl.textContent = '(il y a ' + data.game_ban_days_since_last + ' j)';
+                gameDetailEl.style.display = '';
+              } else {
+                gameDetailEl.style.display = 'none';
+              }
+            }
             document.getElementById('profile-community').textContent = data.community_banned ? 'Oui' : 'Non';
             var eloVal = data.faceit_elo != null ? String(data.faceit_elo) : '—';
             document.getElementById('profile-elo').textContent = eloVal;
