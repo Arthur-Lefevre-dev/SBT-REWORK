@@ -518,3 +518,44 @@ header .back-link:hover,
   background: var(--border);
   text-decoration: none;
 }
+
+/* Faceit level colors (CS2 level 1–10): 1 Blanc, 2–3 Vert clair, 4–7 Jaune, 8–9 Orange, 10 Rouge */
+.profile-stat.faceit-lvl-1 {
+  border-color: #e6edf3;
+  background: rgba(230, 237, 243, 0.2);
+}
+.profile-stat.faceit-lvl-1 .stat-value { color: #f0f4f8; }
+
+.profile-stat.faceit-lvl-2,
+.profile-stat.faceit-lvl-3 {
+  border-color: #7ee787;
+  background: rgba(126, 231, 135, 0.12);
+}
+.profile-stat.faceit-lvl-2 .stat-value,
+.profile-stat.faceit-lvl-3 .stat-value { color: #7ee787; }
+
+.profile-stat.faceit-lvl-4,
+.profile-stat.faceit-lvl-5,
+.profile-stat.faceit-lvl-6,
+.profile-stat.faceit-lvl-7 {
+  border-color: #d29922;
+  background: rgba(210, 153, 34, 0.12);
+}
+.profile-stat.faceit-lvl-4 .stat-value,
+.profile-stat.faceit-lvl-5 .stat-value,
+.profile-stat.faceit-lvl-6 .stat-value,
+.profile-stat.faceit-lvl-7 .stat-value { color: #e3b341; }
+
+.profile-stat.faceit-lvl-8,
+.profile-stat.faceit-lvl-9 {
+  border-color: #db6d28;
+  background: rgba(219, 109, 40, 0.12);
+}
+.profile-stat.faceit-lvl-8 .stat-value,
+.profile-stat.faceit-lvl-9 .stat-value { color: #f0883e; }
+
+.profile-stat.faceit-lvl-10 {
+  border-color: #f85149;
+  background: rgba(248, 81, 73, 0.12);
+}
+.profile-stat.faceit-lvl-10 .stat-value { color: #f85149; }
