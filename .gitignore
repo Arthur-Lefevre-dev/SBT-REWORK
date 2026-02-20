@@ -2,6 +2,7 @@ node_modules/
 output/
 .env
 *.log
+steam-data-bu.db
 steam-data.db
 steam-data.db-wal
 steam-data.db-shm
