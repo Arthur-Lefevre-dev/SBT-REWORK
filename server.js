@@ -10,8 +10,11 @@ import { fileURLToPath } from 'url';
 import {
   getStats,
   getVacBanned,
+  getVacBannedCount,
   getGameBanned,
+  getGameBannedCount,
   getCommunityBanned,
+  getCommunityBannedCount,
   getAllBanned,
   getBannedCount,
   getProfiles,
@@ -59,31 +62,40 @@ app.get('/api/banned', (req, res) => {
   }
 });
 
-// API: VAC banned
+// API: VAC banned (paginated)
 app.get('/api/vac-banned', (req, res) => {
   try {
-    const rows = getVacBanned();
-    res.json(rows);
+    const limit = parseInt(req.query.limit ?? '10', 10);
+    const offset = parseInt(req.query.offset ?? '0', 10);
+    const rows = getVacBanned(undefined, limit, offset);
+    const total = getVacBannedCount();
+    res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// API: Game banned
+// API: Game banned (paginated)
 app.get('/api/game-banned', (req, res) => {
   try {
-    const rows = getGameBanned();
-    res.json(rows);
+    const limit = parseInt(req.query.limit ?? '10', 10);
+    const offset = parseInt(req.query.offset ?? '0', 10);
+    const rows = getGameBanned(undefined, limit, offset);
+    const total = getGameBannedCount();
+    res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// API: Community banned
+// API: Community banned (paginated)
 app.get('/api/community-banned', (req, res) => {
   try {
-    const rows = getCommunityBanned();
-    res.json(rows);
+    const limit = parseInt(req.query.limit ?? '10', 10);
+    const offset = parseInt(req.query.offset ?? '0', 10);
+    const rows = getCommunityBanned(undefined, limit, offset);
+    const total = getCommunityBannedCount();
+    res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

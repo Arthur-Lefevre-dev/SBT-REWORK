@@ -210,9 +210,9 @@ export function getTopFriends(database = getDb(), limit = 20) {
 }
 
 /**
- * Get VAC banned profiles with details
+ * Get VAC banned profiles with details (paginated)
  */
-export function getVacBanned(database = getDb()) {
+export function getVacBanned(database = getDb(), limit = 100, offset = 0) {
   return database
     .prepare(
       `
@@ -220,15 +220,23 @@ export function getVacBanned(database = getDb()) {
            vac_count, days_since_last_ban, last_ban_date
     FROM profiles WHERE vac_banned = 1
     ORDER BY days_since_last_ban ASC
+    LIMIT ? OFFSET ?
   `,
     )
-    .all();
+    .all(limit, offset);
 }
 
 /**
- * Get Game banned profiles (no VAC)
+ * Count VAC banned profiles
  */
-export function getGameBanned(database = getDb()) {
+export function getVacBannedCount(database = getDb()) {
+  return database.prepare("SELECT COUNT(*) as count FROM profiles WHERE vac_banned = 1").get().count;
+}
+
+/**
+ * Get Game banned profiles (no VAC) (paginated)
+ */
+export function getGameBanned(database = getDb(), limit = 100, offset = 0) {
   return database
     .prepare(
       `
@@ -236,23 +244,42 @@ export function getGameBanned(database = getDb()) {
            game_ban_count
     FROM profiles WHERE game_ban_count > 0 AND vac_banned = 0
     ORDER BY game_ban_count DESC
+    LIMIT ? OFFSET ?
   `,
     )
-    .all();
+    .all(limit, offset);
 }
 
 /**
- * Get Community banned profiles
+ * Count Game banned profiles
  */
-export function getCommunityBanned(database = getDb()) {
+export function getGameBannedCount(database = getDb()) {
+  return database
+    .prepare("SELECT COUNT(*) as count FROM profiles WHERE game_ban_count > 0 AND vac_banned = 0")
+    .get().count;
+}
+
+/**
+ * Get Community banned profiles (paginated)
+ */
+export function getCommunityBanned(database = getDb(), limit = 100, offset = 0) {
   return database
     .prepare(
       `
     SELECT steamid64, steamid, persona_name, profile_url, friends_page_url, avatar
     FROM profiles WHERE community_banned = 1
+    ORDER BY persona_name ASC
+    LIMIT ? OFFSET ?
   `,
     )
-    .all();
+    .all(limit, offset);
+}
+
+/**
+ * Count Community banned profiles
+ */
+export function getCommunityBannedCount(database = getDb()) {
+  return database.prepare("SELECT COUNT(*) as count FROM profiles WHERE community_banned = 1").get().count;
 }
 
 /**

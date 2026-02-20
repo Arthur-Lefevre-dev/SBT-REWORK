@@ -7,8 +7,14 @@ const PAGE_SIZE = 10;
 
 let pageBanned = 0;
 let pageProfiles = 0;
+let pageVac = 0;
+let pageGame = 0;
+let pageCommunity = 0;
 let totalBanned = 0;
 let totalProfiles = 0;
+let totalVac = 0;
+let totalGame = 0;
+let totalCommunity = 0;
 let searchQuery = '';
 
 async function fetchJson(path) {
@@ -154,16 +160,18 @@ async function loadAllBanned() {
 }
 
 async function loadVacBanned() {
-  const rows = await fetchJson("/api/vac-banned");
+  const offset = pageVac * PAGE_SIZE;
+  const data = await fetchJson(`/api/vac-banned?limit=${PAGE_SIZE}&offset=${offset}`);
+  const rows = data.rows ?? [];
+  totalVac = data.total ?? 0;
   const tbody = document.getElementById("vac-banned-table");
   if (rows.length === 0) {
     tbody.innerHTML =
       '<tr><td colspan="7" class="empty-msg">Aucun profil VAC banni</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows
-    .map(
-      (r) => `
+  } else {
+    tbody.innerHTML = rows
+      .map(
+        (r) => `
     <tr>
       <td>${avatarCell(r.avatar, r.steamid64)}</td>
       <td>${nameCell(r.persona_name, r.steamid64)}</td>
@@ -174,21 +182,32 @@ async function loadVacBanned() {
       <td>${linkCell(r.steamid64)}</td>
     </tr>
   `,
-    )
-    .join("");
+      )
+      .join("");
+  }
+  renderPagination(
+    "pagination-vac",
+    pageVac,
+    totalVac,
+    PAGE_SIZE,
+    () => { pageVac--; loadVacBanned(); },
+    () => { pageVac++; loadVacBanned(); },
+  );
 }
 
 async function loadGameBanned() {
-  const rows = await fetchJson("/api/game-banned");
+  const offset = pageGame * PAGE_SIZE;
+  const data = await fetchJson(`/api/game-banned?limit=${PAGE_SIZE}&offset=${offset}`);
+  const rows = data.rows ?? [];
+  totalGame = data.total ?? 0;
   const tbody = document.getElementById("game-banned-table");
   if (rows.length === 0) {
     tbody.innerHTML =
       '<tr><td colspan="5" class="empty-msg">Aucun profil Game banni</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows
-    .map(
-      (r) => `
+  } else {
+    tbody.innerHTML = rows
+      .map(
+        (r) => `
     <tr>
       <td>${avatarCell(r.avatar, r.steamid64)}</td>
       <td>${nameCell(r.persona_name, r.steamid64)}</td>
@@ -197,21 +216,32 @@ async function loadGameBanned() {
       <td>${linkCell(r.steamid64)}</td>
     </tr>
   `,
-    )
-    .join("");
+      )
+      .join("");
+  }
+  renderPagination(
+    "pagination-game",
+    pageGame,
+    totalGame,
+    PAGE_SIZE,
+    () => { pageGame--; loadGameBanned(); },
+    () => { pageGame++; loadGameBanned(); },
+  );
 }
 
 async function loadCommunityBanned() {
-  const rows = await fetchJson("/api/community-banned");
+  const offset = pageCommunity * PAGE_SIZE;
+  const data = await fetchJson(`/api/community-banned?limit=${PAGE_SIZE}&offset=${offset}`);
+  const rows = data.rows ?? [];
+  totalCommunity = data.total ?? 0;
   const tbody = document.getElementById("community-banned-table");
   if (rows.length === 0) {
     tbody.innerHTML =
       '<tr><td colspan="4" class="empty-msg">Aucun profil Community banni</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows
-    .map(
-      (r) => `
+  } else {
+    tbody.innerHTML = rows
+      .map(
+        (r) => `
     <tr>
       <td>${avatarCell(r.avatar, r.steamid64)}</td>
       <td>${nameCell(r.persona_name, r.steamid64)}</td>
@@ -219,8 +249,17 @@ async function loadCommunityBanned() {
       <td>${linkCell(r.steamid64)}</td>
     </tr>
   `,
-    )
-    .join("");
+      )
+      .join("");
+  }
+  renderPagination(
+    "pagination-community",
+    pageCommunity,
+    totalCommunity,
+    PAGE_SIZE,
+    () => { pageCommunity--; loadCommunityBanned(); },
+    () => { pageCommunity++; loadCommunityBanned(); },
+  );
 }
 
 let chartBansTime = null;
@@ -629,6 +668,9 @@ async function refresh() {
 document.getElementById("refresh").addEventListener("click", () => {
   pageBanned = 0;
   pageProfiles = 0;
+  pageVac = 0;
+  pageGame = 0;
+  pageCommunity = 0;
   refresh();
 });
 
