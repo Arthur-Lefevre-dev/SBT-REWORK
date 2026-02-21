@@ -23,6 +23,7 @@ import {
   getProfile,
   getFriendCount,
   getFriendBannedCount,
+  getBannedFriends,
   getBanStatsOverTime,
   getBanStatsYears,
   getBanStatsByBanDate,
@@ -175,7 +176,8 @@ app.get('/api/profile/:steamid64', async (req, res) => {
       ...profile,
       friend_count: friendCount,
       friend_banned_count: friendBannedCount,
-      friend_ban_percentage
+      friend_ban_percentage,
+      friends_banned: getBannedFriends(undefined, steamid64)
     };
     const faceitKey = process.env.FACEIT_API_KEY;
     if (faceitKey) {
@@ -201,6 +203,42 @@ app.get('/api/profile/:steamid64', async (req, res) => {
       } catch (_) {
         // ignore Faceit errors
       }
+    }
+    // Leetify Public CS API (https://api-public-docs.cs-prod.leetify.com/)
+    const leetifyKey = process.env.LEETIFY_API_KEY;
+    try {
+      const leetifyUrl = `https://api-public.cs-prod.leetify.com/v3/profile?steam64_id=${encodeURIComponent(steamid64)}`;
+      const leetifyOpts = { headers: {} };
+      if (leetifyKey) leetifyOpts.headers._leetify_key = leetifyKey;
+      const leetifyRes = await fetch(leetifyUrl, leetifyOpts);
+      if (leetifyRes.ok) {
+        const leetify = await leetifyRes.json();
+        payload.leetify = {
+          profile_url: `https://leetify.com/app/profile/${steamid64}`,
+          winrate: leetify.winrate != null ? Math.round(leetify.winrate * 100) : null,
+          total_matches: leetify.total_matches ?? null,
+          ranks: leetify.ranks
+            ? {
+                premier: leetify.ranks.premier ?? null,
+                faceit: leetify.ranks.faceit ?? null,
+                faceit_elo: leetify.ranks.faceit_elo ?? null,
+                leetify_rating: leetify.ranks.leetify ?? null,
+                wingman: leetify.ranks.wingman ?? null
+              }
+            : null,
+          rating: leetify.rating
+            ? {
+                aim: leetify.rating.aim ?? null,
+                positioning: leetify.rating.positioning ?? null,
+                utility: leetify.rating.utility ?? null,
+                clutch: leetify.rating.clutch ?? null,
+                opening: leetify.rating.opening ?? null
+              }
+            : null
+        };
+      }
+    } catch (_) {
+      // ignore Leetify errors
     }
     res.json(payload);
   } catch (err) {

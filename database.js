@@ -629,6 +629,27 @@ export function getFriendBannedCount(database = getDb(), steamid64) {
 }
 
 /**
+ * Get list of friends who are banned (VAC, Game or Community) for profile page
+ */
+export function getBannedFriends(database = getDb(), steamid64) {
+  const id = String(steamid64);
+  return database
+    .prepare(
+      `SELECT p.steamid64, p.steamid, p.persona_name, p.profile_url, p.avatar,
+              p.vac_banned, p.vac_count, p.game_ban_count, p.community_banned
+       FROM profiles p
+       INNER JOIN (
+         SELECT steamid64_b AS fid FROM friendships WHERE steamid64_a = ?
+         UNION
+         SELECT steamid64_a FROM friendships WHERE steamid64_b = ?
+       ) f ON p.steamid64 = f.fid
+       WHERE p.vac_banned = 1 OR p.game_ban_count > 0 OR p.community_banned = 1
+       ORDER BY p.persona_name COLLATE NOCASE`
+    )
+    .all(id, id);
+}
+
+/**
  * Get friendship pairs (who is friend with whom)
  */
 export function getFriendshipPairs(database = getDb(), limit = 500) {

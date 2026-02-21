@@ -565,6 +565,123 @@ header .back-link:hover,
   color: var(--text-muted);
 }
 
+.profile-scraped-at {
+  margin: 0 1.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.profile-leetify-rating-wrap {
+  padding: 1rem 1.25rem 1.25rem;
+  margin: 0 1.25rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+
+.profile-leetify-rating-title {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.profile-leetify-rating-max {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.profile-leetify-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.profile-leetify-bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr minmax(4.5rem, auto);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.profile-leetify-bar-label {
+  font-size: 0.85rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.profile-leetify-bar-track {
+  height: 10px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.profile-leetify-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease-out;
+}
+
+/* Color scale by level: good (≥60%), mid (40–59%), bad (<40%) */
+.profile-leetify-bar-fill.leetify-good {
+  background: linear-gradient(90deg, #238636 0%, #2ea043 50%, #56d364 100%);
+}
+.profile-leetify-bar-fill.leetify-mid {
+  background: linear-gradient(90deg, #9e6a03 0%, #d29922 50%, #e3b341 100%);
+}
+.profile-leetify-bar-fill.leetify-bad {
+  background: linear-gradient(90deg, #8b2c0d 0%, #da3633 50%, #f85149 100%);
+}
+
+.profile-leetify-bar-value {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+  min-width: 3.5rem;
+}
+
+.profile-leetify-bar-row.leetify-good .profile-leetify-bar-value { color: #56d364; }
+.profile-leetify-bar-row.leetify-mid .profile-leetify-bar-value { color: #e3b341; }
+.profile-leetify-bar-row.leetify-bad .profile-leetify-bar-value { color: #f85149; }
+
+/* Leetify attribution (Data provided by Leetify) */
+.profile-leetify-attribution-wrap,
+.profile-leetify-attribution {
+  margin: 0 1.25rem 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-leetify-attribution-wrap .profile-leetify-attribution-text,
+.profile-leetify-attribution-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.profile-leetify-attribution-wrap .profile-leetify-attribution-logo,
+.profile-leetify-attribution-logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.profile-leetify-attribution-logo img {
+  height: 28px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
 .profile-links-wrap {
   padding: 1rem 1.25rem 1.5rem;
   border-top: 1px solid var(--border);
@@ -592,6 +709,74 @@ header .back-link:hover,
 .profile-links a:hover {
   background: var(--border);
   text-decoration: none;
+}
+
+.profile-friends-banned-wrap {
+  padding: 1rem 1.25rem 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.profile-friends-banned-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.profile-friends-banned-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-friend-banned-item {
+  margin: 0;
+  padding: 0;
+}
+
+.profile-friend-banned-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.profile-friend-banned-link:hover {
+  background: var(--border);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.profile-friend-banned-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.profile-friend-banned-name {
+  flex: 1;
+  font-weight: 500;
+  min-width: 0;
+}
+
+.profile-friend-banned-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 /* Faceit level colors (CS2 level 1–10): 1 Blanc, 2–3 Vert clair, 4–7 Jaune, 8–9 Orange, 10 Rouge */
