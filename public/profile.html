@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <header>
@@ -17,9 +20,11 @@
     </header>
 
     <main class="profile-page">
-      <div id="profile-loading" class="profile-loading">Chargement du profil…</div>
-      <div id="profile-error" class="profile-error" style="display: none;"></div>
-      <div id="profile-content" style="display: none;">
+      <div id="profile-loading" class="profile-loading">
+        Chargement du profil…
+      </div>
+      <div id="profile-error" class="profile-error" style="display: none"></div>
+      <div id="profile-content" style="display: none">
         <div class="profile-panel">
           <h2>Profil</h2>
           <div class="profile-header-wrap">
@@ -36,7 +41,11 @@
             </div>
             <div class="profile-stat">
               <span id="profile-friends-banned" class="stat-value">—</span>
-              <span id="profile-friends-banned-detail" class="stat-detail" style="display: none;"></span>
+              <span
+                id="profile-friends-banned-detail"
+                class="stat-detail"
+                style="display: none"
+              ></span>
               <span class="stat-label">Amis bannis</span>
             </div>
             <div class="profile-stat">
@@ -45,7 +54,11 @@
             </div>
             <div class="profile-stat">
               <span id="profile-game" class="stat-value">—</span>
-              <span id="profile-game-detail" class="stat-detail" style="display: none;"></span>
+              <span
+                id="profile-game-detail"
+                class="stat-detail"
+                style="display: none"
+              ></span>
               <span class="stat-label">Game bans</span>
             </div>
             <div class="profile-stat">
@@ -53,7 +66,13 @@
               <span class="stat-label">Community</span>
             </div>
             <div class="profile-stat" id="profile-elo-stat">
-              <img id="profile-elo-badge" class="profile-elo-badge" src="" alt="" style="display: none;" />
+              <img
+                id="profile-elo-badge"
+                class="profile-elo-badge"
+                src=""
+                alt=""
+                style="display: none"
+              />
               <span id="profile-elo" class="stat-value">—</span>
               <span class="stat-label">ELO Faceit</span>
             </div>
@@ -67,21 +86,48 @@
             </div>
             <div class="profile-stat" id="profile-leetify-premier-stat">
               <span id="profile-leetify-premier" class="stat-value">—</span>
-              <span class="stat-label">Premier (max 35 000)</span>
+              <span class="stat-label">Premier</span>
             </div>
           </div>
-          <p id="profile-scraped-at" class="profile-scraped-at" style="display: none;"></p>
-          <div id="profile-leetify-rating-wrap" class="profile-leetify-rating-wrap" style="display: none;"></div>
-          <div id="profile-leetify-attribution-wrap" class="profile-leetify-attribution-wrap" style="display: none;">
-            <span class="profile-leetify-attribution-text">Data provided by</span>
-            <a href="https://leetify.com" target="_blank" rel="noopener" class="profile-leetify-attribution-logo"><img src="/img/static/Leetify.png" alt="Leetify" /></a>
+          <p
+            id="profile-scraped-at"
+            class="profile-scraped-at"
+            style="display: none"
+          ></p>
+          <div
+            id="profile-leetify-rating-wrap"
+            class="profile-leetify-rating-wrap"
+            style="display: none"
+          ></div>
+          <div
+            id="profile-leetify-attribution-wrap"
+            class="profile-leetify-attribution-wrap"
+            style="display: none"
+          >
+            <span class="profile-leetify-attribution-text"
+              >Data provided by</span
+            >
+            <a
+              href="https://leetify.com"
+              target="_blank"
+              rel="noopener"
+              class="profile-leetify-attribution-logo"
+              ><img src="/img/static/Leetify.png" alt="Leetify"
+            /></a>
           </div>
           <div class="profile-links-wrap">
             <div class="profile-links" id="profile-links"></div>
           </div>
-          <div id="profile-friends-banned-list-wrap" class="profile-friends-banned-wrap" style="display: none;">
+          <div
+            id="profile-friends-banned-list-wrap"
+            class="profile-friends-banned-wrap"
+            style="display: none"
+          >
             <h3 class="profile-friends-banned-title">Amis bannis</h3>
-            <ul id="profile-friends-banned-list" class="profile-friends-banned-list"></ul>
+            <ul
+              id="profile-friends-banned-list"
+              class="profile-friends-banned-list"
+            ></ul>
           </div>
         </div>
       </div>
@@ -91,99 +137,149 @@
 
     <script>
       (function () {
-        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const pathParts = window.location.pathname.split("/").filter(Boolean);
         const steamid64 = pathParts[pathParts.length - 1];
-        if (!steamid64 || steamid64 === 'profile') {
-          document.getElementById('profile-loading').style.display = 'none';
-          document.getElementById('profile-error').style.display = 'block';
-          document.getElementById('profile-error').textContent = 'URL de profil invalide.';
+        if (!steamid64 || steamid64 === "profile") {
+          document.getElementById("profile-loading").style.display = "none";
+          document.getElementById("profile-error").style.display = "block";
+          document.getElementById("profile-error").textContent =
+            "URL de profil invalide.";
           return;
         }
 
-        const loadingEl = document.getElementById('profile-loading');
-        const errorEl = document.getElementById('profile-error');
-        const contentEl = document.getElementById('profile-content');
+        const loadingEl = document.getElementById("profile-loading");
+        const errorEl = document.getElementById("profile-error");
+        const contentEl = document.getElementById("profile-content");
 
-        fetch('/api/profile/' + encodeURIComponent(steamid64))
+        fetch("/api/profile/" + encodeURIComponent(steamid64))
           .then(function (res) {
-            if (!res.ok) throw new Error(res.status === 404 ? 'Profil non trouvé' : res.statusText);
+            if (!res.ok)
+              throw new Error(
+                res.status === 404 ? "Profil non trouvé" : res.statusText,
+              );
             return res.json();
           })
           .then(function (data) {
-            loadingEl.style.display = 'none';
-            errorEl.style.display = 'none';
-            contentEl.style.display = 'block';
+            loadingEl.style.display = "none";
+            errorEl.style.display = "none";
+            contentEl.style.display = "block";
 
-            document.getElementById('profile-name').textContent = data.persona_name || 'Unknown';
+            document.getElementById("profile-name").textContent =
+              data.persona_name || "Unknown";
             var metaParts = [data.steamid64];
             if (data.steamid) metaParts.push(data.steamid);
-            document.getElementById('profile-meta').textContent = metaParts.join(' · ');
-            const avatar = document.getElementById('profile-avatar');
-            avatar.src = data.avatar || '';
-            avatar.alt = data.persona_name || '';
+            document.getElementById("profile-meta").textContent =
+              metaParts.join(" · ");
+            const avatar = document.getElementById("profile-avatar");
+            avatar.src = data.avatar || "";
+            avatar.alt = data.persona_name || "";
 
-            var scrapedEl = document.getElementById('profile-scraped-at');
+            var scrapedEl = document.getElementById("profile-scraped-at");
             if (scrapedEl && data.scraped_at) {
               try {
-                scrapedEl.textContent = 'Dernière mise à jour : ' + new Date(data.scraped_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
-                scrapedEl.style.display = 'block';
+                scrapedEl.textContent =
+                  "Dernière mise à jour : " +
+                  new Date(data.scraped_at).toLocaleString("fr-FR", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  });
+                scrapedEl.style.display = "block";
               } catch (e) {
-                scrapedEl.style.display = 'none';
+                scrapedEl.style.display = "none";
               }
             } else if (scrapedEl) {
-              scrapedEl.style.display = 'none';
+              scrapedEl.style.display = "none";
             }
 
-            document.getElementById('profile-friends').textContent = data.friend_count != null ? String(data.friend_count) : '—';
-            var friendsBannedEl = document.getElementById('profile-friends-banned');
-            var friendsBannedDetailEl = document.getElementById('profile-friends-banned-detail');
+            document.getElementById("profile-friends").textContent =
+              data.friend_count != null ? String(data.friend_count) : "—";
+            var friendsBannedEl = document.getElementById(
+              "profile-friends-banned",
+            );
+            var friendsBannedDetailEl = document.getElementById(
+              "profile-friends-banned-detail",
+            );
             if (friendsBannedEl) {
-              if (data.friend_ban_percentage != null && data.friend_count != null && data.friend_count > 0) {
-                var banned = data.friend_banned_count != null ? data.friend_banned_count : 0;
-                friendsBannedEl.textContent = data.friend_ban_percentage + ' %';
+              if (
+                data.friend_ban_percentage != null &&
+                data.friend_count != null &&
+                data.friend_count > 0
+              ) {
+                var banned =
+                  data.friend_banned_count != null
+                    ? data.friend_banned_count
+                    : 0;
+                friendsBannedEl.textContent = data.friend_ban_percentage + " %";
                 if (friendsBannedDetailEl) {
-                  friendsBannedDetailEl.textContent = '(' + banned + ' / ' + data.friend_count + ')';
-                  friendsBannedDetailEl.style.display = '';
+                  friendsBannedDetailEl.textContent =
+                    "(" + banned + " / " + data.friend_count + ")";
+                  friendsBannedDetailEl.style.display = "";
                 }
               } else {
-                friendsBannedEl.textContent = '—';
-                if (friendsBannedDetailEl) friendsBannedDetailEl.style.display = 'none';
+                friendsBannedEl.textContent = "—";
+                if (friendsBannedDetailEl)
+                  friendsBannedDetailEl.style.display = "none";
               }
             }
             var isVacBanned = data.vac_banned === 1 || data.vac_banned === true;
-            document.getElementById('profile-vac').textContent = isVacBanned ? String(data.vac_count != null ? data.vac_count : 1) : '0';
-            document.getElementById('profile-game').textContent = data.game_ban_count != null ? String(data.game_ban_count) : '0';
-            var gameDetailEl = document.getElementById('profile-game-detail');
+            document.getElementById("profile-vac").textContent = isVacBanned
+              ? String(data.vac_count != null ? data.vac_count : 1)
+              : "0";
+            document.getElementById("profile-game").textContent =
+              data.game_ban_count != null ? String(data.game_ban_count) : "0";
+            var gameDetailEl = document.getElementById("profile-game-detail");
             if (gameDetailEl) {
               if (data.game_ban_days_since_last != null) {
-                gameDetailEl.textContent = '(il y a ' + data.game_ban_days_since_last + ' j)';
-                gameDetailEl.style.display = '';
+                gameDetailEl.textContent =
+                  "(il y a " + data.game_ban_days_since_last + " j)";
+                gameDetailEl.style.display = "";
               } else {
-                gameDetailEl.style.display = 'none';
+                gameDetailEl.style.display = "none";
               }
             }
-            var isCommunityBanned = data.community_banned === 1 || data.community_banned === true;
-            document.getElementById('profile-community').textContent = isCommunityBanned ? 'Oui' : 'Non';
-            var eloVal = data.faceit_elo != null ? String(data.faceit_elo) : '—';
-            document.getElementById('profile-elo').textContent = eloVal;
-            var eloStatEl = document.getElementById('profile-elo-stat');
-            var eloBadgeEl = document.getElementById('profile-elo-badge');
+            var isCommunityBanned =
+              data.community_banned === 1 || data.community_banned === true;
+            document.getElementById("profile-community").textContent =
+              isCommunityBanned ? "Oui" : "Non";
+            var eloVal =
+              data.faceit_elo != null ? String(data.faceit_elo) : "—";
+            document.getElementById("profile-elo").textContent = eloVal;
+            var eloStatEl = document.getElementById("profile-elo-stat");
+            var eloBadgeEl = document.getElementById("profile-elo-badge");
             if (eloStatEl) {
-              eloStatEl.classList.remove('faceit-lvl-1', 'faceit-lvl-2', 'faceit-lvl-3', 'faceit-lvl-4', 'faceit-lvl-5', 'faceit-lvl-6', 'faceit-lvl-7', 'faceit-lvl-8', 'faceit-lvl-9', 'faceit-lvl-10');
+              eloStatEl.classList.remove(
+                "faceit-lvl-1",
+                "faceit-lvl-2",
+                "faceit-lvl-3",
+                "faceit-lvl-4",
+                "faceit-lvl-5",
+                "faceit-lvl-6",
+                "faceit-lvl-7",
+                "faceit-lvl-8",
+                "faceit-lvl-9",
+                "faceit-lvl-10",
+              );
               var level = null;
-              if (data.faceit_skill_level != null) level = Math.max(1, Math.min(10, parseInt(data.faceit_skill_level, 10)));
-              else if (data.faceit_elo != null) level = eloToLevel(data.faceit_elo);
+              if (data.faceit_skill_level != null)
+                level = Math.max(
+                  1,
+                  Math.min(10, parseInt(data.faceit_skill_level, 10)),
+                );
+              else if (data.faceit_elo != null)
+                level = eloToLevel(data.faceit_elo);
               if (level >= 1 && level <= 10) {
-                eloStatEl.classList.add('faceit-lvl-' + level);
+                eloStatEl.classList.add("faceit-lvl-" + level);
                 if (eloBadgeEl) {
-                  eloBadgeEl.src = '/img/faceit/' + level + '.png';
-                  eloBadgeEl.alt = 'Faceit Level ' + level;
-                  eloBadgeEl.style.display = '';
-                  eloBadgeEl.onerror = function () { this.style.display = 'none'; };
+                  eloBadgeEl.src = "/img/faceit/" + level + ".png";
+                  eloBadgeEl.alt = "Faceit Level " + level;
+                  eloBadgeEl.style.display = "";
+                  eloBadgeEl.onerror = function () {
+                    this.style.display = "none";
+                  };
                 }
               } else if (eloBadgeEl) {
-                eloBadgeEl.src = '';
-                eloBadgeEl.style.display = 'none';
+                eloBadgeEl.src = "";
+                eloBadgeEl.style.display = "none";
               }
             }
 
@@ -200,56 +296,119 @@
               return 10;
             }
 
-            const steamUrl = 'https://steamcommunity.com/profiles/' + steamid64;
-            const faceitName = (data.persona_name || '').replace(/\s+/g, '_');
-            const faceitUrl = data.faceit_url || ('https://www.faceit.com/en/players/' + encodeURIComponent(faceitName));
-            const friendsUrl = data.friends_page_url || steamUrl + '/friends/';
+            const steamUrl = "https://steamcommunity.com/profiles/" + steamid64;
+            const faceitName = (data.persona_name || "").replace(/\s+/g, "_");
+            const faceitUrl =
+              data.faceit_url ||
+              "https://www.faceit.com/en/players/" +
+                encodeURIComponent(faceitName);
+            const friendsUrl = data.friends_page_url || steamUrl + "/friends/";
 
-            var linksHtml = '<a href="' + steamUrl + '" target="_blank" rel="noopener">Profil Steam</a>' +
-              '<a href="' + friendsUrl + '" target="_blank" rel="noopener">Amis Steam</a>' +
-              '<a href="' + faceitUrl + '" target="_blank" rel="noopener">Faceit</a>';
+            var linksHtml =
+              '<a href="' +
+              steamUrl +
+              '" target="_blank" rel="noopener">Profil Steam</a>' +
+              '<a href="' +
+              friendsUrl +
+              '" target="_blank" rel="noopener">Amis Steam</a>' +
+              '<a href="' +
+              faceitUrl +
+              '" target="_blank" rel="noopener">Faceit</a>';
             if (data.leetify && data.leetify.profile_url) {
-              linksHtml += '<a href="' + data.leetify.profile_url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener">Leetify</a>';
+              linksHtml +=
+                '<a href="' +
+                data.leetify.profile_url.replace(/"/g, "&quot;") +
+                '" target="_blank" rel="noopener">Leetify</a>';
             }
-            document.getElementById('profile-links').innerHTML = linksHtml;
+            document.getElementById("profile-links").innerHTML = linksHtml;
 
             // Leetify stats (only show when we have data)
             var leetify = data.leetify;
-            var winrateEl = document.getElementById('profile-leetify-winrate');
-            var matchesEl = document.getElementById('profile-leetify-matches');
-            var premierEl = document.getElementById('profile-leetify-premier');
-            var winrateStat = document.getElementById('profile-leetify-stat');
-            var matchesStat = document.getElementById('profile-leetify-matches-stat');
-            var premierStat = document.getElementById('profile-leetify-premier-stat');
+            var winrateEl = document.getElementById("profile-leetify-winrate");
+            var matchesEl = document.getElementById("profile-leetify-matches");
+            var premierEl = document.getElementById("profile-leetify-premier");
+            var winrateStat = document.getElementById("profile-leetify-stat");
+            var matchesStat = document.getElementById(
+              "profile-leetify-matches-stat",
+            );
+            var premierStat = document.getElementById(
+              "profile-leetify-premier-stat",
+            );
             if (leetify) {
-              if (winrateEl) winrateEl.textContent = leetify.winrate != null ? leetify.winrate + ' %' : '—';
-              if (matchesEl) matchesEl.textContent = leetify.total_matches != null ? String(leetify.total_matches) : '—';
-              var premierMax = 35000;
+              if (winrateEl)
+                winrateEl.textContent =
+                  leetify.winrate != null ? leetify.winrate + " %" : "—";
+              if (matchesEl)
+                matchesEl.textContent =
+                  leetify.total_matches != null
+                    ? String(leetify.total_matches)
+                    : "—";
+              function getPremierTierClass(r) {
+                if (r >= 30000) return "premier-gold";
+                if (r >= 25000) return "premier-red";
+                if (r >= 20000) return "premier-pink";
+                if (r >= 15000) return "premier-purple";
+                if (r >= 10000) return "premier-blue";
+                if (r >= 5000) return "premier-light-blue";
+                return "premier-gray";
+              }
+              var premierTiers = [
+                "premier-gray",
+                "premier-light-blue",
+                "premier-blue",
+                "premier-purple",
+                "premier-pink",
+                "premier-red",
+                "premier-gold",
+              ];
+              if (premierStat)
+                premierStat.classList.remove.apply(
+                  premierStat.classList,
+                  premierTiers,
+                );
               if (premierEl) {
                 if (leetify.ranks && leetify.ranks.premier != null) {
-                  premierEl.textContent = Math.round(leetify.ranks.premier).toLocaleString('fr-FR') + ' / ' + premierMax.toLocaleString('fr-FR');
+                  var pr = Math.round(leetify.ranks.premier);
+                  premierEl.textContent = pr.toLocaleString("fr-FR");
+                  if (premierStat)
+                    premierStat.classList.add(getPremierTierClass(pr));
                 } else {
-                  premierEl.textContent = '—';
+                  premierEl.textContent = "—";
                 }
               }
               // Leetify rating breakdown – bar chart (aim, positioning, utility, clutch, opening), scale 0–100
               var rating = leetify.rating;
-              var ratingWrap = document.getElementById('profile-leetify-rating-wrap');
-              if (ratingWrap && rating && (rating.aim != null || rating.positioning != null || rating.utility != null || rating.clutch != null || rating.opening != null)) {
+              var ratingWrap = document.getElementById(
+                "profile-leetify-rating-wrap",
+              );
+              if (
+                ratingWrap &&
+                rating &&
+                (rating.aim != null ||
+                  rating.positioning != null ||
+                  rating.utility != null ||
+                  rating.clutch != null ||
+                  rating.opening != null)
+              ) {
                 var items = [
-                  { key: 'aim', label: 'Aim', value: rating.aim },
-                  { key: 'positioning', label: 'Position', value: rating.positioning },
-                  { key: 'utility', label: 'Utility', value: rating.utility },
-                  { key: 'clutch', label: 'Clutch', value: rating.clutch },
-                  { key: 'opening', label: 'Opening', value: rating.opening }
+                  { key: "aim", label: "Aim", value: rating.aim },
+                  {
+                    key: "positioning",
+                    label: "Position",
+                    value: rating.positioning,
+                  },
+                  { key: "utility", label: "Utility", value: rating.utility },
+                  { key: "clutch", label: "Clutch", value: rating.clutch },
+                  { key: "opening", label: "Opening", value: rating.opening },
                 ];
                 var ratingMax = 100;
                 function levelClass(pct) {
-                  if (pct >= 60) return 'leetify-good';
-                  if (pct >= 40) return 'leetify-mid';
-                  return 'leetify-bad';
+                  if (pct >= 60) return "leetify-good";
+                  if (pct >= 40) return "leetify-mid";
+                  return "leetify-bad";
                 }
-                var html = '<h3 class="profile-leetify-rating-title">Rating Leetify <span class="profile-leetify-rating-max">(max 100)</span></h3><div class="profile-leetify-bars">';
+                var html =
+                  '<h3 class="profile-leetify-rating-title">Rating Leetify</h3><div class="profile-leetify-bars">';
                 items.forEach(function (item) {
                   if (item.value == null) return;
                   var v = Number(item.value);
@@ -257,54 +416,116 @@
                   var pct = Math.min(100, Math.max(0, (v / ratingMax) * 100));
                   var rounded = Math.round(v);
                   var level = levelClass(pct);
-                  html += '<div class="profile-leetify-bar-row ' + level + '" data-metric="' + item.key + '">' +
-                    '<span class="profile-leetify-bar-label">' + item.label + '</span>' +
-                    '<div class="profile-leetify-bar-track"><div class="profile-leetify-bar-fill ' + level + '" style="width:' + pct + '%"></div></div>' +
-                    '<span class="profile-leetify-bar-value">' + rounded + ' %</span></div>';
+                  html +=
+                    '<div class="profile-leetify-bar-row ' +
+                    level +
+                    '" data-metric="' +
+                    item.key +
+                    '">' +
+                    '<span class="profile-leetify-bar-label">' +
+                    item.label +
+                    "</span>" +
+                    '<div class="profile-leetify-bar-track"><div class="profile-leetify-bar-fill ' +
+                    level +
+                    '" style="width:' +
+                    pct +
+                    '%"></div></div>' +
+                    '<span class="profile-leetify-bar-value">' +
+                    rounded +
+                    " %</span></div>";
                 });
-                html += '</div>';
+                html += "</div>";
                 ratingWrap.innerHTML = html;
-                ratingWrap.style.display = 'block';
+                ratingWrap.style.display = "block";
               } else if (ratingWrap) {
-                ratingWrap.style.display = 'none';
+                ratingWrap.style.display = "none";
               }
-              var leetifyAttributionWrap = document.getElementById('profile-leetify-attribution-wrap');
-              if (leetifyAttributionWrap) leetifyAttributionWrap.style.display = 'flex';
+              var leetifyAttributionWrap = document.getElementById(
+                "profile-leetify-attribution-wrap",
+              );
+              if (leetifyAttributionWrap)
+                leetifyAttributionWrap.style.display = "flex";
             } else {
-              if (winrateEl) winrateEl.textContent = '—';
-              if (matchesEl) matchesEl.textContent = '—';
-              if (premierEl) premierEl.textContent = '—';
-              var leetifyAttributionWrap = document.getElementById('profile-leetify-attribution-wrap');
-              if (leetifyAttributionWrap) leetifyAttributionWrap.style.display = 'none';
+              if (winrateEl) winrateEl.textContent = "—";
+              if (matchesEl) matchesEl.textContent = "—";
+              if (premierEl) premierEl.textContent = "—";
+              if (premierStat)
+                premierStat.classList.remove(
+                  "premier-gray",
+                  "premier-light-blue",
+                  "premier-blue",
+                  "premier-purple",
+                  "premier-pink",
+                  "premier-red",
+                  "premier-gold",
+                );
+              var leetifyAttributionWrap = document.getElementById(
+                "profile-leetify-attribution-wrap",
+              );
+              if (leetifyAttributionWrap)
+                leetifyAttributionWrap.style.display = "none";
             }
 
-            var friendsBannedListWrap = document.getElementById('profile-friends-banned-list-wrap');
-            var friendsBannedList = document.getElementById('profile-friends-banned-list');
-            if (friendsBannedListWrap && friendsBannedList && data.friends_banned && data.friends_banned.length > 0) {
-              friendsBannedListWrap.style.display = 'block';
-              friendsBannedList.innerHTML = data.friends_banned.map(function (f) {
-                var badges = [];
-                if (f.vac_banned === 1 || f.vac_banned === true) badges.push('<span class="badge-ban badge-vac">VAC</span>');
-                if (f.game_ban_count > 0) badges.push('<span class="badge-ban badge-game">Game</span>');
-                if (f.community_banned === 1 || f.community_banned === true) badges.push('<span class="badge-ban badge-community">Community</span>');
-                var profileUrl = '/profile/' + encodeURIComponent(f.steamid64);
-                var name = (f.persona_name || f.steamid64 || 'Unknown').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                var avatar = (f.avatar || '').replace(/"/g, '&quot;');
-                return '<li class="profile-friend-banned-item">' +
-                  '<a href="' + profileUrl + '" class="profile-friend-banned-link">' +
-                  '<img class="profile-friend-banned-avatar" src="' + avatar + '" alt="" onerror="this.style.display=\'none\'" />' +
-                  '<span class="profile-friend-banned-name">' + name + '</span>' +
-                  (badges.length ? ' <span class="profile-friend-banned-badges">' + badges.join(' ') + '</span>' : '') +
-                  '</a></li>';
-              }).join('');
+            var friendsBannedListWrap = document.getElementById(
+              "profile-friends-banned-list-wrap",
+            );
+            var friendsBannedList = document.getElementById(
+              "profile-friends-banned-list",
+            );
+            if (
+              friendsBannedListWrap &&
+              friendsBannedList &&
+              data.friends_banned &&
+              data.friends_banned.length > 0
+            ) {
+              friendsBannedListWrap.style.display = "block";
+              friendsBannedList.innerHTML = data.friends_banned
+                .map(function (f) {
+                  var badges = [];
+                  if (f.vac_banned === 1 || f.vac_banned === true)
+                    badges.push('<span class="badge-ban badge-vac">VAC</span>');
+                  if (f.game_ban_count > 0)
+                    badges.push(
+                      '<span class="badge-ban badge-game">Game</span>',
+                    );
+                  if (f.community_banned === 1 || f.community_banned === true)
+                    badges.push(
+                      '<span class="badge-ban badge-community">Community</span>',
+                    );
+                  var profileUrl =
+                    "/profile/" + encodeURIComponent(f.steamid64);
+                  var name = (f.persona_name || f.steamid64 || "Unknown")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+                  var avatar = (f.avatar || "").replace(/"/g, "&quot;");
+                  return (
+                    '<li class="profile-friend-banned-item">' +
+                    '<a href="' +
+                    profileUrl +
+                    '" class="profile-friend-banned-link">' +
+                    '<img class="profile-friend-banned-avatar" src="' +
+                    avatar +
+                    '" alt="" onerror="this.style.display=\'none\'" />' +
+                    '<span class="profile-friend-banned-name">' +
+                    name +
+                    "</span>" +
+                    (badges.length
+                      ? ' <span class="profile-friend-banned-badges">' +
+                        badges.join(" ") +
+                        "</span>"
+                      : "") +
+                    "</a></li>"
+                  );
+                })
+                .join("");
             } else if (friendsBannedListWrap) {
-              friendsBannedListWrap.style.display = 'none';
+              friendsBannedListWrap.style.display = "none";
             }
           })
           .catch(function (err) {
-            loadingEl.style.display = 'none';
-            errorEl.style.display = 'block';
-            errorEl.textContent = err.message || 'Erreur de chargement.';
+            loadingEl.style.display = "none";
+            errorEl.style.display = "block";
+            errorEl.textContent = err.message || "Erreur de chargement.";
           });
       })();
     </script>
