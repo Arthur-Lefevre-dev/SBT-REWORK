@@ -64,17 +64,6 @@
               <span id="profile-community" class="stat-value">—</span>
               <span class="stat-label">Community</span>
             </div>
-            <div class="profile-stat" id="profile-elo-stat">
-              <img
-                id="profile-elo-badge"
-                class="profile-elo-badge"
-                src=""
-                alt=""
-                style="display: none"
-              />
-              <span id="profile-elo" class="stat-value">—</span>
-              <span class="stat-label">ELO Faceit</span>
-            </div>
             <div class="profile-stat" id="profile-leetify-stat">
               <span id="profile-leetify-winrate" class="stat-value">—</span>
               <span class="stat-label">Winrate Leetify</span>
@@ -94,6 +83,17 @@
             <div class="profile-stat" id="profile-leetify-renown-stat">
               <span id="profile-leetify-renown" class="stat-value">—</span>
               <span class="stat-label">Renown</span>
+            </div>
+            <div class="profile-stat" id="profile-elo-stat">
+              <img
+                id="profile-elo-badge"
+                class="profile-elo-badge"
+                src=""
+                alt=""
+                style="display: none"
+              />
+              <span id="profile-elo" class="stat-value">—</span>
+              <span class="stat-label">ELO Faceit</span>
             </div>
             <div class="profile-stat" id="profile-leetify-rating-num-stat">
               <span id="profile-leetify-rating-num" class="stat-value">—</span>
@@ -139,9 +139,6 @@
               ><img src="/img/static/Leetify.png" alt="Leetify"
             /></a>
           </div>
-          <div class="profile-links-wrap">
-            <div class="profile-links" id="profile-links"></div>
-          </div>
           <div
             id="profile-friends-banned-list-wrap"
             class="profile-friends-banned-wrap"
@@ -163,6 +160,9 @@
                 <button type="button" id="profile-friends-banned-next" class="profile-friends-banned-btn" aria-label="Suivant">Suivant</button>
               </div>
             </div>
+          </div>
+          <div class="profile-links-wrap">
+            <div class="profile-links" id="profile-links"></div>
           </div>
         </div>
       </div>
@@ -357,6 +357,113 @@
             }
             document.getElementById("profile-links").innerHTML = linksHtml;
 
+            // Amis bannis (run first so it is never skipped by errors below)
+            var friendsBannedListWrap = document.getElementById(
+              "profile-friends-banned-list-wrap",
+            );
+            var friendsBannedList = document.getElementById(
+              "profile-friends-banned-list",
+            );
+            var FRIENDS_BANNED_PAGE_SIZE = 10;
+            var friendsBannedData = data.friends_banned || [];
+            var friendsBannedCurrentPage = 1;
+
+            function renderFriendRow(f) {
+              var badges = [];
+              if (f.vac_banned === 1 || f.vac_banned === true)
+                badges.push('<span class="badge-ban badge-vac">VAC</span>');
+              if (f.game_ban_count > 0)
+                badges.push('<span class="badge-ban badge-game">Game</span>');
+              if (f.community_banned === 1 || f.community_banned === true)
+                badges.push(
+                  '<span class="badge-ban badge-community">Community</span>',
+                );
+              var profileUrl = "/profile/" + encodeURIComponent(f.steamid64);
+              var name = (f.persona_name || f.steamid64 || "Unknown")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+              var avatar = (f.avatar || "").replace(/"/g, "&quot;");
+              return (
+                '<li class="profile-friend-banned-item">' +
+                '<a href="' +
+                profileUrl +
+                '" class="profile-friend-banned-link">' +
+                '<img class="profile-friend-banned-avatar" src="' +
+                avatar +
+                '" alt="" onerror="this.style.display=\'none\'" />' +
+                '<span class="profile-friend-banned-name">' +
+                name +
+                "</span>" +
+                (badges.length
+                  ? ' <span class="profile-friend-banned-badges">' +
+                    badges.join(" ") +
+                    "</span>"
+                  : "") +
+                "</a></li>"
+              );
+            }
+
+            function renderFriendsBannedPage(page) {
+              if (!friendsBannedList) return;
+              var total = friendsBannedData.length;
+              var totalPages = Math.max(1, Math.ceil(total / FRIENDS_BANNED_PAGE_SIZE));
+              var p = Math.max(1, Math.min(page, totalPages));
+              friendsBannedCurrentPage = p;
+              var start = (p - 1) * FRIENDS_BANNED_PAGE_SIZE;
+              var end = Math.min(start + FRIENDS_BANNED_PAGE_SIZE, total);
+              var pageData = friendsBannedData.slice(start, end);
+              friendsBannedList.innerHTML = pageData.map(renderFriendRow).join("");
+
+              var paginationWrap = document.getElementById(
+                "profile-friends-banned-pagination",
+              );
+              var rangeEl = document.getElementById(
+                "profile-friends-banned-range",
+              );
+              var prevBtn = document.getElementById(
+                "profile-friends-banned-prev",
+              );
+              var nextBtn = document.getElementById(
+                "profile-friends-banned-next",
+              );
+              if (total > FRIENDS_BANNED_PAGE_SIZE && paginationWrap) {
+                paginationWrap.style.display = "flex";
+                if (rangeEl)
+                  rangeEl.textContent =
+                    "Affichage " +
+                    (start + 1) +
+                    "–" +
+                    end +
+                    " sur " +
+                    total;
+                if (prevBtn) {
+                  prevBtn.disabled = p <= 1;
+                  prevBtn.onclick = function () {
+                    renderFriendsBannedPage(p - 1);
+                  };
+                }
+                if (nextBtn) {
+                  nextBtn.disabled = p >= totalPages;
+                  nextBtn.onclick = function () {
+                    renderFriendsBannedPage(p + 1);
+                  };
+                }
+              } else if (paginationWrap) {
+                paginationWrap.style.display = "none";
+              }
+            }
+
+            if (
+              friendsBannedListWrap &&
+              friendsBannedList &&
+              friendsBannedData.length > 0
+            ) {
+              friendsBannedListWrap.style.display = "block";
+              renderFriendsBannedPage(1);
+            } else if (friendsBannedListWrap) {
+              friendsBannedListWrap.style.display = "none";
+            }
+
             // Leetify stats (only show when we have data)
             var leetify = data.leetify;
             var winrateEl = document.getElementById("profile-leetify-winrate");
@@ -419,12 +526,25 @@
               if (renownEl) renownEl.textContent = (leetify.ranks && leetify.ranks.renown != null) ? String(leetify.ranks.renown) : "—";
               var statsWrap = document.getElementById("profile-leetify-stats-wrap");
               if (statsWrap && leetify.stats && (leetify.stats.reaction_time_ms != null || leetify.stats.accuracy_head != null || leetify.stats.preaim != null || leetify.stats.spray_accuracy != null)) {
-                var parts = [];
-                if (leetify.stats.reaction_time_ms != null) parts.push("Réaction: " + Math.round(leetify.stats.reaction_time_ms) + " ms");
-                if (leetify.stats.accuracy_head != null) parts.push("Head: " + Math.round(leetify.stats.accuracy_head * 100) + " %");
-                if (leetify.stats.preaim != null) parts.push("Preaim: " + Math.round(leetify.stats.preaim * 100) + " %");
-                if (leetify.stats.spray_accuracy != null) parts.push("Spray: " + Math.round(leetify.stats.spray_accuracy * 100) + " %");
-                statsWrap.innerHTML = "<span class=\"profile-leetify-stats-label\">Stats Leetify</span> " + parts.join(" · ");
+                function formatPct(v) {
+                  if (v == null) return "—";
+                  var n = Number(v);
+                  if (n >= 0 && n <= 1) n = n * 100;
+                  return (Math.round(n * 10) / 10).toFixed(1).replace(".", ",") + " %";
+                }
+                function formatMs(v) {
+                  if (v == null) return "—";
+                  var n = Number(v);
+                  if (n > 0 && n < 1) n = n * 1000;
+                  return Math.round(n) + " ms";
+                }
+                var items = [];
+                if (leetify.stats.reaction_time_ms != null) items.push({ label: "Réaction", value: formatMs(leetify.stats.reaction_time_ms) });
+                if (leetify.stats.accuracy_head != null) items.push({ label: "Head", value: formatPct(leetify.stats.accuracy_head) });
+                if (leetify.stats.preaim != null) items.push({ label: "Preaim", value: formatPct(leetify.stats.preaim) });
+                if (leetify.stats.spray_accuracy != null) items.push({ label: "Spray", value: formatPct(leetify.stats.spray_accuracy) });
+                var gridHtml = items.map(function (i) { return "<div class=\"profile-leetify-stat-item\"><span class=\"profile-leetify-stat-item-label\">" + i.label + "</span><span class=\"profile-leetify-stat-item-value\">" + i.value + "</span></div>"; }).join("");
+                statsWrap.innerHTML = "<h4 class=\"profile-leetify-stats-title\">Stats Leetify</h4><div class=\"profile-leetify-stats-grid\">" + gridHtml + "</div>";
                 statsWrap.style.display = "block";
               } else if (statsWrap) statsWrap.style.display = "none";
               var matchesWrap = document.getElementById("profile-leetify-matches-wrap");
@@ -538,111 +658,6 @@
                 leetifyAttributionWrap.style.display = "none";
             }
 
-            var friendsBannedListWrap = document.getElementById(
-              "profile-friends-banned-list-wrap",
-            );
-            var friendsBannedList = document.getElementById(
-              "profile-friends-banned-list",
-            );
-            var FRIENDS_BANNED_PAGE_SIZE = 10;
-            var friendsBannedData = data.friends_banned || [];
-            var friendsBannedCurrentPage = 1;
-
-            function renderFriendRow(f) {
-              var badges = [];
-              if (f.vac_banned === 1 || f.vac_banned === true)
-                badges.push('<span class="badge-ban badge-vac">VAC</span>');
-              if (f.game_ban_count > 0)
-                badges.push('<span class="badge-ban badge-game">Game</span>');
-              if (f.community_banned === 1 || f.community_banned === true)
-                badges.push(
-                  '<span class="badge-ban badge-community">Community</span>',
-                );
-              var profileUrl = "/profile/" + encodeURIComponent(f.steamid64);
-              var name = (f.persona_name || f.steamid64 || "Unknown")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
-              var avatar = (f.avatar || "").replace(/"/g, "&quot;");
-              return (
-                '<li class="profile-friend-banned-item">' +
-                '<a href="' +
-                profileUrl +
-                '" class="profile-friend-banned-link">' +
-                '<img class="profile-friend-banned-avatar" src="' +
-                avatar +
-                '" alt="" onerror="this.style.display=\'none\'" />' +
-                '<span class="profile-friend-banned-name">' +
-                name +
-                "</span>" +
-                (badges.length
-                  ? ' <span class="profile-friend-banned-badges">' +
-                    badges.join(" ") +
-                    "</span>"
-                  : "") +
-                "</a></li>"
-              );
-            }
-
-            function renderFriendsBannedPage(page) {
-              if (!friendsBannedList) return;
-              var total = friendsBannedData.length;
-              var totalPages = Math.max(1, Math.ceil(total / FRIENDS_BANNED_PAGE_SIZE));
-              var p = Math.max(1, Math.min(page, totalPages));
-              friendsBannedCurrentPage = p;
-              var start = (p - 1) * FRIENDS_BANNED_PAGE_SIZE;
-              var end = Math.min(start + FRIENDS_BANNED_PAGE_SIZE, total);
-              var pageData = friendsBannedData.slice(start, end);
-              friendsBannedList.innerHTML = pageData.map(renderFriendRow).join("");
-
-              var paginationWrap = document.getElementById(
-                "profile-friends-banned-pagination",
-              );
-              var rangeEl = document.getElementById(
-                "profile-friends-banned-range",
-              );
-              var prevBtn = document.getElementById(
-                "profile-friends-banned-prev",
-              );
-              var nextBtn = document.getElementById(
-                "profile-friends-banned-next",
-              );
-              if (total > FRIENDS_BANNED_PAGE_SIZE && paginationWrap) {
-                paginationWrap.style.display = "flex";
-                if (rangeEl)
-                  rangeEl.textContent =
-                    "Affichage " +
-                    (start + 1) +
-                    "–" +
-                    end +
-                    " sur " +
-                    total;
-                if (prevBtn) {
-                  prevBtn.disabled = p <= 1;
-                  prevBtn.onclick = function () {
-                    renderFriendsBannedPage(p - 1);
-                  };
-                }
-                if (nextBtn) {
-                  nextBtn.disabled = p >= totalPages;
-                  nextBtn.onclick = function () {
-                    renderFriendsBannedPage(p + 1);
-                  };
-                }
-              } else if (paginationWrap) {
-                paginationWrap.style.display = "none";
-              }
-            }
-
-            if (
-              friendsBannedListWrap &&
-              friendsBannedList &&
-              friendsBannedData.length > 0
-            ) {
-              friendsBannedListWrap.style.display = "block";
-              renderFriendsBannedPage(1);
-            } else if (friendsBannedListWrap) {
-              friendsBannedListWrap.style.display = "none";
-            }
           })
           .catch(function (err) {
             loadingEl.style.display = "none";

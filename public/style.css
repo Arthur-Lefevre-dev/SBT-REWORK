@@ -625,19 +625,47 @@ header .back-link:hover,
 }
 
 .profile-leetify-stats-wrap {
-  padding: 0.75rem 1.25rem;
+  padding: 1rem 1.25rem;
   margin: 0 1.25rem 0.75rem;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 0.9rem;
+}
+
+.profile-leetify-stats-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.profile-leetify-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.profile-leetify-stat-item {
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.profile-leetify-stat-item-label {
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.profile-leetify-stats-wrap .profile-leetify-stats-label {
+.profile-leetify-stat-item-value {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text);
-  margin-right: 0.5rem;
 }
 
 .profile-leetify-matches-wrap {
