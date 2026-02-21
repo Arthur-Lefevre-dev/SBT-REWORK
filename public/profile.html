@@ -538,12 +538,63 @@
                   if (n > 0 && n < 1) n = n * 1000;
                   return Math.round(n) + " ms";
                 }
+                function pctRaw(v) {
+                  if (v == null) return null;
+                  var n = Number(v);
+                  if (n >= 0 && n <= 1) n = n * 100;
+                  return n;
+                }
+                function msRaw(v) {
+                  if (v == null) return null;
+                  var n = Number(v);
+                  if (n > 0 && n < 1) n = n * 1000;
+                  return n;
+                }
+                function formatDeg(v) {
+                  if (v == null) return "—";
+                  var n = Number(v);
+                  return (Math.round(n * 10) / 10).toFixed(1).replace(".", ",") + " °";
+                }
+                function statLevel(key, raw) {
+                  if (raw == null) return "mid";
+                  if (key === "reaction") {
+                    if (raw <= 500) return "good";
+                    if (raw <= 650) return "mid";
+                    return "bad";
+                  }
+                  if (key === "preaim") {
+                    if (raw <= 9) return "good";
+                    if (raw <= 13) return "mid";
+                    return "bad";
+                  }
+                  if (key === "head") {
+                    if (raw >= 25) return "good";
+                    if (raw >= 15) return "mid";
+                    return "bad";
+                  }
+                  var pct = raw;
+                  if (pct >= 60) return "good";
+                  if (pct >= 40) return "mid";
+                  return "bad";
+                }
                 var items = [];
-                if (leetify.stats.reaction_time_ms != null) items.push({ label: "Réaction", value: formatMs(leetify.stats.reaction_time_ms) });
-                if (leetify.stats.accuracy_head != null) items.push({ label: "Head", value: formatPct(leetify.stats.accuracy_head) });
-                if (leetify.stats.preaim != null) items.push({ label: "Preaim", value: formatPct(leetify.stats.preaim) });
-                if (leetify.stats.spray_accuracy != null) items.push({ label: "Spray", value: formatPct(leetify.stats.spray_accuracy) });
-                var gridHtml = items.map(function (i) { return "<div class=\"profile-leetify-stat-item\"><span class=\"profile-leetify-stat-item-label\">" + i.label + "</span><span class=\"profile-leetify-stat-item-value\">" + i.value + "</span></div>"; }).join("");
+                if (leetify.stats.reaction_time_ms != null) {
+                  var r = msRaw(leetify.stats.reaction_time_ms);
+                  items.push({ label: "Réaction", value: formatMs(leetify.stats.reaction_time_ms), key: "reaction", raw: r, level: statLevel("reaction", r) });
+                }
+                if (leetify.stats.accuracy_head != null) {
+                  var h = pctRaw(leetify.stats.accuracy_head);
+                  items.push({ label: "Head", value: formatPct(leetify.stats.accuracy_head), key: "head", raw: h, level: statLevel("head", h) });
+                }
+                if (leetify.stats.preaim != null) {
+                  var p = Number(leetify.stats.preaim);
+                  items.push({ label: "Preaim", value: formatDeg(leetify.stats.preaim), key: "preaim", raw: p, level: statLevel("preaim", p) });
+                }
+                if (leetify.stats.spray_accuracy != null) {
+                  var s = pctRaw(leetify.stats.spray_accuracy);
+                  items.push({ label: "Spray", value: formatPct(leetify.stats.spray_accuracy), key: "pct", raw: s, level: statLevel("pct", s) });
+                }
+                var gridHtml = items.map(function (i) { return "<div class=\"profile-leetify-stat-item leetify-stat-" + i.level + "\"><span class=\"profile-leetify-stat-item-label\">" + i.label + "</span><span class=\"profile-leetify-stat-item-value\">" + i.value + "</span></div>"; }).join("");
                 statsWrap.innerHTML = "<h4 class=\"profile-leetify-stats-title\">Stats Leetify</h4><div class=\"profile-leetify-stats-grid\">" + gridHtml + "</div>";
                 statsWrap.style.display = "block";
               } else if (statsWrap) statsWrap.style.display = "none";

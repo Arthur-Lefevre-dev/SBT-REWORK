@@ -665,7 +665,31 @@ header .back-link:hover,
   font-family: "JetBrains Mono", monospace;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text);
+}
+
+/* Stats Leetify color scale: good (green), mid (yellow), bad (red) */
+.profile-leetify-stat-item.leetify-stat-good {
+  border-color: #238636;
+  background: rgba(35, 134, 54, 0.12);
+}
+.profile-leetify-stat-item.leetify-stat-good .profile-leetify-stat-item-value {
+  color: #56d364;
+}
+
+.profile-leetify-stat-item.leetify-stat-mid {
+  border-color: #d29922;
+  background: rgba(210, 153, 34, 0.12);
+}
+.profile-leetify-stat-item.leetify-stat-mid .profile-leetify-stat-item-value {
+  color: #e3b341;
+}
+
+.profile-leetify-stat-item.leetify-stat-bad {
+  border-color: #da3633;
+  background: rgba(218, 54, 51, 0.12);
+}
+.profile-leetify-stat-item.leetify-stat-bad .profile-leetify-stat-item-value {
+  color: #f85149;
 }
 
 .profile-leetify-matches-wrap {
