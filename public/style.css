@@ -989,14 +989,16 @@ header .back-link:hover,
 }
 
 /* Faceit level colors (CS2 level 1–10): 1 Blanc, 2–3 Vert clair, 4–7 Jaune, 8–9 Orange, 10 Rouge */
-.profile-stat#profile-elo-stat {
+.profile-stat#profile-elo-stat,
+.profile-stat#profile-leetify-wingman-stat {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
 }
 
-.profile-elo-badge {
+.profile-elo-badge,
+.profile-wingman-badge {
   width: 48px;
   height: 48px;
   object-fit: contain;

@@ -77,6 +77,13 @@
               <span class="stat-label">Premier</span>
             </div>
             <div class="profile-stat" id="profile-leetify-wingman-stat">
+              <img
+                id="profile-wingman-badge"
+                class="profile-wingman-badge"
+                src=""
+                alt=""
+                style="display: none"
+              />
               <span id="profile-leetify-wingman" class="stat-value">—</span>
               <span class="stat-label">Wingman</span>
             </div>
@@ -519,9 +526,24 @@
                 }
               }
               var wingmanEl = document.getElementById("profile-leetify-wingman");
+              var wingmanBadgeEl = document.getElementById("profile-wingman-badge");
               var ratingNumEl = document.getElementById("profile-leetify-rating-num");
               var renownEl = document.getElementById("profile-leetify-renown");
-              if (wingmanEl) wingmanEl.textContent = (leetify.ranks && leetify.ranks.wingman != null) ? String(leetify.ranks.wingman) : "—";
+              if (wingmanEl) {
+                var wRank = leetify.ranks && leetify.ranks.wingman != null ? Math.max(1, Math.min(18, Math.round(leetify.ranks.wingman))) : null;
+                if (wRank != null) {
+                  wingmanEl.textContent = String(wRank);
+                  if (wingmanBadgeEl) {
+                    wingmanBadgeEl.src = "/img/wingman/" + wRank + ".png";
+                    wingmanBadgeEl.alt = "Wingman Rank " + wRank;
+                    wingmanBadgeEl.style.display = "";
+                    wingmanBadgeEl.onerror = function () { this.style.display = "none"; };
+                  }
+                } else {
+                  wingmanEl.textContent = "—";
+                  if (wingmanBadgeEl) { wingmanBadgeEl.src = ""; wingmanBadgeEl.style.display = "none"; }
+                }
+              }
               if (ratingNumEl) ratingNumEl.textContent = (leetify.ranks && leetify.ranks.leetify_rating != null) ? Math.round(leetify.ranks.leetify_rating) : "—";
               if (renownEl) renownEl.textContent = (leetify.ranks && leetify.ranks.renown != null) ? String(leetify.ranks.renown) : "—";
               var statsWrap = document.getElementById("profile-leetify-stats-wrap");
@@ -702,6 +724,10 @@
                   "premier-red",
                   "premier-gold",
                 );
+              var wEl = document.getElementById("profile-leetify-wingman");
+              var wBadge = document.getElementById("profile-wingman-badge");
+              if (wEl) wEl.textContent = "—";
+              if (wBadge) { wBadge.src = ""; wBadge.style.display = "none"; }
               var leetifyAttributionWrap = document.getElementById(
                 "profile-leetify-attribution-wrap",
               );
