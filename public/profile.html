@@ -87,6 +87,18 @@
               <span id="profile-leetify-premier" class="stat-value">—</span>
               <span class="stat-label">Premier</span>
             </div>
+            <div class="profile-stat" id="profile-leetify-wingman-stat">
+              <span id="profile-leetify-wingman" class="stat-value">—</span>
+              <span class="stat-label">Wingman</span>
+            </div>
+            <div class="profile-stat" id="profile-leetify-renown-stat">
+              <span id="profile-leetify-renown" class="stat-value">—</span>
+              <span class="stat-label">Renown</span>
+            </div>
+            <div class="profile-stat" id="profile-leetify-rating-num-stat">
+              <span id="profile-leetify-rating-num" class="stat-value">—</span>
+              <span class="stat-label">Rating Leetify</span>
+            </div>
           </div>
           <p
             id="profile-scraped-at"
@@ -98,6 +110,19 @@
             class="profile-leetify-rating-wrap"
             style="display: none"
           ></div>
+          <div
+            id="profile-leetify-stats-wrap"
+            class="profile-leetify-stats-wrap"
+            style="display: none"
+          ></div>
+          <div
+            id="profile-leetify-matches-wrap"
+            class="profile-leetify-matches-wrap"
+            style="display: none"
+          >
+            <h3 class="profile-leetify-matches-title">10 derniers matchs (Leetify)</h3>
+            <div id="profile-leetify-matches-list" class="profile-leetify-matches-list"></div>
+          </div>
           <div
             id="profile-leetify-attribution-wrap"
             class="profile-leetify-attribution-wrap"
@@ -386,6 +411,43 @@
                   premierEl.textContent = "—";
                 }
               }
+              var wingmanEl = document.getElementById("profile-leetify-wingman");
+              var ratingNumEl = document.getElementById("profile-leetify-rating-num");
+              var renownEl = document.getElementById("profile-leetify-renown");
+              if (wingmanEl) wingmanEl.textContent = (leetify.ranks && leetify.ranks.wingman != null) ? String(leetify.ranks.wingman) : "—";
+              if (ratingNumEl) ratingNumEl.textContent = (leetify.ranks && leetify.ranks.leetify_rating != null) ? Math.round(leetify.ranks.leetify_rating) : "—";
+              if (renownEl) renownEl.textContent = (leetify.ranks && leetify.ranks.renown != null) ? String(leetify.ranks.renown) : "—";
+              var statsWrap = document.getElementById("profile-leetify-stats-wrap");
+              if (statsWrap && leetify.stats && (leetify.stats.reaction_time_ms != null || leetify.stats.accuracy_head != null || leetify.stats.preaim != null || leetify.stats.spray_accuracy != null)) {
+                var parts = [];
+                if (leetify.stats.reaction_time_ms != null) parts.push("Réaction: " + Math.round(leetify.stats.reaction_time_ms) + " ms");
+                if (leetify.stats.accuracy_head != null) parts.push("Head: " + Math.round(leetify.stats.accuracy_head * 100) + " %");
+                if (leetify.stats.preaim != null) parts.push("Preaim: " + Math.round(leetify.stats.preaim * 100) + " %");
+                if (leetify.stats.spray_accuracy != null) parts.push("Spray: " + Math.round(leetify.stats.spray_accuracy * 100) + " %");
+                statsWrap.innerHTML = "<span class=\"profile-leetify-stats-label\">Stats Leetify</span> " + parts.join(" · ");
+                statsWrap.style.display = "block";
+              } else if (statsWrap) statsWrap.style.display = "none";
+              var matchesWrap = document.getElementById("profile-leetify-matches-wrap");
+              var matchesListEl = document.getElementById("profile-leetify-matches-list");
+              if (matchesWrap && matchesListEl && leetify.recent_matches && leetify.recent_matches.length > 0) {
+                function platformLabel(ds) {
+                  if (!ds) return "—";
+                  var s = String(ds).toLowerCase();
+                  if (s === "faceit") return "Faceit";
+                  if (s === "matchmaking") return "Matchmaking";
+                  return ds;
+                }
+                var matchRows = leetify.recent_matches.map(function (m) {
+                  var dateStr = "—";
+                  if (m.finished_at) try { dateStr = new Date(m.finished_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) {}
+                  var scoreStr = Array.isArray(m.score) && m.score.length >= 2 ? m.score[0] + " – " + m.score[1] : "—";
+                  var outcome = m.outcome ? (String(m.outcome).toLowerCase() === "win" ? "Victoire" : "Défaite") : "—";
+                  var mapName = (m.map_name || "—").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                  return "<tr><td class=\"profile-leetify-match-platform\">" + platformLabel(m.data_source) + "</td><td class=\"profile-leetify-match-map\">" + mapName + "</td><td class=\"profile-leetify-match-outcome\">" + outcome + "</td><td class=\"profile-leetify-match-score\">" + scoreStr + "</td><td class=\"profile-leetify-match-date\">" + dateStr + "</td></tr>";
+                });
+                matchesListEl.innerHTML = "<table class=\"profile-leetify-matches-table\"><thead><tr><th>Plateforme</th><th>Map</th><th>Résultat</th><th>Score</th><th>Date</th></tr></thead><tbody>" + matchRows.join("") + "</tbody></table>";
+                matchesWrap.style.display = "block";
+              } else if (matchesWrap) matchesWrap.style.display = "none";
               // Leetify rating breakdown – bar chart (aim, positioning, utility, clutch, opening), scale 0–100
               var rating = leetify.rating;
               var ratingWrap = document.getElementById(

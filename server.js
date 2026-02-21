@@ -206,24 +206,40 @@ app.get('/api/profile/:steamid64', async (req, res) => {
     }
     // Leetify Public CS API (https://api-public-docs.cs-prod.leetify.com/)
     const leetifyKey = process.env.LEETIFY_API_KEY;
+    const leetifyOpts = { headers: {} };
+    if (leetifyKey) leetifyOpts.headers._leetify_key = leetifyKey;
     try {
-      const leetifyUrl = `https://api-public.cs-prod.leetify.com/v3/profile?steam64_id=${encodeURIComponent(steamid64)}`;
-      const leetifyOpts = { headers: {} };
-      if (leetifyKey) leetifyOpts.headers._leetify_key = leetifyKey;
-      const leetifyRes = await fetch(leetifyUrl, leetifyOpts);
-      if (leetifyRes.ok) {
-        const leetify = await leetifyRes.json();
+      const profileUrl = `https://api-public.cs-prod.leetify.com/v3/profile?steam64_id=${encodeURIComponent(steamid64)}`;
+      const profileRes = await fetch(profileUrl, leetifyOpts);
+      if (profileRes.ok) {
+        const leetify = await profileRes.json();
+        let recentMatches = Array.isArray(leetify.recent_matches) ? leetify.recent_matches.slice(0, 10) : [];
+        if (recentMatches.length < 10) {
+          try {
+            const matchesUrl = `https://api-public.cs-prod.leetify.com/v3/profile/matches?steam64_id=${encodeURIComponent(steamid64)}`;
+            const matchesRes = await fetch(matchesUrl, leetifyOpts);
+            if (matchesRes.ok) {
+              const matchesList = await matchesRes.json();
+              if (Array.isArray(matchesList) && matchesList.length > 0) {
+                recentMatches = matchesList.slice(0, 10);
+              }
+            }
+          } catch (_) {}
+        }
         payload.leetify = {
           profile_url: `https://leetify.com/app/profile/${steamid64}`,
           winrate: leetify.winrate != null ? Math.round(leetify.winrate * 100) : null,
           total_matches: leetify.total_matches ?? null,
+          first_match_date: leetify.first_match_date ?? null,
           ranks: leetify.ranks
             ? {
                 premier: leetify.ranks.premier ?? null,
                 faceit: leetify.ranks.faceit ?? null,
                 faceit_elo: leetify.ranks.faceit_elo ?? null,
                 leetify_rating: leetify.ranks.leetify ?? null,
-                wingman: leetify.ranks.wingman ?? null
+                wingman: leetify.ranks.wingman ?? null,
+                renown: leetify.ranks.renown ?? null,
+                competitive: leetify.ranks.competitive ?? []
               }
             : null,
           rating: leetify.rating
@@ -232,9 +248,35 @@ app.get('/api/profile/:steamid64', async (req, res) => {
                 positioning: leetify.rating.positioning ?? null,
                 utility: leetify.rating.utility ?? null,
                 clutch: leetify.rating.clutch ?? null,
-                opening: leetify.rating.opening ?? null
+                opening: leetify.rating.opening ?? null,
+                ct_leetify: leetify.rating.ct_leetify ?? null,
+                t_leetify: leetify.rating.t_leetify ?? null
               }
-            : null
+            : null,
+          stats: leetify.stats
+            ? {
+                reaction_time_ms: leetify.stats.reaction_time_ms ?? null,
+                accuracy_head: leetify.stats.accuracy_head ?? null,
+                preaim: leetify.stats.preaim ?? null,
+                spray_accuracy: leetify.stats.spray_accuracy ?? null
+              }
+            : null,
+          recent_matches: recentMatches.map((m) => {
+            let score = m.score;
+            if ((!score || !Array.isArray(score)) && Array.isArray(m.team_scores) && m.team_scores.length >= 2) {
+              score = [m.team_scores[0].score ?? 0, m.team_scores[1].score ?? 0];
+            }
+            return {
+              id: m.id ?? null,
+              finished_at: m.finished_at ?? null,
+              data_source: m.data_source ?? null,
+              outcome: m.outcome ?? null,
+              map_name: m.map_name ?? null,
+              score: score ?? null,
+              leetify_rating: m.leetify_rating ?? null,
+              rank: m.rank ?? null
+            };
+          })
         };
       }
     } catch (_) {

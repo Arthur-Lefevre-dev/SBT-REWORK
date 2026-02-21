@@ -624,6 +624,68 @@ header .back-link:hover,
   color: var(--text-muted);
 }
 
+.profile-leetify-stats-wrap {
+  padding: 0.75rem 1.25rem;
+  margin: 0 1.25rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.profile-leetify-stats-wrap .profile-leetify-stats-label {
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 0.5rem;
+}
+
+.profile-leetify-matches-wrap {
+  padding: 1rem 1.25rem 1.25rem;
+  margin: 0 1.25rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.profile-leetify-matches-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.profile-leetify-matches-list {
+  overflow-x: auto;
+}
+
+.profile-leetify-matches-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.profile-leetify-matches-table th,
+.profile-leetify-matches-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-leetify-matches-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.profile-leetify-matches-table .profile-leetify-match-platform {
+  color: var(--accent);
+}
+
+.profile-leetify-matches-table .profile-leetify-match-outcome {
+  font-weight: 500;
+}
+
 .profile-leetify-rating-wrap {
   padding: 1rem 1.25rem 1.25rem;
   margin: 0 1.25rem 1rem;
