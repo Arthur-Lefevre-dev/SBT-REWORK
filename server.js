@@ -29,6 +29,7 @@ import {
   getBanStatsByBanDate,
   getBanStatsYearsByBanDate
 } from './database.js';
+import { resolveVanityUrl } from './steam-api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -139,6 +140,27 @@ app.get('/api/search', (req, res) => {
     const limit = Math.min(parseInt(req.query.limit ?? '12', 10), 20);
     const rows = q.length >= 2 ? getSearchProfiles(undefined, q, limit) : [];
     res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API: resolve Steam vanity URL to SteamID64 (for search bar paste)
+app.get('/api/resolve-vanity', async (req, res) => {
+  try {
+    const vanity = (req.query.vanity || req.query.vanityurl || "").trim();
+    if (!vanity) {
+      return res.status(400).json({ error: 'Paramètre vanity requis' });
+    }
+    const apiKey = process.env.STEAM_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({ error: 'Résolution d’URL personnalisée non configurée (STEAM_API_KEY)' });
+    }
+    const steamid64 = await resolveVanityUrl(apiKey, vanity);
+    if (!steamid64) {
+      return res.status(404).json({ error: 'Profil personnalisé non trouvé' });
+    }
+    res.json({ steamid64 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -670,8 +670,47 @@ const searchInput = document.getElementById('search-input');
 const searchClear = document.getElementById('search-clear');
 const searchSuggestionsEl = document.getElementById('search-suggestions');
 
+/**
+ * Parse Steam profile URL; returns { type: 'steam64', value } or { type: 'vanity', value } or null
+ */
+function parseSteamProfileUrl(str) {
+  const s = (str && String(str).trim()) || '';
+  if (!s) return null;
+  // steamcommunity.com/profiles/76561198000000000 (17 digits)
+  const profilesMatch = s.match(/steamcommunity\.com\/profiles\/(\d{17})/i);
+  if (profilesMatch) return { type: 'steam64', value: profilesMatch[1] };
+  // steamcommunity.com/id/username (letters, numbers, underscore, hyphen)
+  const idMatch = s.match(/steamcommunity\.com\/id\/([a-zA-Z0-9_-]+)/i);
+  if (idMatch) return { type: 'vanity', value: idMatch[1] };
+  return null;
+}
+
 function handleSearch() {
-  searchQuery = searchInput ? searchInput.value.trim() : '';
+  const raw = searchInput ? searchInput.value.trim() : '';
+  const parsed = parseSteamProfileUrl(raw);
+  if (parsed) {
+    if (parsed.type === 'steam64') {
+      window.location.href = '/profile/' + encodeURIComponent(parsed.value);
+      return;
+    }
+    if (parsed.type === 'vanity') {
+      fetchJson('/api/resolve-vanity?vanity=' + encodeURIComponent(parsed.value))
+        .then((data) => {
+          if (data && data.steamid64) {
+            window.location.href = '/profile/' + encodeURIComponent(data.steamid64);
+          } else {
+            handleSearchAsQuery(raw);
+          }
+        })
+        .catch(() => handleSearchAsQuery(raw));
+      return;
+    }
+  }
+  handleSearchAsQuery(raw);
+}
+
+function handleSearchAsQuery(raw) {
+  searchQuery = raw;
   if (searchClear) searchClear.style.display = searchQuery ? 'block' : 'none';
   pageBanned = 0;
   pageProfiles = 0;
@@ -735,8 +774,10 @@ if (searchInput) {
     const query = searchInput.value.trim();
     clearTimeout(searchTimeout);
     clearTimeout(suggestionsTimeout);
-    searchTimeout = setTimeout(handleSearch, 300);
-    if (query.length >= 2) {
+    searchTimeout = setTimeout(function () {
+      handleSearchAsQuery(query);
+    }, 300);
+    if (query.length >= 2 && !parseSteamProfileUrl(query)) {
       suggestionsTimeout = setTimeout(async function () {
         const profiles = await fetchSuggestions(query);
         if (searchInput.value.trim() === query) renderSuggestions(profiles);

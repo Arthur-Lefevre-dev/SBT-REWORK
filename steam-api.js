@@ -62,6 +62,26 @@ export async function getPlayerBans(apiKey, steamIds) {
 }
 
 /**
+ * Resolve vanity URL (custom profile name) to SteamID64
+ * @param {string} apiKey
+ * @param {string} vanityUrl - custom profile name (e.g. "username" from steamcommunity.com/id/username)
+ * @returns {Promise<string|null>} SteamID64 or null if not found
+ */
+export async function resolveVanityUrl(apiKey, vanityUrl) {
+  const vanity = String(vanityUrl).trim();
+  if (!vanity) return null;
+  try {
+    const { data } = await axios.get(`${BASE_URL}/ISteamUser/ResolveVanityURL/v1/`, {
+      params: { key: apiKey, vanityurl: vanity }
+    });
+    const steamid = data?.response?.steamid;
+    return steamid && data.response.success === 1 ? steamid : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
  * Fetch friend list for a user
  * @param {string} apiKey
  * @param {string} steamId64
