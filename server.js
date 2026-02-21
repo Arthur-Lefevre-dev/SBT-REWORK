@@ -238,7 +238,6 @@ app.get('/api/profile/:steamid64', async (req, res) => {
                 faceit_elo: leetify.ranks.faceit_elo ?? null,
                 leetify_rating: leetify.ranks.leetify ?? null,
                 wingman: leetify.ranks.wingman ?? null,
-                renown: leetify.ranks.renown ?? null,
                 competitive: leetify.ranks.competitive ?? []
               }
             : null,

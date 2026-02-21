@@ -92,10 +92,6 @@
               />
               <span class="stat-label">Wingman</span>
             </div>
-            <div class="profile-stat" id="profile-leetify-renown-stat">
-              <span id="profile-leetify-renown" class="stat-value">—</span>
-              <span class="stat-label">Renown</span>
-            </div>
             <div class="profile-stat" id="profile-elo-stat">
               <img
                 id="profile-elo-badge"
@@ -531,7 +527,6 @@
                 if (premierFallback) { premierFallback.textContent = "—"; premierFallback.style.display = "block"; }
               }
               var wingmanBadgeEl = document.getElementById("profile-wingman-badge");
-              var renownEl = document.getElementById("profile-leetify-renown");
               if (wingmanBadgeEl) {
                 var wRank = leetify.ranks && leetify.ranks.wingman != null ? Math.max(1, Math.min(18, Math.round(leetify.ranks.wingman))) : null;
                 wingmanBadgeEl.src = wRank != null ? "/img/wingman/" + wRank + ".png" : "/img/wingman/0.png";
@@ -539,7 +534,6 @@
                 wingmanBadgeEl.style.display = "";
                 wingmanBadgeEl.onerror = function () { this.style.display = "none"; };
               }
-              if (renownEl) renownEl.textContent = (leetify.ranks && leetify.ranks.renown != null) ? String(leetify.ranks.renown) : "—";
               var statsWrap = document.getElementById("profile-leetify-stats-wrap");
               if (statsWrap && leetify.stats && (leetify.stats.reaction_time_ms != null || leetify.stats.accuracy_head != null || leetify.stats.preaim != null || leetify.stats.spray_accuracy != null)) {
                 function formatPct(v) {
