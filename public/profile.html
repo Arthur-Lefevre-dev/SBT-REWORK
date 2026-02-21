@@ -379,23 +379,19 @@
               data.faceit_url ||
               "https://www.faceit.com/en/players/" +
                 encodeURIComponent(faceitName);
-            const friendsUrl = data.friends_page_url || steamUrl + "/friends/";
 
             var linksHtml =
               '<a href="' +
               steamUrl +
-              '" target="_blank" rel="noopener">Profil Steam</a>' +
-              '<a href="' +
-              friendsUrl +
-              '" target="_blank" rel="noopener">Amis Steam</a>' +
+              '" class="profile-link-icon" target="_blank" rel="noopener" title="Profil Steam"><img src="/img/static/steam-logo.svg" alt="Profil Steam"></a>' +
               '<a href="' +
               faceitUrl +
-              '" target="_blank" rel="noopener">Faceit</a>';
+              '" class="profile-link-icon" target="_blank" rel="noopener" title="Faceit"><img src="/img/static/faceit-logo.svg" alt="Faceit"></a>';
             if (data.leetify && data.leetify.profile_url) {
               linksHtml +=
                 '<a href="' +
                 data.leetify.profile_url.replace(/"/g, "&quot;") +
-                '" target="_blank" rel="noopener">Leetify</a>';
+                '" class="profile-link-icon" target="_blank" rel="noopener" title="Leetify"><img src="/img/static/leetify.webp" alt="Leetify"></a>';
             }
             document.getElementById("profile-links").innerHTML = linksHtml;
 

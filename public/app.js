@@ -671,12 +671,14 @@ const searchClear = document.getElementById('search-clear');
 const searchSuggestionsEl = document.getElementById('search-suggestions');
 
 /**
- * Parse Steam profile URL; returns { type: 'steam64', value } or { type: 'vanity', value } or null
+ * Parse Steam profile URL or raw SteamID64; returns { type: 'steam64', value } or { type: 'vanity', value } or null
  */
 function parseSteamProfileUrl(str) {
   const s = (str && String(str).trim()) || '';
   if (!s) return null;
-  // steamcommunity.com/profiles/76561198000000000 (17 digits)
+  // Raw 17-digit SteamID64 (e.g. pasted number only)
+  if (/^\d{17}$/.test(s)) return { type: 'steam64', value: s };
+  // steamcommunity.com/profiles/76561198000000000 (with optional protocol, www, trailing slash or query)
   const profilesMatch = s.match(/steamcommunity\.com\/profiles\/(\d{17})/i);
   if (profilesMatch) return { type: 'steam64', value: profilesMatch[1] };
   // steamcommunity.com/id/username (letters, numbers, underscore, hyphen)
@@ -795,12 +797,23 @@ if (searchInput) {
   });
   searchInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
+      e.preventDefault();
       clearTimeout(searchTimeout);
+      clearTimeout(suggestionsTimeout);
       handleSearch();
       hideSuggestions();
     }
     if (e.key === 'Escape') hideSuggestions();
   });
+  const searchSubmit = document.getElementById('search-submit');
+  if (searchSubmit) {
+    searchSubmit.addEventListener('click', function () {
+      clearTimeout(searchTimeout);
+      clearTimeout(suggestionsTimeout);
+      handleSearch();
+      hideSuggestions();
+    });
+  }
 }
 
 if (searchSuggestionsEl) {

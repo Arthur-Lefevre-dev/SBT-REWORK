@@ -170,6 +170,22 @@ h1 {
   background: var(--border);
 }
 
+.btn-search-submit {
+  padding: 0.5rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-search-submit:hover {
+  background: var(--border);
+}
+
 .btn-refresh {
   padding: 0.5rem 1.25rem;
   background: var(--accent);
@@ -1052,6 +1068,17 @@ header .back-link:hover,
 .profile-links a:hover {
   background: var(--border);
   text-decoration: none;
+}
+
+.profile-links a.profile-link-icon {
+  padding: 0.5rem;
+}
+
+.profile-links a.profile-link-icon img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .profile-friends-banned-wrap {
