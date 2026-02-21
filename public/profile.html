@@ -73,10 +73,21 @@
               <span class="stat-label">Matchs Leetify</span>
             </div>
             <div class="profile-stat" id="profile-leetify-premier-stat">
-              <div id="profile-premier-rating-wrap" class="profile-premier-rating" style="display: none">
+              <div
+                id="profile-premier-rating-wrap"
+                class="profile-premier-rating"
+                style="display: none"
+              >
                 <span class="profile-premier-bars" aria-hidden="true"></span>
                 <div class="profile-premier-label-inner">
-                  <span id="profile-premier-large" class="profile-premier-label-large"></span><span id="profile-premier-small" class="profile-premier-label-small"></span>
+                  <span
+                    id="profile-premier-large"
+                    class="profile-premier-label-large"
+                  ></span
+                  ><span
+                    id="profile-premier-small"
+                    class="profile-premier-label-small"
+                  ></span>
                 </div>
               </div>
               <span id="profile-premier-fallback" class="stat-value">—</span>
@@ -124,8 +135,18 @@
             class="profile-leetify-matches-wrap"
             style="display: none"
           >
-            <h3 class="profile-leetify-matches-title">10 derniers matchs (Leetify)</h3>
-            <div id="profile-leetify-matches-list" class="profile-leetify-matches-list"></div>
+            <h3 class="profile-leetify-matches-title">10 derniers matchs</h3>
+            <div class="profile-leetify-matches-header" aria-hidden="true">
+              <span class="profile-leetify-matches-h-cell">Plateforme</span>
+              <span class="profile-leetify-matches-h-cell">Map</span>
+              <span class="profile-leetify-matches-h-cell">Résultat</span>
+              <span class="profile-leetify-matches-h-cell">Score</span>
+              <span class="profile-leetify-matches-h-cell">Date</span>
+            </div>
+            <div
+              id="profile-leetify-matches-list"
+              class="profile-leetify-matches-list"
+            ></div>
           </div>
           <div
             id="profile-leetify-attribution-wrap"
@@ -158,10 +179,27 @@
               class="profile-friends-banned-pagination"
               style="display: none"
             >
-              <span id="profile-friends-banned-range" class="profile-friends-banned-range"></span>
+              <span
+                id="profile-friends-banned-range"
+                class="profile-friends-banned-range"
+              ></span>
               <div class="profile-friends-banned-buttons">
-                <button type="button" id="profile-friends-banned-prev" class="profile-friends-banned-btn" aria-label="Précédent">Précédent</button>
-                <button type="button" id="profile-friends-banned-next" class="profile-friends-banned-btn" aria-label="Suivant">Suivant</button>
+                <button
+                  type="button"
+                  id="profile-friends-banned-prev"
+                  class="profile-friends-banned-btn"
+                  aria-label="Précédent"
+                >
+                  Précédent
+                </button>
+                <button
+                  type="button"
+                  id="profile-friends-banned-next"
+                  class="profile-friends-banned-btn"
+                  aria-label="Suivant"
+                >
+                  Suivant
+                </button>
               </div>
             </div>
           </div>
@@ -410,13 +448,18 @@
             function renderFriendsBannedPage(page) {
               if (!friendsBannedList) return;
               var total = friendsBannedData.length;
-              var totalPages = Math.max(1, Math.ceil(total / FRIENDS_BANNED_PAGE_SIZE));
+              var totalPages = Math.max(
+                1,
+                Math.ceil(total / FRIENDS_BANNED_PAGE_SIZE),
+              );
               var p = Math.max(1, Math.min(page, totalPages));
               friendsBannedCurrentPage = p;
               var start = (p - 1) * FRIENDS_BANNED_PAGE_SIZE;
               var end = Math.min(start + FRIENDS_BANNED_PAGE_SIZE, total);
               var pageData = friendsBannedData.slice(start, end);
-              friendsBannedList.innerHTML = pageData.map(renderFriendRow).join("");
+              friendsBannedList.innerHTML = pageData
+                .map(renderFriendRow)
+                .join("");
 
               var paginationWrap = document.getElementById(
                 "profile-friends-banned-pagination",
@@ -434,12 +477,7 @@
                 paginationWrap.style.display = "flex";
                 if (rangeEl)
                   rangeEl.textContent =
-                    "Affichage " +
-                    (start + 1) +
-                    "–" +
-                    end +
-                    " sur " +
-                    total;
+                    "Affichage " + (start + 1) + "–" + end + " sur " + total;
                 if (prevBtn) {
                   prevBtn.disabled = p <= 1;
                   prevBtn.onclick = function () {
@@ -479,8 +517,12 @@
             var premierStat = document.getElementById(
               "profile-leetify-premier-stat",
             );
-            var premierWrap = document.getElementById("profile-premier-rating-wrap");
-            var premierFallback = document.getElementById("profile-premier-fallback");
+            var premierWrap = document.getElementById(
+              "profile-premier-rating-wrap",
+            );
+            var premierFallback = document.getElementById(
+              "profile-premier-fallback",
+            );
             var premierLarge = document.getElementById("profile-premier-large");
             var premierSmall = document.getElementById("profile-premier-small");
             if (leetify) {
@@ -519,28 +561,65 @@
                 var pr = Math.round(leetify.ranks.premier);
                 if (premierWrap) premierWrap.style.display = "flex";
                 if (premierFallback) premierFallback.style.display = "none";
-                if (premierLarge) premierLarge.textContent = Math.floor(pr / 1000).toLocaleString("fr-FR") + ",";
-                if (premierSmall) premierSmall.textContent = (pr % 1000).toString().padStart(3, "0");
-                if (premierStat) premierStat.classList.add(getPremierTierClass(pr));
+                if (premierLarge)
+                  premierLarge.textContent =
+                    Math.floor(pr / 1000).toLocaleString("fr-FR") + ",";
+                if (premierSmall)
+                  premierSmall.textContent = (pr % 1000)
+                    .toString()
+                    .padStart(3, "0");
+                if (premierStat)
+                  premierStat.classList.add(getPremierTierClass(pr));
               } else {
                 if (premierWrap) premierWrap.style.display = "none";
-                if (premierFallback) { premierFallback.textContent = "—"; premierFallback.style.display = "block"; }
+                if (premierFallback) {
+                  premierFallback.textContent = "—";
+                  premierFallback.style.display = "block";
+                }
               }
-              var wingmanBadgeEl = document.getElementById("profile-wingman-badge");
+              var wingmanBadgeEl = document.getElementById(
+                "profile-wingman-badge",
+              );
               if (wingmanBadgeEl) {
-                var wRank = leetify.ranks && leetify.ranks.wingman != null ? Math.max(1, Math.min(18, Math.round(leetify.ranks.wingman))) : null;
-                wingmanBadgeEl.src = wRank != null ? "/img/wingman/" + wRank + ".png" : "/img/wingman/0.png";
-                wingmanBadgeEl.alt = wRank != null ? "Wingman Rank " + wRank : "Wingman non classé";
+                var wRank =
+                  leetify.ranks && leetify.ranks.wingman != null
+                    ? Math.max(
+                        1,
+                        Math.min(18, Math.round(leetify.ranks.wingman)),
+                      )
+                    : null;
+                wingmanBadgeEl.src =
+                  wRank != null
+                    ? "/img/wingman/" + wRank + ".png"
+                    : "/img/wingman/0.png";
+                wingmanBadgeEl.alt =
+                  wRank != null
+                    ? "Wingman Rank " + wRank
+                    : "Wingman non classé";
                 wingmanBadgeEl.style.display = "";
-                wingmanBadgeEl.onerror = function () { this.style.display = "none"; };
+                wingmanBadgeEl.onerror = function () {
+                  this.style.display = "none";
+                };
               }
-              var statsWrap = document.getElementById("profile-leetify-stats-wrap");
-              if (statsWrap && leetify.stats && (leetify.stats.reaction_time_ms != null || leetify.stats.accuracy_head != null || leetify.stats.preaim != null || leetify.stats.spray_accuracy != null)) {
+              var statsWrap = document.getElementById(
+                "profile-leetify-stats-wrap",
+              );
+              if (
+                statsWrap &&
+                leetify.stats &&
+                (leetify.stats.reaction_time_ms != null ||
+                  leetify.stats.accuracy_head != null ||
+                  leetify.stats.preaim != null ||
+                  leetify.stats.spray_accuracy != null)
+              ) {
                 function formatPct(v) {
                   if (v == null) return "—";
                   var n = Number(v);
                   if (n >= 0 && n <= 1) n = n * 100;
-                  return (Math.round(n * 10) / 10).toFixed(1).replace(".", ",") + " %";
+                  return (
+                    (Math.round(n * 10) / 10).toFixed(1).replace(".", ",") +
+                    " %"
+                  );
                 }
                 function formatMs(v) {
                   if (v == null) return "—";
@@ -563,7 +642,10 @@
                 function formatDeg(v) {
                   if (v == null) return "—";
                   var n = Number(v);
-                  return (Math.round(n * 10) / 10).toFixed(1).replace(".", ",") + " °";
+                  return (
+                    (Math.round(n * 10) / 10).toFixed(1).replace(".", ",") +
+                    " °"
+                  );
                 }
                 function statLevel(key, raw) {
                   if (raw == null) return "mid";
@@ -590,43 +672,190 @@
                 var items = [];
                 if (leetify.stats.reaction_time_ms != null) {
                   var r = msRaw(leetify.stats.reaction_time_ms);
-                  items.push({ label: "Réaction", value: formatMs(leetify.stats.reaction_time_ms), key: "reaction", raw: r, level: statLevel("reaction", r) });
+                  items.push({
+                    label: "Réaction",
+                    value: formatMs(leetify.stats.reaction_time_ms),
+                    key: "reaction",
+                    raw: r,
+                    level: statLevel("reaction", r),
+                  });
                 }
                 if (leetify.stats.accuracy_head != null) {
                   var h = pctRaw(leetify.stats.accuracy_head);
-                  items.push({ label: "Head", value: formatPct(leetify.stats.accuracy_head), key: "head", raw: h, level: statLevel("head", h) });
+                  items.push({
+                    label: "Head",
+                    value: formatPct(leetify.stats.accuracy_head),
+                    key: "head",
+                    raw: h,
+                    level: statLevel("head", h),
+                  });
                 }
                 if (leetify.stats.preaim != null) {
                   var p = Number(leetify.stats.preaim);
-                  items.push({ label: "Preaim", value: formatDeg(leetify.stats.preaim), key: "preaim", raw: p, level: statLevel("preaim", p) });
+                  items.push({
+                    label: "Preaim",
+                    value: formatDeg(leetify.stats.preaim),
+                    key: "preaim",
+                    raw: p,
+                    level: statLevel("preaim", p),
+                  });
                 }
                 if (leetify.stats.spray_accuracy != null) {
                   var s = pctRaw(leetify.stats.spray_accuracy);
-                  items.push({ label: "Spray", value: formatPct(leetify.stats.spray_accuracy), key: "pct", raw: s, level: statLevel("pct", s) });
+                  items.push({
+                    label: "Spray",
+                    value: formatPct(leetify.stats.spray_accuracy),
+                    key: "pct",
+                    raw: s,
+                    level: statLevel("pct", s),
+                  });
                 }
-                var gridHtml = items.map(function (i) { return "<div class=\"profile-leetify-stat-item leetify-stat-" + i.level + "\"><span class=\"profile-leetify-stat-item-label\">" + i.label + "</span><span class=\"profile-leetify-stat-item-value\">" + i.value + "</span></div>"; }).join("");
-                statsWrap.innerHTML = "<h4 class=\"profile-leetify-stats-title\">Stats Leetify</h4><div class=\"profile-leetify-stats-grid\">" + gridHtml + "</div>";
+                var gridHtml = items
+                  .map(function (i) {
+                    return (
+                      '<div class="profile-leetify-stat-item leetify-stat-' +
+                      i.level +
+                      '"><span class="profile-leetify-stat-item-label">' +
+                      i.label +
+                      '</span><span class="profile-leetify-stat-item-value">' +
+                      i.value +
+                      "</span></div>"
+                    );
+                  })
+                  .join("");
+                statsWrap.innerHTML =
+                  '<h4 class="profile-leetify-stats-title">Stats Leetify</h4><div class="profile-leetify-stats-grid">' +
+                  gridHtml +
+                  "</div>";
                 statsWrap.style.display = "block";
               } else if (statsWrap) statsWrap.style.display = "none";
-              var matchesWrap = document.getElementById("profile-leetify-matches-wrap");
-              var matchesListEl = document.getElementById("profile-leetify-matches-list");
-              if (matchesWrap && matchesListEl && leetify.recent_matches && leetify.recent_matches.length > 0) {
-                function platformLabel(ds) {
-                  if (!ds) return "—";
-                  var s = String(ds).toLowerCase();
-                  if (s === "faceit") return "Faceit";
-                  if (s === "matchmaking") return "Matchmaking";
-                  return ds;
+              var matchesWrap = document.getElementById(
+                "profile-leetify-matches-wrap",
+              );
+              var matchesListEl = document.getElementById(
+                "profile-leetify-matches-list",
+              );
+              if (
+                matchesWrap &&
+                matchesListEl &&
+                leetify.recent_matches &&
+                leetify.recent_matches.length > 0
+              ) {
+                function platformLogoAndLabel(ds) {
+                  var s = (ds && String(ds).toLowerCase()) || "";
+                  var label =
+                    s === "faceit"
+                      ? "Faceit"
+                      : s === "wingman"
+                        ? "Wingman"
+                        : "Premier";
+                  var logo =
+                    s === "faceit"
+                      ? "/img/static/faceit-match.svg"
+                      : "/img/static/premier-match.svg";
+                  return (
+                    '<img src="' +
+                    logo +
+                    '" alt="" class="profile-leetify-match-logo" aria-hidden="true"><span>' +
+                    label +
+                    "</span>"
+                  );
                 }
-                var matchRows = leetify.recent_matches.map(function (m) {
+                var mapNameToSlug = {
+                  mirage: "de_mirage",
+                  "dust ii": "de_dust2",
+                  "dust 2": "de_dust2",
+                  dust2: "de_dust2",
+                  inferno: "de_inferno",
+                  nuke: "de_nuke",
+                  overpass: "de_overpass",
+                  train: "de_train",
+                  ancient: "de_ancient",
+                  anubis: "de_anubis",
+                };
+                var miniaMaps = [
+                  "de_inferno",
+                  "de_anubis",
+                  "de_overpass",
+                  "de_train",
+                  "de_nuke",
+                  "de_mirage",
+                  "de_dust2",
+                  "de_ancient",
+                ];
+                function getMapSlug(name) {
+                  if (!name) return null;
+                  var key = String(name).toLowerCase().trim();
+                  return (
+                    mapNameToSlug[key] ||
+                    (key.indexOf(" ") === -1 && key.indexOf("de_") !== 0
+                      ? "de_" + key.replace(/\s+/g, "_")
+                      : key)
+                  );
+                }
+                var matchCards = leetify.recent_matches.map(function (m) {
                   var dateStr = "—";
-                  if (m.finished_at) try { dateStr = new Date(m.finished_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) {}
-                  var scoreStr = Array.isArray(m.score) && m.score.length >= 2 ? m.score[0] + " – " + m.score[1] : "—";
-                  var outcome = m.outcome ? (String(m.outcome).toLowerCase() === "win" ? "Victoire" : "Défaite") : "—";
-                  var mapName = (m.map_name || "—").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                  return "<tr><td class=\"profile-leetify-match-platform\">" + platformLabel(m.data_source) + "</td><td class=\"profile-leetify-match-map\">" + mapName + "</td><td class=\"profile-leetify-match-outcome\">" + outcome + "</td><td class=\"profile-leetify-match-score\">" + scoreStr + "</td><td class=\"profile-leetify-match-date\">" + dateStr + "</td></tr>";
+                  if (m.finished_at)
+                    try {
+                      dateStr = new Date(m.finished_at).toLocaleDateString(
+                        "fr-FR",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      );
+                    } catch (e) {}
+                  var scoreStr =
+                    Array.isArray(m.score) && m.score.length >= 2
+                      ? m.score[0] + " – " + m.score[1]
+                      : "—";
+                  var outcome = m.outcome
+                    ? String(m.outcome).toLowerCase() === "win"
+                      ? "Victoire"
+                      : "Défaite"
+                    : "—";
+                  var mapName = (m.map_name || "—")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+                  var mapSlug = getMapSlug(m.map_name);
+                  var hasMinia = mapSlug && miniaMaps.indexOf(mapSlug) !== -1;
+                  var mapCell = mapSlug
+                    ? '<img src="/img/map_logo/' +
+                      mapSlug +
+                      '.svg" alt="" class="profile-leetify-match-map-icon" aria-hidden="true"><span>' +
+                      mapName +
+                      "</span>"
+                    : "<span>" + mapName + "</span>";
+                  var cardClass =
+                    "profile-leetify-match-card" +
+                    (hasMinia ? " profile-leetify-match-card-with-bg" : "");
+                  var cardStyle = hasMinia
+                    ? " style=\"background-image: url('/img/map_minia/" +
+                      mapSlug +
+                      ".webp')\""
+                    : "";
+                  return (
+                    '<div class="' +
+                    cardClass +
+                    '"' +
+                    cardStyle +
+                    '><span class="profile-leetify-match-platform">' +
+                    platformLogoAndLabel(m.data_source) +
+                    '</span><span class="profile-leetify-match-map">' +
+                    mapCell +
+                    '</span><span class="profile-leetify-match-outcome">' +
+                    outcome +
+                    '</span><span class="profile-leetify-match-score">' +
+                    scoreStr +
+                    '</span><span class="profile-leetify-match-date">' +
+                    dateStr +
+                    "</span></div>"
+                  );
                 });
-                matchesListEl.innerHTML = "<table class=\"profile-leetify-matches-table\"><thead><tr><th>Plateforme</th><th>Map</th><th>Résultat</th><th>Score</th><th>Date</th></tr></thead><tbody>" + matchRows.join("") + "</tbody></table>";
+                matchesListEl.innerHTML = matchCards.join("");
                 matchesWrap.style.display = "block";
               } else if (matchesWrap) matchesWrap.style.display = "none";
               // Leetify rating breakdown – bar chart (aim, positioning, utility, clutch, opening), scale 0–100
@@ -702,7 +931,10 @@
               if (winrateEl) winrateEl.textContent = "—";
               if (matchesEl) matchesEl.textContent = "—";
               if (premierWrap) premierWrap.style.display = "none";
-              if (premierFallback) { premierFallback.textContent = "—"; premierFallback.style.display = "block"; }
+              if (premierFallback) {
+                premierFallback.textContent = "—";
+                premierFallback.style.display = "block";
+              }
               if (premierStat)
                 premierStat.classList.remove(
                   "premier-gray",
@@ -714,14 +946,16 @@
                   "premier-gold",
                 );
               var wBadge = document.getElementById("profile-wingman-badge");
-              if (wBadge) { wBadge.src = ""; wBadge.style.display = "none"; }
+              if (wBadge) {
+                wBadge.src = "";
+                wBadge.style.display = "none";
+              }
               var leetifyAttributionWrap = document.getElementById(
                 "profile-leetify-attribution-wrap",
               );
               if (leetifyAttributionWrap)
                 leetifyAttributionWrap.style.display = "none";
             }
-
           })
           .catch(function (err) {
             loadingEl.style.display = "none";

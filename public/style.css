@@ -801,6 +801,7 @@ header .back-link:hover,
   color: #f85149;
 }
 
+/* 10 derniers matchs – card layout aligned with stats/panel */
 .profile-leetify-matches-wrap {
   padding: 1rem 1.25rem 1.25rem;
   margin: 0 1.25rem 1rem;
@@ -811,40 +812,98 @@ header .back-link:hover,
 
 .profile-leetify-matches-title {
   margin: 0 0 0.75rem 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
 }
 
-.profile-leetify-matches-list {
-  overflow-x: auto;
-}
-
-.profile-leetify-matches-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.profile-leetify-matches-table th,
-.profile-leetify-matches-table td {
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-
-.profile-leetify-matches-table th {
+.profile-leetify-matches-header {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 0.9fr 0.9fr 1.1fr;
+  gap: 0.75rem;
+  padding: 0 0.5rem 0.4rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.profile-leetify-matches-table .profile-leetify-match-platform {
+.profile-leetify-matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-leetify-match-card {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 0.9fr 0.9fr 1.1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  position: relative;
+  min-height: 52px;
+}
+
+.profile-leetify-match-card-with-bg {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.profile-leetify-match-card-with-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(22, 27, 34, 0.82);
+  border-radius: 8px;
+  z-index: 0;
+}
+
+.profile-leetify-match-card-with-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-leetify-match-card .profile-leetify-match-platform {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--accent);
 }
 
-.profile-leetify-matches-table .profile-leetify-match-outcome {
-  font-weight: 500;
+.profile-leetify-match-logo {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.profile-leetify-match-card .profile-leetify-match-map {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-leetify-match-map-icon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.profile-leetify-match-card .profile-leetify-match-outcome {
+  font-weight: 600;
+}
+
+.profile-leetify-match-card .profile-leetify-match-score {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85rem;
 }
 
 .profile-leetify-rating-wrap {
