@@ -62,7 +62,7 @@
             </div>
             <div class="profile-stat">
               <span id="profile-community" class="stat-value">—</span>
-              <span class="stat-label">Community</span>
+              <span class="stat-label">Community bans</span>
             </div>
             <div class="profile-stat" id="profile-leetify-stat">
               <span id="profile-leetify-winrate" class="stat-value">—</span>
@@ -73,7 +73,13 @@
               <span class="stat-label">Matchs Leetify</span>
             </div>
             <div class="profile-stat" id="profile-leetify-premier-stat">
-              <span id="profile-leetify-premier" class="stat-value">—</span>
+              <div id="profile-premier-rating-wrap" class="profile-premier-rating" style="display: none">
+                <span class="profile-premier-bars" aria-hidden="true"></span>
+                <div class="profile-premier-label-inner">
+                  <span id="profile-premier-large" class="profile-premier-label-large"></span><span id="profile-premier-small" class="profile-premier-label-small"></span>
+                </div>
+              </div>
+              <span id="profile-premier-fallback" class="stat-value">—</span>
               <span class="stat-label">Premier</span>
             </div>
             <div class="profile-stat" id="profile-leetify-wingman-stat">
@@ -84,7 +90,6 @@
                 alt=""
                 style="display: none"
               />
-              <span id="profile-leetify-wingman" class="stat-value">—</span>
               <span class="stat-label">Wingman</span>
             </div>
             <div class="profile-stat" id="profile-leetify-renown-stat">
@@ -101,10 +106,6 @@
               />
               <span id="profile-elo" class="stat-value">—</span>
               <span class="stat-label">ELO Faceit</span>
-            </div>
-            <div class="profile-stat" id="profile-leetify-rating-num-stat">
-              <span id="profile-leetify-rating-num" class="stat-value">—</span>
-              <span class="stat-label">Rating Leetify</span>
             </div>
           </div>
           <p
@@ -282,7 +283,7 @@
             var isCommunityBanned =
               data.community_banned === 1 || data.community_banned === true;
             document.getElementById("profile-community").textContent =
-              isCommunityBanned ? "Oui" : "Non";
+              isCommunityBanned ? "1" : "0";
             var eloVal =
               data.faceit_elo != null ? String(data.faceit_elo) : "—";
             document.getElementById("profile-elo").textContent = eloVal;
@@ -475,7 +476,6 @@
             var leetify = data.leetify;
             var winrateEl = document.getElementById("profile-leetify-winrate");
             var matchesEl = document.getElementById("profile-leetify-matches");
-            var premierEl = document.getElementById("profile-leetify-premier");
             var winrateStat = document.getElementById("profile-leetify-stat");
             var matchesStat = document.getElementById(
               "profile-leetify-matches-stat",
@@ -483,6 +483,10 @@
             var premierStat = document.getElementById(
               "profile-leetify-premier-stat",
             );
+            var premierWrap = document.getElementById("profile-premier-rating-wrap");
+            var premierFallback = document.getElementById("profile-premier-fallback");
+            var premierLarge = document.getElementById("profile-premier-large");
+            var premierSmall = document.getElementById("profile-premier-small");
             if (leetify) {
               if (winrateEl)
                 winrateEl.textContent =
@@ -515,36 +519,26 @@
                   premierStat.classList,
                   premierTiers,
                 );
-              if (premierEl) {
-                if (leetify.ranks && leetify.ranks.premier != null) {
-                  var pr = Math.round(leetify.ranks.premier);
-                  premierEl.textContent = pr.toLocaleString("fr-FR");
-                  if (premierStat)
-                    premierStat.classList.add(getPremierTierClass(pr));
-                } else {
-                  premierEl.textContent = "—";
-                }
+              if (leetify.ranks && leetify.ranks.premier != null) {
+                var pr = Math.round(leetify.ranks.premier);
+                if (premierWrap) premierWrap.style.display = "flex";
+                if (premierFallback) premierFallback.style.display = "none";
+                if (premierLarge) premierLarge.textContent = Math.floor(pr / 1000).toLocaleString("fr-FR") + ",";
+                if (premierSmall) premierSmall.textContent = (pr % 1000).toString().padStart(3, "0");
+                if (premierStat) premierStat.classList.add(getPremierTierClass(pr));
+              } else {
+                if (premierWrap) premierWrap.style.display = "none";
+                if (premierFallback) { premierFallback.textContent = "—"; premierFallback.style.display = "block"; }
               }
-              var wingmanEl = document.getElementById("profile-leetify-wingman");
               var wingmanBadgeEl = document.getElementById("profile-wingman-badge");
-              var ratingNumEl = document.getElementById("profile-leetify-rating-num");
               var renownEl = document.getElementById("profile-leetify-renown");
-              if (wingmanEl) {
+              if (wingmanBadgeEl) {
                 var wRank = leetify.ranks && leetify.ranks.wingman != null ? Math.max(1, Math.min(18, Math.round(leetify.ranks.wingman))) : null;
-                if (wRank != null) {
-                  wingmanEl.textContent = String(wRank);
-                  if (wingmanBadgeEl) {
-                    wingmanBadgeEl.src = "/img/wingman/" + wRank + ".png";
-                    wingmanBadgeEl.alt = "Wingman Rank " + wRank;
-                    wingmanBadgeEl.style.display = "";
-                    wingmanBadgeEl.onerror = function () { this.style.display = "none"; };
-                  }
-                } else {
-                  wingmanEl.textContent = "—";
-                  if (wingmanBadgeEl) { wingmanBadgeEl.src = ""; wingmanBadgeEl.style.display = "none"; }
-                }
+                wingmanBadgeEl.src = wRank != null ? "/img/wingman/" + wRank + ".png" : "/img/wingman/0.png";
+                wingmanBadgeEl.alt = wRank != null ? "Wingman Rank " + wRank : "Wingman non classé";
+                wingmanBadgeEl.style.display = "";
+                wingmanBadgeEl.onerror = function () { this.style.display = "none"; };
               }
-              if (ratingNumEl) ratingNumEl.textContent = (leetify.ranks && leetify.ranks.leetify_rating != null) ? Math.round(leetify.ranks.leetify_rating) : "—";
               if (renownEl) renownEl.textContent = (leetify.ranks && leetify.ranks.renown != null) ? String(leetify.ranks.renown) : "—";
               var statsWrap = document.getElementById("profile-leetify-stats-wrap");
               if (statsWrap && leetify.stats && (leetify.stats.reaction_time_ms != null || leetify.stats.accuracy_head != null || leetify.stats.preaim != null || leetify.stats.spray_accuracy != null)) {
@@ -713,7 +707,8 @@
             } else {
               if (winrateEl) winrateEl.textContent = "—";
               if (matchesEl) matchesEl.textContent = "—";
-              if (premierEl) premierEl.textContent = "—";
+              if (premierWrap) premierWrap.style.display = "none";
+              if (premierFallback) { premierFallback.textContent = "—"; premierFallback.style.display = "block"; }
               if (premierStat)
                 premierStat.classList.remove(
                   "premier-gray",
@@ -724,9 +719,7 @@
                   "premier-red",
                   "premier-gold",
                 );
-              var wEl = document.getElementById("profile-leetify-wingman");
               var wBadge = document.getElementById("profile-wingman-badge");
-              if (wEl) wEl.textContent = "—";
               if (wBadge) { wBadge.src = ""; wBadge.style.display = "none"; }
               var leetifyAttributionWrap = document.getElementById(
                 "profile-leetify-attribution-wrap",
