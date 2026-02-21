@@ -36,6 +36,16 @@ h1 {
   font-weight: 700;
 }
 
+.header-home-link {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.header-home-link:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .subtitle {
   margin: 0.5rem 0 1rem;
   color: var(--text-muted);
@@ -820,6 +830,48 @@ header .back-link:hover,
   flex-wrap: wrap;
   gap: 0.35rem;
   flex-shrink: 0;
+}
+
+.profile-friends-banned-pagination {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.profile-friends-banned-range {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.profile-friends-banned-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.profile-friends-banned-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.profile-friends-banned-btn:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.profile-friends-banned-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Faceit level colors (CS2 level 1–10): 1 Blanc, 2–3 Vert clair, 4–7 Jaune, 8–9 Orange, 10 Rouge */

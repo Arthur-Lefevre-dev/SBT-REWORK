@@ -14,9 +14,8 @@
   </head>
   <body>
     <header>
-      <h1>Steam Ban Tracker</h1>
+      <h1><a href="/" class="header-home-link">Steam Ban Tracker</a></h1>
       <p class="subtitle">Profil</p>
-      <a href="/" class="back-link">← Tableau de bord</a>
     </header>
 
     <main class="profile-page">
@@ -128,6 +127,17 @@
               id="profile-friends-banned-list"
               class="profile-friends-banned-list"
             ></ul>
+            <div
+              id="profile-friends-banned-pagination"
+              class="profile-friends-banned-pagination"
+              style="display: none"
+            >
+              <span id="profile-friends-banned-range" class="profile-friends-banned-range"></span>
+              <div class="profile-friends-banned-buttons">
+                <button type="button" id="profile-friends-banned-prev" class="profile-friends-banned-btn" aria-label="Précédent">Précédent</button>
+                <button type="button" id="profile-friends-banned-next" class="profile-friends-banned-btn" aria-label="Suivant">Suivant</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -472,52 +482,102 @@
             var friendsBannedList = document.getElementById(
               "profile-friends-banned-list",
             );
+            var FRIENDS_BANNED_PAGE_SIZE = 10;
+            var friendsBannedData = data.friends_banned || [];
+            var friendsBannedCurrentPage = 1;
+
+            function renderFriendRow(f) {
+              var badges = [];
+              if (f.vac_banned === 1 || f.vac_banned === true)
+                badges.push('<span class="badge-ban badge-vac">VAC</span>');
+              if (f.game_ban_count > 0)
+                badges.push('<span class="badge-ban badge-game">Game</span>');
+              if (f.community_banned === 1 || f.community_banned === true)
+                badges.push(
+                  '<span class="badge-ban badge-community">Community</span>',
+                );
+              var profileUrl = "/profile/" + encodeURIComponent(f.steamid64);
+              var name = (f.persona_name || f.steamid64 || "Unknown")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+              var avatar = (f.avatar || "").replace(/"/g, "&quot;");
+              return (
+                '<li class="profile-friend-banned-item">' +
+                '<a href="' +
+                profileUrl +
+                '" class="profile-friend-banned-link">' +
+                '<img class="profile-friend-banned-avatar" src="' +
+                avatar +
+                '" alt="" onerror="this.style.display=\'none\'" />' +
+                '<span class="profile-friend-banned-name">' +
+                name +
+                "</span>" +
+                (badges.length
+                  ? ' <span class="profile-friend-banned-badges">' +
+                    badges.join(" ") +
+                    "</span>"
+                  : "") +
+                "</a></li>"
+              );
+            }
+
+            function renderFriendsBannedPage(page) {
+              if (!friendsBannedList) return;
+              var total = friendsBannedData.length;
+              var totalPages = Math.max(1, Math.ceil(total / FRIENDS_BANNED_PAGE_SIZE));
+              var p = Math.max(1, Math.min(page, totalPages));
+              friendsBannedCurrentPage = p;
+              var start = (p - 1) * FRIENDS_BANNED_PAGE_SIZE;
+              var end = Math.min(start + FRIENDS_BANNED_PAGE_SIZE, total);
+              var pageData = friendsBannedData.slice(start, end);
+              friendsBannedList.innerHTML = pageData.map(renderFriendRow).join("");
+
+              var paginationWrap = document.getElementById(
+                "profile-friends-banned-pagination",
+              );
+              var rangeEl = document.getElementById(
+                "profile-friends-banned-range",
+              );
+              var prevBtn = document.getElementById(
+                "profile-friends-banned-prev",
+              );
+              var nextBtn = document.getElementById(
+                "profile-friends-banned-next",
+              );
+              if (total > FRIENDS_BANNED_PAGE_SIZE && paginationWrap) {
+                paginationWrap.style.display = "flex";
+                if (rangeEl)
+                  rangeEl.textContent =
+                    "Affichage " +
+                    (start + 1) +
+                    "–" +
+                    end +
+                    " sur " +
+                    total;
+                if (prevBtn) {
+                  prevBtn.disabled = p <= 1;
+                  prevBtn.onclick = function () {
+                    renderFriendsBannedPage(p - 1);
+                  };
+                }
+                if (nextBtn) {
+                  nextBtn.disabled = p >= totalPages;
+                  nextBtn.onclick = function () {
+                    renderFriendsBannedPage(p + 1);
+                  };
+                }
+              } else if (paginationWrap) {
+                paginationWrap.style.display = "none";
+              }
+            }
+
             if (
               friendsBannedListWrap &&
               friendsBannedList &&
-              data.friends_banned &&
-              data.friends_banned.length > 0
+              friendsBannedData.length > 0
             ) {
               friendsBannedListWrap.style.display = "block";
-              friendsBannedList.innerHTML = data.friends_banned
-                .map(function (f) {
-                  var badges = [];
-                  if (f.vac_banned === 1 || f.vac_banned === true)
-                    badges.push('<span class="badge-ban badge-vac">VAC</span>');
-                  if (f.game_ban_count > 0)
-                    badges.push(
-                      '<span class="badge-ban badge-game">Game</span>',
-                    );
-                  if (f.community_banned === 1 || f.community_banned === true)
-                    badges.push(
-                      '<span class="badge-ban badge-community">Community</span>',
-                    );
-                  var profileUrl =
-                    "/profile/" + encodeURIComponent(f.steamid64);
-                  var name = (f.persona_name || f.steamid64 || "Unknown")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;");
-                  var avatar = (f.avatar || "").replace(/"/g, "&quot;");
-                  return (
-                    '<li class="profile-friend-banned-item">' +
-                    '<a href="' +
-                    profileUrl +
-                    '" class="profile-friend-banned-link">' +
-                    '<img class="profile-friend-banned-avatar" src="' +
-                    avatar +
-                    '" alt="" onerror="this.style.display=\'none\'" />' +
-                    '<span class="profile-friend-banned-name">' +
-                    name +
-                    "</span>" +
-                    (badges.length
-                      ? ' <span class="profile-friend-banned-badges">' +
-                        badges.join(" ") +
-                        "</span>"
-                      : "") +
-                    "</a></li>"
-                  );
-                })
-                .join("");
+              renderFriendsBannedPage(1);
             } else if (friendsBannedListWrap) {
               friendsBannedListWrap.style.display = "none";
             }
