@@ -269,6 +269,7 @@ app.get('/api/profile/:steamid64', async (req, res) => {
               id: m.id ?? null,
               finished_at: m.finished_at ?? null,
               data_source: m.data_source ?? null,
+              game_mode: m.game_mode ?? m.mode ?? null,
               outcome: m.outcome ?? null,
               map_name: m.map_name ?? null,
               score: score ?? null,

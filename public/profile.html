@@ -741,18 +741,14 @@
                 leetify.recent_matches &&
                 leetify.recent_matches.length > 0
               ) {
-                function platformLogoAndLabel(ds) {
+                function platformLogoAndLabel(ds, gameMode) {
                   var s = (ds && String(ds).toLowerCase()) || "";
-                  var label =
-                    s === "faceit"
-                      ? "Faceit"
-                      : s === "wingman"
-                        ? "Wingman"
-                        : "Premier";
-                  var logo =
-                    s === "faceit"
-                      ? "/img/static/faceit-match.svg"
-                      : "/img/static/premier-match.svg";
+                  var gm = (gameMode && String(gameMode).toLowerCase()) || "";
+                  var isFaceit = s === "faceit";
+                  var isWingman = s === "wingman" || s.indexOf("wingman") !== -1 ||
+                    gm === "wingman" || gm === "2v2" || (gm && gm.indexOf("wingman") !== -1);
+                  var label = isFaceit ? "Faceit" : (isWingman ? "Wingman" : "Premier");
+                  var logo = isFaceit ? "/img/static/faceit-match.svg" : "/img/static/premier-match.svg";
                   return (
                     '<img src="' +
                     logo +
@@ -843,7 +839,7 @@
                     '"' +
                     cardStyle +
                     '><span class="profile-leetify-match-platform">' +
-                    platformLogoAndLabel(m.data_source) +
+                    platformLogoAndLabel(m.data_source, m.game_mode) +
                     '</span><span class="profile-leetify-match-map">' +
                     mapCell +
                     '</span><span class="profile-leetify-match-outcome">' +
