@@ -3,6 +3,8 @@
 This project is a rework of my [Steam Ban Tracker](https://github.com/Arthur-Lefevre-dev/STEAM-BAN-TRACKER) project, but with a better architecture and more features.
 This project is still a work in progress, but it is already usable, please report any issues you find. And use it by respecting the [Steam Web API Terms of Use](https://steamcommunity.com/dev/apiterms) and Steam Terms of Service.
 
+Translations is coming soon. Sorry is you don't understand the language, you can use the English version soon.
+
 Tool to **track Steam bans** (VAC, Game, Community). Profiles are discovered through the friends network from a starting profile. Web interface with dashboard, charts, and enriched profile pages (Faceit, Leetify).
 
 ## Prerequisites
