@@ -66,8 +66,8 @@ const graph = await scrape(apiKey, startSteamId64, {
   maxDepth,
   maxProfiles,
   knownIds,
-  parallelBatches: 5,
-  saveInterval: 800,
+  parallelBatches: 3,
+  saveInterval: 200,
   onSave: saveGraph,
   verbose: true
 });

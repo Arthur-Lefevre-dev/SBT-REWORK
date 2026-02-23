@@ -9,18 +9,18 @@ import {
   getPlayerBans,
   getFriendList,
   steamId64ToSteamId,
-  isSteamRateLimitError
-} from './steam/api.js';
-import { getGameBanDaysFromProfile } from './steam/profile-scrape.js';
-import { FriendshipGraph } from './friendship-graph.js';
+  isSteamRateLimitError,
+} from "./steam/api.js";
+import { getGameBanDaysFromProfile } from "./steam/profile-scrape.js";
+import { FriendshipGraph } from "./friendship-graph.js";
 
 // Tuned for speed while respecting Steam/community rate limits
-const BATCH_PROFILES = 50;      // Steam API accepts up to 100 ids per summaries/bans call
-const FRIEND_CONCURRENCY = 18;   // Parallel friend-list fetches per batch
-const DELAY_MS = 100;            // Pause between batch rounds (ms)
-const PARALLEL_BATCHES = 5;     // Batches processed in parallel per round
-const GAME_BAN_SCRAPE_CONCURRENCY = 4;  // Parallel HTML scrapes for game ban dates
-const GAME_BAN_SCRAPE_DELAY_MS = 80;    // Delay between waves of game-ban scrapes
+const BATCH_PROFILES = 25; // Steam API accepts up to 100 ids per summaries/bans call
+const FRIEND_CONCURRENCY = 8; // Parallel friend-list fetches per batch
+const DELAY_MS = 200; // Pause between batch rounds (ms)
+const PARALLEL_BATCHES = 3; // Batches processed in parallel per round
+const GAME_BAN_SCRAPE_CONCURRENCY = 4; // Parallel HTML scrapes for game ban dates
+const GAME_BAN_SCRAPE_DELAY_MS = 120; // Delay between waves of game-ban scrapes
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -30,10 +30,12 @@ async function pLimit(tasks, limit) {
   const executing = [];
   const results = [];
   for (const [i, fn] of tasks.entries()) {
-    const p = Promise.resolve().then(fn).then((r) => {
-      executing.splice(executing.indexOf(p), 1);
-      return r;
-    });
+    const p = Promise.resolve()
+      .then(fn)
+      .then((r) => {
+        executing.splice(executing.indexOf(p), 1);
+        return r;
+      });
     results[i] = p;
     executing.push(p);
     if (executing.length >= limit) {
@@ -56,12 +58,14 @@ async function processBatch(apiKey, batch) {
   const ids = batch.map((b) => b.steamId64);
   const [summaries, bans] = await Promise.all([
     getPlayerSummaries(apiKey, ids),
-    getPlayerBans(apiKey, ids)
+    getPlayerBans(apiKey, ids),
   ]);
   const summaryMap = new Map(summaries.map((s) => [String(s.steamid), s]));
   const banMap = new Map(bans.map((b) => [String(b.SteamId), b]));
 
-  const friendTasks = batch.map((b) => () => getFriendList(apiKey, b.steamId64));
+  const friendTasks = batch.map(
+    (b) => () => getFriendList(apiKey, b.steamId64),
+  );
   const friendsResults = await pLimit(friendTasks, FRIEND_CONCURRENCY);
 
   const profiles = [];
@@ -73,12 +77,14 @@ async function processBatch(apiKey, batch) {
     const daysSinceLastBan = ban?.DaysSinceLastBan ?? null;
     const lastBanDate =
       daysSinceLastBan != null
-        ? new Date(Date.now() - daysSinceLastBan * 24 * 60 * 60 * 1000).toISOString()
+        ? new Date(
+            Date.now() - daysSinceLastBan * 24 * 60 * 60 * 1000,
+          ).toISOString()
         : null;
     profiles.push({
       steamId64,
       steamId: steamId64ToSteamId(steamId64),
-      personaName: summary?.personaname ?? 'Unknown',
+      personaName: summary?.personaname ?? "Unknown",
       profileUrl: summary?.profileurl ?? null,
       friendsPageUrl: `https://steamcommunity.com/profiles/${steamId64}/friends/`,
       avatar: summary?.avatarmedium ?? null,
@@ -93,14 +99,14 @@ async function processBatch(apiKey, batch) {
             daysSinceLastBan,
             lastBanDate,
             numberOfGameBans: ban.NumberOfGameBans ?? 0,
-            economyBan: ban.EconomyBan ?? 'none'
+            economyBan: ban.EconomyBan ?? "none",
           }
-        : null
+        : null,
     });
     friendsData.push({
       steamId64,
       depth,
-      friendIds: friendsResults[i].map((f) => f.steamid)
+      friendIds: friendsResults[i].map((f) => f.steamid),
     });
   }
 
@@ -109,7 +115,9 @@ async function processBatch(apiKey, batch) {
   if (gameBanProfiles.length > 0) {
     const tasks = gameBanProfiles.map((p) => async () => {
       try {
-        const extra = await getGameBanDaysFromProfile(p.steamId64, { delayMs: 0 });
+        const extra = await getGameBanDaysFromProfile(p.steamId64, {
+          delayMs: 0,
+        });
         if (extra) {
           p.ban.gameBanDaysSinceLast = extra.gameBanDaysSinceLast;
           p.ban.gameLastBanDate = extra.gameLastBanDate;
@@ -172,7 +180,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
     knownIds: knownIdsOption = null,
     saveInterval = 0,
     onSave = null,
-    verbose = true
+    verbose = true,
   } = options;
 
   const knownIds = knownIdsOption instanceof Set ? knownIdsOption : new Set();
@@ -197,7 +205,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
         knownIds,
         batchSize,
         maxProfiles,
-        maxDepth
+        maxDepth,
       );
       if (batch.length > 0) batches.push(batch);
     }
@@ -205,12 +213,12 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
 
     const totalInBatches = batches.reduce((s, b) => s + b.length, 0);
     log(
-      `[${visited.size}${maxProfiles === Infinity ? '' : '/' + maxProfiles}] ${batches.length} batch(es) × ${totalInBatches} profiles (depth ${batches[0][0].depth})`
+      `[${visited.size}${maxProfiles === Infinity ? "" : "/" + maxProfiles}] ${batches.length} batch(es) × ${totalInBatches} profiles (depth ${batches[0][0].depth})`,
     );
 
     try {
       const results = await Promise.all(
-        batches.map((batch) => processBatch(apiKey, batch))
+        batches.map((batch) => processBatch(apiKey, batch)),
       );
 
       for (const { profiles, friendsData } of results) {
@@ -239,9 +247,10 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
         lastSaveCount += saveInterval;
         const count = visited.size;
         // Run save in background; chain saves. Catch errors so one failure does not break the chain.
-        const doSave = () => onSave(graph).catch((err) => {
-          log(`  → Sauvegarde DB échouée: ${err?.message || err}`);
-        });
+        const doSave = () =>
+          onSave(graph).catch((err) => {
+            log(`  → Sauvegarde DB échouée: ${err?.message || err}`);
+          });
         pendingSavePromise = pendingSavePromise
           ? pendingSavePromise.then(doSave, (err) => {
               log(`  → Sauvegarde DB échouée: ${err?.message || err}`);
@@ -265,7 +274,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
           }
         }
       } else {
-        log('Error batch:', err.message);
+        log("Error batch:", err.message);
         for (const batch of batches) {
           for (const { steamId64 } of batch) visited.delete(steamId64);
         }
