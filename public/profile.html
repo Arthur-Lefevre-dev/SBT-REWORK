@@ -169,7 +169,19 @@
             class="profile-friends-banned-wrap"
             style="display: none"
           >
-            <h3 class="profile-friends-banned-title">Amis bannis</h3>
+            <div class="profile-friends-banned-header">
+              <h3 class="profile-friends-banned-title">Amis bannis</h3>
+              <div class="profile-friends-banned-sort">
+                <label for="profile-friends-banned-sort-select" class="profile-friends-banned-sort-label">Trier par</label>
+                <select id="profile-friends-banned-sort-select" class="profile-friends-banned-sort-select" aria-label="Trier la liste des amis bannis">
+                  <option value="date-desc">Date (récent)</option>
+                  <option value="date-asc">Date (ancien)</option>
+                  <option value="type">Type de ban</option>
+                  <option value="name-asc">Nom (A–Z)</option>
+                  <option value="name-desc">Nom (Z–A)</option>
+                </select>
+              </div>
+            </div>
             <ul
               id="profile-friends-banned-list"
               class="profile-friends-banned-list"
@@ -403,8 +415,48 @@
               "profile-friends-banned-list",
             );
             var FRIENDS_BANNED_PAGE_SIZE = 10;
-            var friendsBannedData = data.friends_banned || [];
+            var friendsBannedData = (data.friends_banned || []).slice();
             var friendsBannedCurrentPage = 1;
+
+            function banTypeOrder(f) {
+              if (f.vac_banned === 1 || f.vac_banned === true) return 1;
+              if (f.game_ban_count > 0) return 2;
+              if (f.community_banned === 1 || f.community_banned === true) return 3;
+              return 4;
+            }
+
+            function sortFriendsBanned() {
+              var sel = document.getElementById("profile-friends-banned-sort-select");
+              var value = (sel && sel.value) || "date-desc";
+              var name = function (f) {
+                return (f.persona_name || f.steamid64 || "").toLowerCase();
+              };
+              var date = function (f) {
+                var t = f.scraped_at ? new Date(f.scraped_at).getTime() : 0;
+                return isNaN(t) ? 0 : t;
+              };
+              if (value === "date-desc") {
+                friendsBannedData.sort(function (a, b) {
+                  return date(b) - date(a) || name(a).localeCompare(name(b));
+                });
+              } else if (value === "date-asc") {
+                friendsBannedData.sort(function (a, b) {
+                  return date(a) - date(b) || name(a).localeCompare(name(b));
+                });
+              } else if (value === "type") {
+                friendsBannedData.sort(function (a, b) {
+                  return banTypeOrder(a) - banTypeOrder(b) || name(a).localeCompare(name(b));
+                });
+              } else if (value === "name-asc") {
+                friendsBannedData.sort(function (a, b) {
+                  return name(a).localeCompare(name(b));
+                });
+              } else if (value === "name-desc") {
+                friendsBannedData.sort(function (a, b) {
+                  return name(b).localeCompare(name(a));
+                });
+              }
+            }
 
             function renderFriendRow(f) {
               var badges = [];
@@ -497,7 +549,15 @@
               friendsBannedData.length > 0
             ) {
               friendsBannedListWrap.style.display = "block";
+              sortFriendsBanned();
               renderFriendsBannedPage(1);
+              var sortSelect = document.getElementById("profile-friends-banned-sort-select");
+              if (sortSelect) {
+                sortSelect.onchange = function () {
+                  sortFriendsBanned();
+                  renderFriendsBannedPage(1);
+                };
+              }
             } else if (friendsBannedListWrap) {
               friendsBannedListWrap.style.display = "none";
             }

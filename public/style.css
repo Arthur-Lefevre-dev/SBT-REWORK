@@ -1086,11 +1086,42 @@ header .back-link:hover,
   border-top: 1px solid var(--border);
 }
 
+.profile-friends-banned-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 .profile-friends-banned-title {
-  margin: 0 0 0.75rem 0;
+  margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text);
+}
+
+.profile-friends-banned-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-friends-banned-sort-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.profile-friends-banned-sort-select {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
 }
 
 .profile-friends-banned-list {
