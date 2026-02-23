@@ -5,14 +5,20 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
     "scrape": "node index.js",
-    "stats": "node scripts/stats-from-file.js",
     "server": "nodemon server.js",
-    "migrate:sqlite-to-supabase": "node scripts/migrate-sqlite-to-supabase.js",
-    "stats:file": "node scripts/stats-from-file.js"
+    "dev": "concurrently \"npm run server\" \"wait-on http://localhost:3000/api/stats -t 60000 && vite\"",
+    "build": "vite build && node scripts/copy-img-to-dist.cjs",
+    "preview": "vite preview",
+    "migrate:sqlite-to-supabase": "node scripts/migrate-sqlite-to-supabase.js"
   },
-  "keywords": ["steam", "scraper", "steamid64", "friends", "vac-ban"],
+  "keywords": [
+    "steam",
+    "scraper",
+    "steamid64",
+    "friends",
+    "vac-ban"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -25,6 +31,9 @@
     "nodemon": "^3.1.14"
   },
   "devDependencies": {
-    "supabase": "^2.76.13"
+    "concurrently": "^9.1.0",
+    "supabase": "^2.76.13",
+    "vite": "^7.3.1",
+    "wait-on": "^8.0.1"
   }
 }

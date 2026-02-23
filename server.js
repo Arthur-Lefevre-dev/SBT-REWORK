@@ -5,6 +5,7 @@
 
 import 'dotenv/config';
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -36,9 +37,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
-// Verify DB connection at startup
+// Verify DB connection before accepting requests; then start server
 const dbBackend = getDbBackend();
-(async () => {
+async function start() {
   try {
     await getStats();
     console.log(`DB: ${dbBackend} — Connexion OK`);
@@ -47,16 +48,25 @@ const dbBackend = getDbBackend();
     if (dbBackend === 'supabase') {
       console.error('→ Vérifiez SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY dans .env');
       console.error('→ Avec RLS activé, le site doit utiliser la clé service_role (pas anon).');
+    } else {
+      console.error('→ Vérifiez que steam-data.db existe ou que le répertoire est accessible.');
     }
+    process.exit(1);
   }
-})();
+  app.listen(PORT, () => {
+    console.log(`Interface stats: http://localhost:${PORT}`);
+  });
+}
+
+// Serve built frontend (dist) if present, else public (dev)
+const staticDir = fs.existsSync(path.join(__dirname, 'dist')) ? 'dist' : 'public';
 
 // Profile page (must be before static so /profile/:id is handled here)
 app.get('/profile/:steamid64', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+  res.sendFile(path.join(__dirname, staticDir, 'profile.html'));
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, staticDir)));
 
 // API: summary stats
 app.get('/api/stats', async (req, res) => {
@@ -338,6 +348,4 @@ app.get('/api/profile/:steamid64', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Interface stats: http://localhost:${PORT}`);
-});
+start();

@@ -1,5 +1,8 @@
 # Steam Ban Tracker
 
+This project is a rework of my [Steam Ban Tracker](https://github.com/Arthur-Lefevre-dev/STEAM-BAN-TRACKER) project, but with a better architecture and more features.
+This project is still a work in progress, but it is already usable, please report any issues you find. And use it by respecting the [Steam Web API Terms of Use](https://steamcommunity.com/dev/apiterms) and Steam Terms of Service.
+
 Tool to **track Steam bans** (VAC, Game, Community). Profiles are discovered through the friends network from a starting profile. Web interface with dashboard, charts, and enriched profile pages (Faceit, Leetify).
 
 ## Prerequisites
@@ -67,20 +70,29 @@ node index.js 76561198011775992 0 0
 npm run server
 ```
 
-Opens **http://localhost:3000**:
+Opens **http://localhost:3000** (or **http://localhost:5173** if using Vite dev):
 
 - **Dashboard**: global stats, paginated lists (VAC, Game, Community, all banned), profile search, ban trend charts (by scrape date or by ban date).
 - **Profile page** (`/profile/:steamid64`): display name, avatar, friends (count, % banned), bans (VAC, Game, Community), **Faceit ELO** (if `FACEIT_API_KEY` is set), **Leetify stats** (if `LEETIFY_API_KEY` is set) — winrate, matches, Premier rank, rating bars, **banned friends list** (sort by date / ban type), “Data provided by Leetify” attribution.
 
 On startup, the server prints `DB: sqlite — Connexion OK` or `DB: supabase — Connexion OK`; on failure, it suggests what to check (`.env`, Supabase key, schema).
 
+#### Frontend with Vite (optional)
+
+- **Dev** (hot reload): run `npm run dev` or `npm run Server` — starts **both** the Express API (port 3000) and Vite (port 5173). Open **http://localhost:5173**; Vite proxies `/api` and `/profile` to the API.
+  WIP: Vite dev server is not working properly, so we need to use the Express server to test the frontend.
+- **Build**: `npm run build` — outputs to `dist/` and runs `scripts/copy-img-to-dist.cjs` to copy **all** of `public/img` to `dist/img` (so every image is available under `/img/`). The Express server automatically serves `dist/` when present.
+- **Preview**: `npm run preview` — serves only the static `dist/` at port 5173. **No API and no `.env`** (Vite preview does not run Node/Express). To test the full app with API and `.env`, run `npm run server` after a build and open **http://localhost:3000** (serves `dist/` and uses `.env`).
+
 ### Other commands
 
 ```bash
-npm run server                      # Start web server
-npm run stats -- <path.json>        # Print stats from an exported graph JSON
-npm run stats:file -- <path.json>
-npm run migrate:sqlite-to-supabase  # Migrate SQLite data to Supabase
+npm run Scrape [steamId64] [depth] [max profiles] # Scrape profiles from a starting profile
+npm run Server                                    # Start web server (serves public/ or dist/ if present; uses .env)
+npm run Dev                                       # Vite dev server (port 5173, proxy to API)
+npm run Build                                     # Vite build → dist/ + copy public/img → dist/img
+npm run Preview                                   # Static only: serve dist/ with Vite (no API, no .env)
+npm run Migrate:sqlite-to-supabase                # Migrate SQLite data to Supabase
 ```
 
 ## Project structure
@@ -107,7 +119,9 @@ npm run migrate:sqlite-to-supabase  # Migrate SQLite data to Supabase
 │   └── stats-from-file.js
 ├── supabase/
 │   └── schema.sql       # Run in Supabase SQL Editor (tables + RLS)
-└── public/              # Frontend (dashboard, profile page, assets)
+├── public/              # Frontend source (dashboard, profile page, assets)
+├── dist/                # Vite build output (after npm run build)
+└── vite.config.js       # Vite config (root: public, proxy to API)
 ```
 
 ## Data collected
