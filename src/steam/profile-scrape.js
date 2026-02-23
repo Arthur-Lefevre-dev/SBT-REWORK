@@ -9,9 +9,14 @@ const PROFILE_URL = (steamid64) =>
   `https://steamcommunity.com/profiles/${steamid64}`;
 
 const DELAY_MS = 500;
+const RATE_LIMIT_RETRY_MS = 20000; // 20s wait before retry for steamcommunity.com
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function isRateLimit(res) {
+  return res?.status === 429 || res?.status === 503 || res?.status === 403;
 }
 
 /**
@@ -51,20 +56,30 @@ export function parseGameBanDaysFromHtml(html) {
 export async function getGameBanDaysFromProfile(steamid64, options = {}) {
   const { delayMs = DELAY_MS, userAgent } = options;
   const url = PROFILE_URL(steamid64);
-  try {
-    const { data } = await axios.get(url, {
-      timeout: 10000,
-      responseType: 'text',
-      headers: {
-        'Accept-Language': 'en-US,en;q=0.9',
-        ...(userAgent && { 'User-Agent': userAgent }),
-      },
-      maxRedirects: 3,
-      validateStatus: (s) => s === 200,
-    });
-    if (delayMs > 0) await sleep(delayMs);
-    return parseGameBanDaysFromHtml(data);
-  } catch (_) {
-    return null;
+  const maxTries = 2;
+  for (let tryIndex = 0; tryIndex < maxTries; tryIndex++) {
+    try {
+      const { data, status } = await axios.get(url, {
+        timeout: 10000,
+        responseType: 'text',
+        headers: {
+          'Accept-Language': 'en-US,en;q=0.9',
+          ...(userAgent && { 'User-Agent': userAgent }),
+        },
+        maxRedirects: 3,
+        validateStatus: () => true,
+      }).then((res) => ({ data: res.data, status: res.status }));
+      if (isRateLimit({ status }) && tryIndex < maxTries - 1) {
+        console.warn(`[Steam Community] Rate limit (${status}), retry dans ${RATE_LIMIT_RETRY_MS / 1000}s`);
+        await sleep(RATE_LIMIT_RETRY_MS);
+        continue;
+      }
+      if (status !== 200) return null;
+      if (delayMs > 0) await sleep(delayMs);
+      return parseGameBanDaysFromHtml(data);
+    } catch (_) {
+      return null;
+    }
   }
+  return null;
 }

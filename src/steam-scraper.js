@@ -8,7 +8,8 @@ import {
   getPlayerSummaries,
   getPlayerBans,
   getFriendList,
-  steamId64ToSteamId
+  steamId64ToSteamId,
+  isSteamRateLimitError
 } from './steam/api.js';
 import { getGameBanDaysFromProfile } from './steam/profile-scrape.js';
 import { FriendshipGraph } from './friendship-graph.js';
@@ -237,24 +238,45 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
       ) {
         lastSaveCount += saveInterval;
         const count = visited.size;
-        // Run save in background so crawl never blocks; chain saves to avoid parallel writes
+        // Run save in background; chain saves. Catch errors so one failure does not break the chain.
+        const doSave = () => onSave(graph).catch((err) => {
+          log(`  → Sauvegarde DB échouée: ${err?.message || err}`);
+        });
         pendingSavePromise = pendingSavePromise
-          ? pendingSavePromise.then(() => onSave(graph))
-          : onSave(graph);
+          ? pendingSavePromise.then(doSave, (err) => {
+              log(`  → Sauvegarde DB échouée: ${err?.message || err}`);
+              return doSave();
+            })
+          : doSave();
         log(`  → Sauvegarde DB (${count} profils) en arrière-plan`);
       }
 
       await sleep(delayMs);
     } catch (err) {
-      log('Error batch:', err.message);
-      for (const batch of batches) {
-        for (const { steamId64 } of batch) visited.delete(steamId64);
+      const rateLimited = isSteamRateLimitError(err);
+      if (rateLimited) {
+        const pauseMs = 90000; // 90s pause then retry batch
+        log(`  → Rate limit Steam API, pause ${pauseMs / 1000}s puis retry...`);
+        await sleep(pauseMs);
+        for (const batch of batches) {
+          for (const { steamId64, depth } of batch) {
+            visited.delete(steamId64);
+            queue.unshift({ steamId64, depth });
+          }
+        }
+      } else {
+        log('Error batch:', err.message);
+        for (const batch of batches) {
+          for (const { steamId64 } of batch) visited.delete(steamId64);
+        }
       }
     }
   }
 
   if (pendingSavePromise) {
-    await pendingSavePromise;
+    await pendingSavePromise.catch((err) => {
+      log(`  → Sauvegarde DB (finale) échouée: ${err?.message || err}`);
+    });
   }
   return graph;
 }

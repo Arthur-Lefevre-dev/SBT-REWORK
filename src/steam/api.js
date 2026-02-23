@@ -1,11 +1,45 @@
 /**
  * Steam Web API client - profile, bans, friends
  * Requires STEAM_API_KEY from https://steamcommunity.com/dev/apikey
+ * Handles rate limits (429/503) with retry and exponential backoff.
  */
 
 import axios from 'axios';
 
 const BASE_URL = 'https://api.steampowered.com';
+
+const RATE_LIMIT_BACKOFF_MS = [15000, 45000, 90000]; // 15s, 45s, 90s
+const MAX_RETRIES = 3;
+
+function isRateLimitError(err) {
+  const status = err.response?.status;
+  return status === 429 || status === 503 || status === 403;
+}
+
+/** For use by scraper: detect rate limit so it can pause before retrying. */
+export function isSteamRateLimitError(err) {
+  return isRateLimitError(err);
+}
+
+/**
+ * GET with retry on rate limit (429/503/403). Logs and waits before retry.
+ */
+async function steamGet(url, params, retryIndex = 0) {
+  try {
+    const { data } = await axios.get(url, { params, timeout: 30000 });
+    return data;
+  } catch (err) {
+    if (isRateLimitError(err) && retryIndex < MAX_RETRIES) {
+      const waitMs = RATE_LIMIT_BACKOFF_MS[retryIndex] ?? 90000;
+      console.warn(
+        `[Steam API] Rate limit (${err.response?.status ?? '?'}), retry dans ${waitMs / 1000}s (${retryIndex + 1}/${MAX_RETRIES})`
+      );
+      await new Promise((r) => setTimeout(r, waitMs));
+      return steamGet(url, params, retryIndex + 1);
+    }
+    throw err;
+  }
+}
 
 /**
  * Convert SteamID64 to legacy SteamID format (STEAM_X:Y:Z)
@@ -42,8 +76,9 @@ export function steamIdToSteamId64(steamId) {
  */
 export async function getPlayerSummaries(apiKey, steamIds) {
   const ids = Array.isArray(steamIds) ? steamIds.join(',') : steamIds;
-  const { data } = await axios.get(`${BASE_URL}/ISteamUser/GetPlayerSummaries/v2/`, {
-    params: { key: apiKey, steamids: ids }
+  const data = await steamGet(`${BASE_URL}/ISteamUser/GetPlayerSummaries/v2/`, {
+    key: apiKey,
+    steamids: ids
   });
   return data.response?.players ?? [];
 }
@@ -55,8 +90,9 @@ export async function getPlayerSummaries(apiKey, steamIds) {
  */
 export async function getPlayerBans(apiKey, steamIds) {
   const ids = Array.isArray(steamIds) ? steamIds.join(',') : steamIds;
-  const { data } = await axios.get(`${BASE_URL}/ISteamUser/GetPlayerBans/v1/`, {
-    params: { key: apiKey, steamids: ids }
+  const data = await steamGet(`${BASE_URL}/ISteamUser/GetPlayerBans/v1/`, {
+    key: apiKey,
+    steamids: ids
   });
   return data.players ?? [];
 }
@@ -71,8 +107,9 @@ export async function resolveVanityUrl(apiKey, vanityUrl) {
   const vanity = String(vanityUrl).trim();
   if (!vanity) return null;
   try {
-    const { data } = await axios.get(`${BASE_URL}/ISteamUser/ResolveVanityURL/v1/`, {
-      params: { key: apiKey, vanityurl: vanity }
+    const data = await steamGet(`${BASE_URL}/ISteamUser/ResolveVanityURL/v1/`, {
+      key: apiKey,
+      vanityurl: vanity
     });
     const steamid = data?.response?.steamid;
     return steamid && data.response.success === 1 ? steamid : null;
@@ -88,10 +125,13 @@ export async function resolveVanityUrl(apiKey, vanityUrl) {
  */
 export async function getFriendList(apiKey, steamId64) {
   try {
-    const { data } = await axios.get(`${BASE_URL}/ISteamUser/GetFriendList/v1/`, {
-      params: { key: apiKey, steamid: steamId64, relationship: 'friend' }
+    const data = await steamGet(`${BASE_URL}/ISteamUser/GetFriendList/v1/`, {
+      key: apiKey,
+      steamid: steamId64,
+      relationship: 'friend'
     });
-    return data.friendslist?.friends ?? [];
+    if (data?.friendslist === null) return [];
+    return data?.friendslist?.friends ?? [];
   } catch (err) {
     if (err.response?.status === 401) return [];
     if (err.response?.data?.friendslist === null) return [];
