@@ -423,6 +423,20 @@ async function loadChart() {
   const maxTicks = Math.min(40, Math.max(8, Math.floor(dataPoints / 2)));
   const step = Math.max(1, Math.floor(dataPoints / maxTicks));
 
+  function formatAxisDate(isoDate) {
+    if (!isoDate || isoDate.length < 10) return isoDate;
+    const d = new Date(isoDate.slice(0, 10) + "T12:00:00Z");
+    if (isNaN(d.getTime())) return isoDate;
+    return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  }
+
+  function formatTooltipDate(isoDate) {
+    if (!isoDate || isoDate.length < 10) return isoDate;
+    const d = new Date(isoDate.slice(0, 10) + "T12:00:00Z");
+    if (isNaN(d.getTime())) return isoDate;
+    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+  }
+
   const ctx = canvas.getContext("2d");
   
   // Zoom plugin is auto-registered when loaded via CDN
@@ -457,14 +471,15 @@ async function loadChart() {
           },
           ticks: {
             maxTicksLimit: maxTicks,
-            maxRotation: 45,
+            maxRotation: 0,
             minRotation: 0,
+            autoSkip: true,
             color: 'var(--text-muted)',
             font: { size: 10 },
-            callback(_, i) {
-              return i % step === 0 || i === labels.length - 1
-                ? this.getLabelForValue(i)
-                : "";
+            callback: function (value) {
+              var raw = typeof value === "number" && value >= 0 && value < labels.length ? labels[value] : value;
+              if (raw == null) return "";
+              return typeof raw === "string" && raw.length >= 10 ? formatAxisDate(raw) : String(raw);
             },
           },
           grid: {
@@ -502,8 +517,9 @@ async function loadChart() {
             pointStyle: 'rect'
           }
         },
-        tooltip: { 
-          mode: "index", 
+        tooltip: {
+          enabled: true,
+          mode: "index",
           intersect: false,
           backgroundColor: 'rgba(22, 27, 34, 0.95)',
           titleColor: 'var(--text)',
@@ -512,11 +528,24 @@ async function loadChart() {
           borderWidth: 1,
           padding: 10,
           displayColors: true,
+          titleFont: { size: 13, weight: 'bold' },
+          bodyFont: { size: 12 },
           callbacks: {
-            label: function(context) {
-              return context.dataset.label + ': ' + context.parsed.y;
-            }
-          }
+            title: function (tooltipItems) {
+              var i = (tooltipItems[0] && tooltipItems[0].dataIndex) != null ? tooltipItems[0].dataIndex : -1;
+              var raw = i >= 0 && labels[i] != null ? labels[i] : "";
+              return typeof raw === "string" && raw.length >= 10 ? formatTooltipDate(raw) : (raw || "Date");
+            },
+            beforeBody: function (tooltipItems) {
+              var i = (tooltipItems[0] && tooltipItems[0].dataIndex) != null ? tooltipItems[0].dataIndex : -1;
+              var raw = i >= 0 && labels[i] != null ? labels[i] : "";
+              var dateStr = typeof raw === "string" && raw.length >= 10 ? formatTooltipDate(raw) : (raw || "");
+              return dateStr ? ["Date : " + dateStr] : [];
+            },
+            label: function (context) {
+              return context.dataset.label + " : " + context.parsed.y;
+            },
+          },
         },
         zoom: {
           pan: {

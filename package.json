@@ -27,5 +27,8 @@
     "dotenv": "^16.3.1",
     "express": "^4.21.0",
     "nodemon": "^3.1.14"
+  },
+  "devDependencies": {
+    "supabase": "^2.76.13"
   }
 }
