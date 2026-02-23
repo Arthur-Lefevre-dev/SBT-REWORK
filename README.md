@@ -57,7 +57,36 @@ Opens **http://localhost:3000**:
 ### Other commands
 
 ```bash
-npm run stats    # Print friendship graph stats (from database)
+npm run server                    # Start web server (dashboard + profiles)
+npm run stats -- <path-to.json>   # Print stats from a saved graph JSON file
+npm run stats:file -- <path-to.json>
+npm run migrate:sqlite-to-supabase # Migrate SQLite data to Supabase (when DATABASE=supabase)
+```
+
+## Project structure
+
+```
+├── index.js           # Scrape entry point (npm start / npm run scrape)
+├── server.js          # Web server entry point (npm run server)
+├── lib/
+│   └── supabase.js    # Supabase client (when DATABASE=supabase)
+├── src/
+│   ├── db/            # Database layer (SQLite + Supabase facade)
+│   │   ├── index.js   # Facade (chooses backend via .env DATABASE)
+│   │   ├── sqlite.js
+│   │   └── supabase.js
+│   ├── steam/         # Steam API & profile scraping
+│   │   ├── api.js     # Steam Web API (summaries, bans, friends, vanity)
+│   │   └── profile-scrape.js  # Game ban days from profile HTML
+│   ├── steam-scraper.js   # Orchestration (batched crawl)
+│   ├── friendship-graph.js
+│   └── stats.js       # Stats from graph (computeStats, printStats)
+├── scripts/
+│   ├── migrate-sqlite-to-supabase.js
+│   └── stats-from-file.js  # Print stats from saved JSON graph
+├── supabase/
+│   └── schema.sql     # Run in Supabase SQL Editor for new project
+└── public/            # Frontend (dashboard, profile page, assets)
 ```
 
 ## Data collected

@@ -1,17 +1,16 @@
 #!/usr/bin/env node
 /**
  * Compute and print stats from a previously saved graph JSON file
- * Usage: node stats-from-file.js output/steam-scrape-2024-01-01T12-00-00.json
+ * Usage: node scripts/stats-from-file.js output/steam-scrape-2024-01-01T12-00-00.json
  */
 
-import { FriendshipGraph } from './friendship-graph.js';
-import { computeStats, printStats, getFriendshipPairs } from './stats.js';
+import { FriendshipGraph } from '../src/friendship-graph.js';
+import { computeStats, printStats } from '../src/stats.js';
 import fs from 'fs';
-import path from 'path';
 
 const filePath = process.argv[2];
 if (!filePath || !fs.existsSync(filePath)) {
-  console.error('Usage: node stats-from-file.js <path-to-graph.json>');
+  console.error('Usage: node scripts/stats-from-file.js <path-to-graph.json>');
   process.exit(1);
 }
 

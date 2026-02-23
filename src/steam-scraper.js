@@ -9,14 +9,17 @@ import {
   getPlayerBans,
   getFriendList,
   steamId64ToSteamId
-} from './steam-api.js';
-import { getGameBanDaysFromProfile } from './steam-profile-scrape.js';
+} from './steam/api.js';
+import { getGameBanDaysFromProfile } from './steam/profile-scrape.js';
 import { FriendshipGraph } from './friendship-graph.js';
 
-const BATCH_PROFILES = 15;
-const FRIEND_CONCURRENCY = 8;
-const DELAY_MS = 250;
-const PARALLEL_BATCHES = 3; // Number of batches to run in parallel
+// Tuned for speed while respecting Steam/community rate limits
+const BATCH_PROFILES = 50;      // Steam API accepts up to 100 ids per summaries/bans call
+const FRIEND_CONCURRENCY = 18;   // Parallel friend-list fetches per batch
+const DELAY_MS = 100;            // Pause between batch rounds (ms)
+const PARALLEL_BATCHES = 5;     // Batches processed in parallel per round
+const GAME_BAN_SCRAPE_CONCURRENCY = 4;  // Parallel HTML scrapes for game ban dates
+const GAME_BAN_SCRAPE_DELAY_MS = 80;    // Delay between waves of game-ban scrapes
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -100,13 +103,12 @@ async function processBatch(apiKey, batch) {
     });
   }
 
-  // Scrape profile HTML for Game ban "days since last ban" (API does not provide it)
-  for (const p of profiles) {
-    if (p.ban?.numberOfGameBans > 0) {
+  // Scrape profile HTML for Game ban "days since last ban" in parallel (API does not provide it)
+  const gameBanProfiles = profiles.filter((p) => p.ban?.numberOfGameBans > 0);
+  if (gameBanProfiles.length > 0) {
+    const tasks = gameBanProfiles.map((p) => async () => {
       try {
-        const extra = await getGameBanDaysFromProfile(p.steamId64, {
-          delayMs: 0
-        });
+        const extra = await getGameBanDaysFromProfile(p.steamId64, { delayMs: 0 });
         if (extra) {
           p.ban.gameBanDaysSinceLast = extra.gameBanDaysSinceLast;
           p.ban.gameLastBanDate = extra.gameLastBanDate;
@@ -114,8 +116,9 @@ async function processBatch(apiKey, batch) {
       } catch (_) {
         // ignore
       }
-      await sleep(450);
-    }
+    });
+    await pLimit(tasks, GAME_BAN_SCRAPE_CONCURRENCY);
+    if (GAME_BAN_SCRAPE_DELAY_MS > 0) await sleep(GAME_BAN_SCRAPE_DELAY_MS);
   }
 
   return { profiles, friendsData };
@@ -176,6 +179,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
   const visited = new Set();
   const queue = [{ steamId64: String(startSteamId64), depth: 0 }];
   let lastSaveCount = 0;
+  let pendingSavePromise = null; // Chain background saves so crawl never blocks
 
   const log = verbose ? (...a) => console.log(...a) : () => {};
 
@@ -232,8 +236,12 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
         visited.size >= lastSaveCount + saveInterval
       ) {
         lastSaveCount += saveInterval;
-        await onSave(graph);
-        log(`  → Sauvegarde DB (${visited.size} profils)`);
+        const count = visited.size;
+        // Run save in background so crawl never blocks; chain saves to avoid parallel writes
+        pendingSavePromise = pendingSavePromise
+          ? pendingSavePromise.then(() => onSave(graph))
+          : onSave(graph);
+        log(`  → Sauvegarde DB (${count} profils) en arrière-plan`);
       }
 
       await sleep(delayMs);
@@ -245,5 +253,8 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
     }
   }
 
+  if (pendingSavePromise) {
+    await pendingSavePromise;
+  }
   return graph;
 }

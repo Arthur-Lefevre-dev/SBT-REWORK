@@ -27,13 +27,29 @@ import {
   getBanStatsOverTime,
   getBanStatsYears,
   getBanStatsByBanDate,
-  getBanStatsYearsByBanDate
-} from './database.js';
-import { resolveVanityUrl } from './steam-api.js';
+  getBanStatsYearsByBanDate,
+  getDbBackend
+} from './src/db/index.js';
+import { resolveVanityUrl } from './src/steam/api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT ?? 3000;
+
+// Verify DB connection at startup
+const dbBackend = getDbBackend();
+(async () => {
+  try {
+    await getStats();
+    console.log(`DB: ${dbBackend} — Connexion OK`);
+  } catch (e) {
+    console.error(`DB: ${dbBackend} — Connexion échouée:`, e?.message || e);
+    if (dbBackend === 'supabase') {
+      console.error('→ Vérifiez SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY dans .env');
+      console.error('→ Avec RLS activé, le site doit utiliser la clé service_role (pas anon).');
+    }
+  }
+})();
 
 // Profile page (must be before static so /profile/:id is handled here)
 app.get('/profile/:steamid64', (req, res) => {

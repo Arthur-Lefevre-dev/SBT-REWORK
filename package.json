@@ -7,9 +7,10 @@
   "scripts": {
     "start": "node index.js",
     "scrape": "node index.js",
-    "stats": "node stats.js",
+    "stats": "node scripts/stats-from-file.js",
     "server": "nodemon server.js",
-    "migrate:sqlite-to-supabase": "node scripts/migrate-sqlite-to-supabase.js"
+"migrate:sqlite-to-supabase": "node scripts/migrate-sqlite-to-supabase.js",
+    "stats:file": "node scripts/stats-from-file.js"
   },
   "keywords": [
     "steam",

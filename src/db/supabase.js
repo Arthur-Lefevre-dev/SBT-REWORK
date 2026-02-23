@@ -2,7 +2,7 @@
  * Supabase (PostgreSQL) implementation - async API
  */
 
-import { getSupabase, isSupabaseConfigured } from './lib/supabase.js';
+import { getSupabase, isSupabaseConfigured } from '../../lib/supabase.js';
 
 function sb() {
   return getSupabase();

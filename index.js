@@ -6,9 +6,9 @@
  */
 
 import 'dotenv/config';
-import { scrape } from './steam-scraper.js';
-import { computeStats, printStats } from './stats.js';
-import { saveGraph, getExistingSteamIds } from './database.js';
+import { scrape } from './src/steam-scraper.js';
+import { computeStats, printStats } from './src/stats.js';
+import { saveGraph, getExistingSteamIds, getStats, getDbBackend } from './src/db/index.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -16,6 +16,25 @@ const apiKey = process.env.STEAM_API_KEY;
 
 if (!apiKey) {
   console.error('Variable STEAM_API_KEY requise. Obtenez une clé sur https://steamcommunity.com/dev/apikey');
+  process.exit(1);
+}
+
+const dbBackend = getDbBackend();
+console.log(`Base de données: ${dbBackend}`);
+
+// Verify DB connection before starting (read test)
+try {
+  await getStats();
+  console.log(`Connexion DB OK (${dbBackend}).\n`);
+} catch (e) {
+  console.error('Impossible de se connecter à la base de données:');
+  console.error(e?.message || e);
+  if (dbBackend === 'supabase') {
+    console.error('Vérifiez SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY dans .env');
+    console.error('Et que les tables existent (exécutez supabase/schema.sql dans le SQL Editor).');
+  } else {
+    console.error('Vérifiez que le répertoire du projet est accessible (SQLite crée steam-data.db si besoin).');
+  }
   process.exit(1);
 }
 
@@ -39,15 +58,16 @@ try {
     console.log(`${knownIds.size} profils déjà en base (seront ignorés pour éviter de re-crawler).\n`);
   }
 } catch (e) {
-  console.log('Pas de base existante ou erreur lecture DB, tous les profils seront crawlés.\n');
+  console.error('Erreur lecture profils existants:', e?.message || e);
+  process.exit(1);
 }
 
 const graph = await scrape(apiKey, startSteamId64, {
   maxDepth,
   maxProfiles,
   knownIds,
-  parallelBatches: 3,
-  saveInterval: 500,
+  parallelBatches: 5,
+  saveInterval: 800,
   onSave: saveGraph,
   verbose: true
 });
@@ -56,8 +76,13 @@ const stats = computeStats(graph);
 printStats(stats);
 
 // Save to database (SQLite or Supabase)
-await saveGraph(graph);
-console.log('\nDonnées enregistrées.');
+try {
+  await saveGraph(graph);
+  console.log('\nDonnées enregistrées.');
+} catch (e) {
+  console.error('\nErreur lors de la sauvegarde en base:', e?.message || e);
+  process.exit(1);
+}
 
 // Export data (optional backup)
 const outputDir = path.join(process.cwd(), 'output');

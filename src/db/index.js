@@ -3,13 +3,18 @@
  * For Supabase also set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
  */
 
-import { isSupabaseConfigured } from './lib/supabase.js';
-import * as sqlite from './database-sqlite.js';
-import * as supabase from './database-supabase.js';
+import { isSupabaseConfigured } from '../../lib/supabase.js';
+import * as sqlite from './sqlite.js';
+import * as supabase from './supabase.js';
 
 function useSupabase() {
   const db = (process.env.DATABASE || 'sqlite').toLowerCase();
   return db === 'supabase' && isSupabaseConfigured();
+}
+
+/** Returns 'supabase' or 'sqlite' for logging. */
+export function getDbBackend() {
+  return useSupabase() ? 'supabase' : 'sqlite';
 }
 
 export function getDb() {
@@ -146,4 +151,4 @@ export async function getFriendshipPairs(database, limit) {
   return Promise.resolve(sqlite.getFriendshipPairs(database || sqlite.getDb(), limit));
 }
 
-export { isSupabaseConfigured } from './lib/supabase.js';
+export { isSupabaseConfigured } from '../../lib/supabase.js';
