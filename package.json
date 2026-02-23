@@ -8,7 +8,8 @@
     "start": "node index.js",
     "scrape": "node index.js",
     "stats": "node stats.js",
-    "server": "nodemon server.js"
+    "server": "nodemon server.js",
+    "migrate:sqlite-to-supabase": "node scripts/migrate-sqlite-to-supabase.js"
   },
   "keywords": [
     "steam",
@@ -20,6 +21,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "axios": "^1.6.2",
     "better-sqlite3": "^11.6.0",
     "dotenv": "^16.3.1",

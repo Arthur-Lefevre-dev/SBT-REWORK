@@ -43,9 +43,9 @@ app.get('/profile/:steamid64', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API: summary stats
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', async (req, res) => {
   try {
-    const stats = getStats();
+    const stats = await getStats();
     res.json(stats);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -53,13 +53,15 @@ app.get('/api/stats', (req, res) => {
 });
 
 // API: all banned (VAC, Game, Community) - paginated
-app.get('/api/banned', (req, res) => {
+app.get('/api/banned', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit ?? '10', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
     const search = req.query.search || null;
-    const rows = getAllBanned(undefined, limit, offset, search);
-    const total = getBannedCount(undefined, search);
+    const [rows, total] = await Promise.all([
+      getAllBanned(undefined, limit, offset, search),
+      getBannedCount(undefined, search)
+    ]);
     res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -67,12 +69,14 @@ app.get('/api/banned', (req, res) => {
 });
 
 // API: VAC banned (paginated)
-app.get('/api/vac-banned', (req, res) => {
+app.get('/api/vac-banned', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit ?? '10', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
-    const rows = getVacBanned(undefined, limit, offset);
-    const total = getVacBannedCount();
+    const [rows, total] = await Promise.all([
+      getVacBanned(undefined, limit, offset),
+      getVacBannedCount()
+    ]);
     res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -80,12 +84,14 @@ app.get('/api/vac-banned', (req, res) => {
 });
 
 // API: Game banned (paginated)
-app.get('/api/game-banned', (req, res) => {
+app.get('/api/game-banned', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit ?? '10', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
-    const rows = getGameBanned(undefined, limit, offset);
-    const total = getGameBannedCount();
+    const [rows, total] = await Promise.all([
+      getGameBanned(undefined, limit, offset),
+      getGameBannedCount()
+    ]);
     res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -93,12 +99,14 @@ app.get('/api/game-banned', (req, res) => {
 });
 
 // API: Community banned (paginated)
-app.get('/api/community-banned', (req, res) => {
+app.get('/api/community-banned', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit ?? '10', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
-    const rows = getCommunityBanned(undefined, limit, offset);
-    const total = getCommunityBannedCount();
+    const [rows, total] = await Promise.all([
+      getCommunityBanned(undefined, limit, offset),
+      getCommunityBannedCount()
+    ]);
     res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -106,15 +114,14 @@ app.get('/api/community-banned', (req, res) => {
 });
 
 // API: ban stats over time (for chart), optional ?year=2024&by=ban
-// by=ban => by last_ban_date (VAC only, so bans from 135 days ago show at that date)
-app.get('/api/stats-over-time', (req, res) => {
+app.get('/api/stats-over-time', async (req, res) => {
   try {
     const y = req.query.year;
     const year = y !== undefined && y !== '' ? parseInt(String(y), 10) : null;
     const byBan = req.query.by === 'ban';
     const rows = byBan
-      ? getBanStatsByBanDate(undefined, Number.isNaN(year) ? null : year)
-      : getBanStatsOverTime(undefined, Number.isNaN(year) ? null : year);
+      ? await getBanStatsByBanDate(undefined, Number.isNaN(year) ? null : year)
+      : await getBanStatsOverTime(undefined, Number.isNaN(year) ? null : year);
     res.json(Array.isArray(rows) ? rows : []);
   } catch (err) {
     console.error('/api/stats-over-time', err);
@@ -122,11 +129,11 @@ app.get('/api/stats-over-time', (req, res) => {
   }
 });
 
-// API: available years for chart filter (by=ban for years with ban dates)
-app.get('/api/stats-years', (req, res) => {
+// API: available years for chart filter
+app.get('/api/stats-years', async (req, res) => {
   try {
     const byBan = req.query.by === 'ban';
-    const years = byBan ? getBanStatsYearsByBanDate() : getBanStatsYears();
+    const years = byBan ? await getBanStatsYearsByBanDate() : await getBanStatsYears();
     res.json(years);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -134,11 +141,11 @@ app.get('/api/stats-years', (req, res) => {
 });
 
 // API: search profiles (suggestions for search bar)
-app.get('/api/search', (req, res) => {
+app.get('/api/search', async (req, res) => {
   try {
     const q = (req.query.q || "").trim();
     const limit = Math.min(parseInt(req.query.limit ?? '12', 10), 20);
-    const rows = q.length >= 2 ? getSearchProfiles(undefined, q, limit) : [];
+    const rows = q.length >= 2 ? await getSearchProfiles(undefined, q, limit) : [];
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -167,13 +174,15 @@ app.get('/api/resolve-vanity', async (req, res) => {
 });
 
 // API: profiles (paginated)
-app.get('/api/profiles', (req, res) => {
+app.get('/api/profiles', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit ?? '10', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
     const search = req.query.search || null;
-    const rows = getProfiles(undefined, limit, offset, search);
-    const total = getProfilesCount(undefined, search);
+    const [rows, total] = await Promise.all([
+      getProfiles(undefined, limit, offset, search),
+      getProfilesCount(undefined, search)
+    ]);
     res.json({ rows, total });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -184,12 +193,15 @@ app.get('/api/profiles', (req, res) => {
 app.get('/api/profile/:steamid64', async (req, res) => {
   try {
     const steamid64 = req.params.steamid64;
-    const profile = getProfile(undefined, steamid64);
+    const profile = await getProfile(undefined, steamid64);
     if (!profile) {
       return res.status(404).json({ error: 'Profil non trouvé' });
     }
-    const friendCount = getFriendCount(undefined, steamid64);
-    const friendBannedCount = getFriendBannedCount(undefined, steamid64);
+    const [friendCount, friendBannedCount, friends_banned] = await Promise.all([
+      getFriendCount(undefined, steamid64),
+      getFriendBannedCount(undefined, steamid64),
+      getBannedFriends(undefined, steamid64)
+    ]);
     const friend_ban_percentage =
       friendCount > 0
         ? Math.round((friendBannedCount / friendCount) * 100)
@@ -199,7 +211,7 @@ app.get('/api/profile/:steamid64', async (req, res) => {
       friend_count: friendCount,
       friend_banned_count: friendBannedCount,
       friend_ban_percentage,
-      friends_banned: getBannedFriends(undefined, steamid64)
+      friends_banned
     };
     const faceitKey = process.env.FACEIT_API_KEY;
     if (faceitKey) {

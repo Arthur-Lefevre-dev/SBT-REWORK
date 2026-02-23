@@ -232,7 +232,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
         visited.size >= lastSaveCount + saveInterval
       ) {
         lastSaveCount += saveInterval;
-        onSave(graph);
+        await onSave(graph);
         log(`  → Sauvegarde DB (${visited.size} profils)`);
       }
 

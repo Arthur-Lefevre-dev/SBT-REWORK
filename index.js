@@ -32,7 +32,7 @@ console.log(`Profondeur max: ${maxDepthArg === 0 ? '∞' : maxDepth} | Profils m
 
 let knownIds = new Set();
 try {
-  knownIds = getExistingSteamIds();
+  knownIds = await getExistingSteamIds();
   const startId = String(startSteamId64);
   if (knownIds.has(startId)) knownIds.delete(startId); // Always crawl start profile for fresh data + friends
   if (knownIds.size > 0) {
@@ -55,9 +55,9 @@ const graph = await scrape(apiKey, startSteamId64, {
 const stats = computeStats(graph);
 printStats(stats);
 
-// Save to SQLite
-saveGraph(graph);
-console.log('\nDonnées enregistrées dans steam-data.db');
+// Save to database (SQLite or Supabase)
+await saveGraph(graph);
+console.log('\nDonnées enregistrées.');
 
 // Export data (optional backup)
 const outputDir = path.join(process.cwd(), 'output');
