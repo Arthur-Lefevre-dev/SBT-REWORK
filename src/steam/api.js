@@ -2,6 +2,7 @@
  * Steam Web API client - profile, bans, friends
  * Requires STEAM_API_KEY from https://steamcommunity.com/dev/apikey
  * Handles rate limits (429/503) with retry and exponential backoff.
+ * Note: Steam Web API is not routed via Decodo proxy (Steam often returns 403 for proxy IPs).
  */
 
 import axios from 'axios';
@@ -13,7 +14,7 @@ const MAX_RETRIES = 3;
 
 function isRateLimitError(err) {
   const status = err.response?.status;
-  return status === 429 || status === 503 || status === 403;
+  return status === 429 || status === 503;
 }
 
 /** For use by scraper: detect rate limit so it can pause before retrying. */
@@ -26,7 +27,10 @@ export function isSteamRateLimitError(err) {
  */
 async function steamGet(url, params, retryIndex = 0) {
   try {
-    const { data } = await axios.get(url, { params, timeout: 30000 });
+    const { data } = await axios.get(url, {
+      params,
+      timeout: 30000,
+    });
     return data;
   } catch (err) {
     if (isRateLimitError(err) && retryIndex < MAX_RETRIES) {

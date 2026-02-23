@@ -13,14 +13,15 @@ import {
 } from "./steam/api.js";
 import { getGameBanDaysFromProfile } from "./steam/profile-scrape.js";
 import { FriendshipGraph } from "./friendship-graph.js";
+import { isDecodoProxyEnabled, checkAndLogProxyIpChange } from "./proxy.js";
 
 // Tuned for speed while respecting Steam/community rate limits
-const BATCH_PROFILES = 25; // Steam API accepts up to 100 ids per summaries/bans call
-const FRIEND_CONCURRENCY = 8; // Parallel friend-list fetches per batch
-const DELAY_MS = 200; // Pause between batch rounds (ms)
+const BATCH_PROFILES = 50; // Steam API accepts up to 100 ids per summaries/bans call
+const FRIEND_CONCURRENCY = 18; // Parallel friend-list fetches per batch
+const DELAY_MS = 100; // Pause between batch rounds (ms)
 const PARALLEL_BATCHES = 3; // Batches processed in parallel per round
 const GAME_BAN_SCRAPE_CONCURRENCY = 4; // Parallel HTML scrapes for game ban dates
-const GAME_BAN_SCRAPE_DELAY_MS = 120; // Delay between waves of game-ban scrapes
+const GAME_BAN_SCRAPE_DELAY_MS = 80; // Delay between waves of game-ban scrapes
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -188,7 +189,10 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
   const visited = new Set();
   const queue = [{ steamId64: String(startSteamId64), depth: 0 }];
   let lastSaveCount = 0;
-  let pendingSavePromise = null; // Chain background saves so crawl never blocks
+  let pendingSavePromise = null;
+  let pendingSaveCount = 0; // Number of saves in the chain (waiting or in progress)
+  let batchRoundIndex = 0;
+  const PROXY_IP_CHECK_EVERY_ROUNDS = 5; // Log proxy IP change every N batch rounds
 
   const log = verbose ? (...a) => console.log(...a) : () => {};
 
@@ -239,6 +243,14 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
         }
       }
 
+      batchRoundIndex += 1;
+      if (
+        isDecodoProxyEnabled() &&
+        batchRoundIndex % PROXY_IP_CHECK_EVERY_ROUNDS === 0
+      ) {
+        await checkAndLogProxyIpChange();
+      }
+
       while (
         saveInterval > 0 &&
         onSave &&
@@ -246,18 +258,32 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
       ) {
         lastSaveCount += saveInterval;
         const count = visited.size;
-        // Run save in background; chain saves. Catch errors so one failure does not break the chain.
+        pendingSaveCount += 1;
+        const queueLabel =
+          pendingSaveCount > 1 ? ` (file: ${pendingSaveCount} en attente)` : "";
+        log(
+          `  → Sauvegarde DB (${count} profils) en arrière-plan${queueLabel}`,
+        );
         const doSave = () =>
-          onSave(graph).catch((err) => {
-            log(`  → Sauvegarde DB échouée: ${err?.message || err}`);
-          });
-        pendingSavePromise = pendingSavePromise
-          ? pendingSavePromise.then(doSave, (err) => {
-              log(`  → Sauvegarde DB échouée: ${err?.message || err}`);
-              return doSave();
+          onSave(graph)
+            .then(() => {
+              pendingSaveCount -= 1;
+              log(
+                `  → Sauvegarde DB OK (${count} profils) — file: ${pendingSaveCount} en attente`,
+              );
             })
+            .catch((err) => {
+              pendingSaveCount -= 1;
+              log(
+                `  → Sauvegarde DB échouée: ${err?.message || err} — file: ${pendingSaveCount} en attente`,
+              );
+            });
+        pendingSavePromise = pendingSavePromise
+          ? pendingSavePromise.then(
+              () => doSave(),
+              () => doSave(),
+            )
           : doSave();
-        log(`  → Sauvegarde DB (${count} profils) en arrière-plan`);
       }
 
       await sleep(delayMs);

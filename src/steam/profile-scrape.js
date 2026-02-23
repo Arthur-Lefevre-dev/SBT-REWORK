@@ -1,9 +1,11 @@
 /**
  * Scrape Steam profile HTML to extract Game ban "days since last ban"
  * (API only gives game_ban_count, not the date)
+ * Optional: Decodo proxy via DECODO_PROXY_USER / DECODO_PROXY_PASSWORD.
  */
 
 import axios from 'axios';
+import { getDecodoAxiosConfig } from '../proxy.js';
 
 const PROFILE_URL = (steamid64) =>
   `https://steamcommunity.com/profiles/${steamid64}`;
@@ -56,6 +58,7 @@ export function parseGameBanDaysFromHtml(html) {
 export async function getGameBanDaysFromProfile(steamid64, options = {}) {
   const { delayMs = DELAY_MS, userAgent } = options;
   const url = PROFILE_URL(steamid64);
+  const proxyConfig = getDecodoAxiosConfig();
   const maxTries = 2;
   for (let tryIndex = 0; tryIndex < maxTries; tryIndex++) {
     try {
@@ -68,6 +71,7 @@ export async function getGameBanDaysFromProfile(steamid64, options = {}) {
         },
         maxRedirects: 3,
         validateStatus: () => true,
+        ...proxyConfig,
       }).then((res) => ({ data: res.data, status: res.status }));
       if (isRateLimit({ status }) && tryIndex < maxTries - 1) {
         console.warn(`[Steam Community] Rate limit (${status}), retry dans ${RATE_LIMIT_RETRY_MS / 1000}s`);

@@ -9,6 +9,7 @@ import 'dotenv/config';
 import { scrape } from './src/steam-scraper.js';
 import { computeStats, printStats } from './src/stats.js';
 import { saveGraph, getExistingSteamIds, getStats, getDbBackend } from './src/db/index.js';
+import { isDecodoProxyEnabled, verifyDecodoProxy } from './src/proxy.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -21,6 +22,15 @@ if (!apiKey) {
 
 const dbBackend = getDbBackend();
 console.log(`Base de données: ${dbBackend}`);
+if (isDecodoProxyEnabled()) {
+  console.log('Proxy Decodo: activé (gate.decodo.com)');
+  try {
+    await verifyDecodoProxy();
+  } catch (e) {
+    console.error(e?.message || e);
+    process.exit(1);
+  }
+}
 
 // Verify DB connection before starting (read test)
 try {
@@ -66,8 +76,8 @@ const graph = await scrape(apiKey, startSteamId64, {
   maxDepth,
   maxProfiles,
   knownIds,
-  parallelBatches: 3,
-  saveInterval: 200,
+  parallelBatches: 5,
+  saveInterval: 800,
   onSave: saveGraph,
   verbose: true
 });

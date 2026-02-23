@@ -28,6 +28,11 @@ FACEIT_API_KEY=your_faceit_key
 # Optional: Leetify (CS stats, Premier, winrate)
 LEETIFY_API_KEY=your_leetify_key
 
+# Optional: Decodo proxy for scraping (Steam Community HTML only; Steam Web API stays direct to avoid 403)
+# gate.decodo.com:7000 — set both to enable
+# DECODO_PROXY_USER=your_decodo_username
+# DECODO_PROXY_PASSWORD=your_decodo_password
+
 # Supabase (only when DATABASE=supabase)
 # Run supabase/schema.sql in the SQL Editor first.
 # Use Secret key (new format) or service_role JWT. With RLS, use the backend key.
@@ -54,6 +59,7 @@ node index.js 76561198011775992 0 0
 - **Friends** are used to discover new profiles; only scraped profiles are stored in the database.
 - **Database saves** run in the background (every 800 profiles) so the crawl is not blocked.
 - On Steam **rate limit** (429/503), automatic retry with backoff, then a 90s pause if needed.
+- **Decodo proxy** (optional): set `DECODO_PROXY_USER` and `DECODO_PROXY_PASSWORD` in `.env` to route **Steam Community** (profile HTML) traffic via [Decodo](https://decodo.com) (gate.decodo.com:7000). Steam Web API calls stay direct (Steam often returns 403 for proxy IPs). Connection is verified at startup; IP changes are logged during scraping.
 
 ### Web interface
 
@@ -92,6 +98,7 @@ npm run migrate:sqlite-to-supabase  # Migrate SQLite data to Supabase
 │   ├── steam/           # Steam API and HTML scraping
 │   │   ├── api.js       # Steam Web API (summaries, bans, friends, vanity) + rate limit retry
 │   │   └── profile-scrape.js   # Game ban days from profile page
+│   ├── proxy.js         # Optional Decodo proxy config (env: DECODO_PROXY_*)
 │   ├── steam-scraper.js # Crawl orchestration (batches, background saves)
 │   ├── friendship-graph.js
 │   └── stats.js         # Graph stats (computeStats, printStats)

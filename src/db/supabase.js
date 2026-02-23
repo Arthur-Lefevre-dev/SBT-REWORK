@@ -45,18 +45,37 @@ export async function saveFriendship(database, steamid64A, steamid64B) {
   await sb().from('friendships').upsert({ steamid64_a: a, steamid64_b: b }, { onConflict: 'steamid64_a,steamid64_b' });
 }
 
+const BATCH_PROFILES = 100;
+const BATCH_FRIENDSHIPS = 500;
+
 export async function saveGraph(graph) {
   const json = graph.toJSON();
   const profileIds = new Set(Object.keys(json.profiles ?? {}));
+  const profiles = Object.values(json.profiles ?? {}).map((p) => profileToRow(p));
 
-  for (const [, profile] of Object.entries(json.profiles ?? {})) {
-    await saveProfile(null, profile);
+  for (let i = 0; i < profiles.length; i += BATCH_PROFILES) {
+    const chunk = profiles.slice(i, i + BATCH_PROFILES);
+    await sb().from('profiles').upsert(chunk, { onConflict: 'steamid64' });
   }
+
+  const friendshipRows = [];
+  const seen = new Set();
   for (const [steamid64, friends] of Object.entries(json.adjacency ?? {})) {
     for (const fid of friends) {
-      if (profileIds.has(String(fid))) {
-        await saveFriendship(null, steamid64, fid);
-      }
+      if (!profileIds.has(String(fid))) continue;
+      const [a, b] = [String(steamid64), String(fid)].sort();
+      if (a === b) continue;
+      const key = `${a}\t${b}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      friendshipRows.push({ steamid64_a: a, steamid64_b: b });
+    }
+  }
+
+  for (let i = 0; i < friendshipRows.length; i += BATCH_FRIENDSHIPS) {
+    const chunk = friendshipRows.slice(i, i + BATCH_FRIENDSHIPS);
+    if (chunk.length > 0) {
+      await sb().from('friendships').upsert(chunk, { onConflict: 'steamid64_a,steamid64_b' });
     }
   }
 }
