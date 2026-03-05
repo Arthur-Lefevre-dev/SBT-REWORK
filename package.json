@@ -5,7 +5,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "scrape": "node index.js",
+    "start": "node --max-old-space-size=8192 index.js",
+    "scrape": "node --max-old-space-size=8192 index.js",
     "server": "nodemon server.js",
     "dev": "concurrently \"npm run server\" \"wait-on http://localhost:3000/api/stats -t 60000 && vite\"",
     "build": "vite build && node scripts/copy-img-to-dist.cjs",

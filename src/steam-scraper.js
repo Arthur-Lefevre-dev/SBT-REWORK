@@ -193,6 +193,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
   let pendingSaveCount = 0; // Number of saves in the chain (waiting or in progress)
   let batchRoundIndex = 0;
   const PROXY_IP_CHECK_EVERY_ROUNDS = 5; // Log proxy IP change every N batch rounds
+  const MAX_PENDING_SAVES = 3; // Cap queue to avoid heap growth from long promise chains
 
   const log = verbose ? (...a) => console.log(...a) : () => {};
 
@@ -256,6 +257,10 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
         onSave &&
         visited.size >= lastSaveCount + saveInterval
       ) {
+        // Throttle: don't queue more saves than MAX_PENDING_SAVES to limit memory from promise chain
+        while (pendingSaveCount >= MAX_PENDING_SAVES) {
+          await sleep(2000);
+        }
         lastSaveCount += saveInterval;
         const count = visited.size;
         pendingSaveCount += 1;

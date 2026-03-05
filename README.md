@@ -65,6 +65,7 @@ node index.js 76561198011775992 0 0
 - **Database saves** run in the background (every 800 profiles) so the crawl is not blocked.
 - On Steam **rate limit** (429/503), automatic retry with backoff, then a 90s pause if needed.
 - **Decodo proxy** (optional): set `DECODO_PROXY_USER` and `DECODO_PROXY_PASSWORD` in `.env` to route **Steam Community** (profile HTML) traffic via [Decodo](https://decodo.com) (gate.decodo.com:7000). Steam Web API calls stay direct (Steam often returns 403 for proxy IPs). Connection is verified at startup; IP changes are logged during scraping.
+- **Memory**: `npm start` / `npm run scrape` use a 8 GB Node heap by default. For 50k+ profiles, if you still hit "JavaScript heap out of memory", run `node --max-old-space-size=16384 index.js` (16 GB) or set `NODE_OPTIONS=--max-old-space-size=16384`.
 
 ### Web interface
 
