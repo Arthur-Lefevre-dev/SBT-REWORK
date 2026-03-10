@@ -28,6 +28,12 @@ let logLines = [];
 
 export function addLog(msg) {
   if (typeof msg !== 'string') return;
+  // Mirror admin console logs to server CLI for easier monitoring
+  // (only non-empty messages are logged).
+  if (msg.trim()) {
+    // eslint-disable-next-line no-console
+    console.log('[BOT]', msg);
+  }
   logLines.push({ t: new Date().toISOString(), msg });
   if (logLines.length > MAX_LOG_LINES) logLines = logLines.slice(-MAX_LOG_LINES);
   if (broadcastFn) broadcastFn(getBotState());
@@ -92,6 +98,7 @@ export function pauseBot() {
   if (!controller) return false;
   controller.paused = true;
   state.status = 'paused';
+  addLog('Bot mis en pause.');
   if (broadcastFn) broadcastFn(getBotState());
   return true;
 }
@@ -100,6 +107,7 @@ export function resumeBot() {
   if (!controller) return false;
   controller.paused = false;
   state.status = 'running';
+  addLog('Bot repris.');
   if (broadcastFn) broadcastFn(getBotState());
   return true;
 }
@@ -108,6 +116,7 @@ export function stopBot() {
   if (!controller) return false;
   controller.aborted = true;
   state.status = 'stopping';
+  addLog('Arrêt du bot demandé…');
   if (broadcastFn) broadcastFn(getBotState());
   return true;
 }
