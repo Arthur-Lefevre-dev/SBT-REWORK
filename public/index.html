@@ -15,53 +15,77 @@
   </head>
   <body>
     <header>
-      <h1>Steam Ban Tracker</h1>
-      <p class="subtitle" data-i18n="home.subtitle">
-        Suivi des bannissements VAC, Game et Community sur Steam
-      </p>
-      <div class="header-actions">
-        <div class="search-box-wrap">
-          <div class="search-box">
-            <input
-              type="text"
-              id="search-input"
-              placeholder="Rechercher (pseudo, SteamID, SteamID64, URL profil Steam)..."
-              data-i18n-placeholder="home.search.placeholder"
-              autocomplete="off"
-            />
-            <button
-              id="search-clear"
-              class="btn-search-clear"
-              style="display: none"
-            >
-              ✕
-            </button>
-          </div>
-          <div
-            id="search-suggestions"
-            class="search-suggestions"
-            role="listbox"
-            aria-label="Profils suggérés"
-            style="display: none"
-          ></div>
+      <div class="header-main">
+        <div class="header-title">
+          <h1>Steam Ban Tracker</h1>
+          <p class="subtitle" data-i18n="home.subtitle">
+            Suivi des bannissements VAC, Game et Community sur Steam
+          </p>
         </div>
-        <button type="button" id="search-submit" class="btn-search-submit" data-i18n="home.search.button">Chercher</button>
-        <button id="refresh" class="btn-refresh" data-i18n="home.refresh">Actualiser</button>
-        <div class="lang-switch">
-          <label for="lang-switcher" data-i18n="lang.label">Langue</label>
-          <select id="lang-switcher" data-lang-switcher>
-            <option value="fr" data-i18n="lang.fr">Français</option>
-            <option value="en" data-i18n="lang.en">English</option>
-          </select>
+        <div class="header-title-actions">
+          <div class="lang-switch">
+            <label for="lang-switcher" data-i18n="lang.label">Langue</label>
+            <select id="lang-switcher" data-lang-switcher>
+              <option value="fr" data-i18n="lang.fr">Français</option>
+              <option value="en" data-i18n="lang.en">English</option>
+            </select>
+          </div>
         </div>
       </div>
     </header>
 
     <main>
+      <section class="panel-search">
+        <div class="header-actions">
+          <div class="header-actions-left">
+            <div class="search-box-wrap">
+              <div class="search-box">
+                <input
+                  type="text"
+                  id="search-input"
+                  placeholder="Rechercher (pseudo, SteamID, SteamID64, URL profil Steam)..."
+                  data-i18n-placeholder="home.search.placeholder"
+                  autocomplete="off"
+                />
+                <button
+                  id="search-clear"
+                  class="btn-search-clear"
+                  style="display: none"
+                >
+                  ✕
+                </button>
+                <button
+                  type="button"
+                  id="search-submit"
+                  class="btn-search-submit"
+                  data-i18n="home.search.button"
+                >
+                  Chercher
+                </button>
+              </div>
+              <div
+                id="search-suggestions"
+                class="search-suggestions"
+                role="listbox"
+                aria-label="Profils suggérés"
+                style="display: none"
+              ></div>
+            </div>
+          </div>
+          <div class="header-actions-right">
+            <button id="refresh" class="btn-refresh" data-i18n="home.refresh">
+              Actualiser
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section class="stats-grid" id="stats-grid">
         <div class="stat-card">
           <span class="stat-value" id="total-profiles">—</span>
-          <span class="stat-label" data-i18n="home.stats.totalProfiles">Profils analysés</span>
+          <span class="stat-label" data-i18n="home.stats.totalProfiles"
+            >Profils analysés</span
+          >
         </div>
         <div class="stat-card stat-warn">
           <span class="stat-value" id="vac-banned">—</span>
@@ -73,7 +97,9 @@
         </div>
         <div class="stat-card stat-warn">
           <span class="stat-value" id="community-banned">—</span>
-          <span class="stat-label" data-i18n="home.stats.community">Community ban</span>
+          <span class="stat-label" data-i18n="home.stats.community"
+            >Community ban</span
+          >
         </div>
       </section>
 
@@ -81,12 +107,20 @@
         <div class="panel panel-chart">
           <h2 data-i18n="home.chart.title">Bans dans le temps</h2>
           <div class="chart-controls">
-            <label for="chart-view" data-i18n="home.chart.view.label">Vue :</label>
+            <label for="chart-view" data-i18n="home.chart.view.label"
+              >Vue :</label
+            >
             <select id="chart-view">
-              <option value="ban" data-i18n="home.chart.view.ban">Bans par date</option>
-              <option value="scrape" data-i18n="home.chart.view.scrape">Par date de scraping</option>
+              <option value="ban" data-i18n="home.chart.view.ban">
+                Bans par date
+              </option>
+              <option value="scrape" data-i18n="home.chart.view.scrape">
+                Par date de scraping
+              </option>
             </select>
-            <label for="chart-year" data-i18n="home.chart.year.label">Année :</label>
+            <label for="chart-year" data-i18n="home.chart.year.label"
+              >Année :</label
+            >
             <select id="chart-year">
               <option value="" data-i18n="home.chart.year.all">Toutes</option>
             </select>
@@ -103,11 +137,14 @@
               <span data-i18n="home.chart.resetZoom">Réinitialiser zoom</span>
             </button>
             <span class="chart-hint" data-i18n="home.chart.hint"
-              >💡 Molette pour zoomer, clic-glisser pour déplacer</span>
+              >💡 Molette pour zoomer, clic-glisser pour déplacer</span
+            >
           </div>
           <div class="chart-wrap">
             <p id="chart-empty-msg" class="empty-msg" style="display: none">
-              <span data-i18n="home.chart.empty">Aucune donnée temporelle (scraper au moins une fois)</span>
+              <span data-i18n="home.chart.empty"
+                >Aucune donnée temporelle (scraper au moins une fois)</span
+              >
             </p>
             <canvas id="chart-bans-time"></canvas>
           </div>
@@ -144,7 +181,9 @@
                   <th data-i18n="home.table.col.name">Pseudo</th>
                   <th data-i18n="home.table.col.steamid">SteamID</th>
                   <th data-i18n="home.table.col.vacCount">Bans VAC</th>
-                  <th data-i18n="home.table.col.daysSinceBan">Jours depuis dernier ban</th>
+                  <th data-i18n="home.table.col.daysSinceBan">
+                    Jours depuis dernier ban
+                  </th>
                   <th data-i18n="home.table.col.estimatedDate">Date estimée</th>
                   <th data-i18n="home.table.col.links">Liens</th>
                 </tr>
@@ -165,7 +204,9 @@
                   <th data-i18n="home.table.col.name">Pseudo</th>
                   <th data-i18n="home.table.col.steamid">SteamID</th>
                   <th data-i18n="home.table.col.gameCount">Nb bans</th>
-                  <th data-i18n="home.table.col.daysSinceBan">Jours depuis dernier ban</th>
+                  <th data-i18n="home.table.col.daysSinceBan">
+                    Jours depuis dernier ban
+                  </th>
                   <th data-i18n="home.table.col.links">Liens</th>
                 </tr>
               </thead>

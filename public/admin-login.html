@@ -20,20 +20,24 @@
     <script src="/i18n.js"></script>
   </head>
   <body>
-    <header class="login-header">
-      <div class="header-actions" style="justify-content: flex-end;">
-        <div class="lang-switch">
-          <label for="login-lang-switcher" data-i18n="lang.label">Langue</label>
-          <select id="login-lang-switcher" data-lang-switcher>
-            <option value="fr" data-i18n="lang.fr">Français</option>
-            <option value="en" data-i18n="lang.en">English</option>
-          </select>
+    <header>
+      <div class="header-main">
+        <div class="header-title">
+          <h1><a href="/" class="header-home-link">Steam Ban Tracker</a></h1>
+          <p class="subtitle" data-i18n="admin.login.subtitle">Panel admin — connectez-vous avec Steam</p>
+        </div>
+        <div class="header-title-actions">
+          <div class="lang-switch">
+            <label for="login-lang-switcher" data-i18n="lang.label">Langue</label>
+            <select id="login-lang-switcher" data-lang-switcher>
+              <option value="fr" data-i18n="lang.fr">Français</option>
+              <option value="en" data-i18n="lang.en">English</option>
+            </select>
+          </div>
         </div>
       </div>
     </header>
     <main class="login-page">
-      <h1>Steam Ban Tracker</h1>
-      <p data-i18n="admin.login.subtitle">Panel admin — connectez-vous avec Steam</p>
 
       <div id="login-with-turnstile" style="display: none;">
         <div id="turnstile-container" class="turnstile-wrap"></div>

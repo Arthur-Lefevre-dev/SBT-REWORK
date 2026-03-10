@@ -7,83 +7,343 @@
     <link rel="stylesheet" href="/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
-      .admin-page { max-width: 900px; margin: 0 auto; padding: 1rem; }
-      .admin-page h2 { margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.1rem; }
-      .admin-page .panel { background: var(--bg-card); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
-      .admin-page label { display: block; margin-bottom: 0.25rem; color: var(--text-muted); font-size: 0.9rem; }
-      .admin-page input { width: 100%; max-width: 400px; padding: 0.5rem; margin-bottom: 0.75rem; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 4px; }
-      .admin-page button { padding: 0.5rem 1rem; margin-right: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; background: var(--accent); color: var(--bg); border: none; border-radius: 4px; font-weight: 600; }
-      .admin-page button:hover { background: var(--accent-hover); }
-      .admin-page button:disabled { opacity: 0.6; cursor: not-allowed; }
-      .admin-page button.danger { background: #c53030; }
-      .admin-page button.danger:hover { background: #e53e3e; }
-      .admin-page .bot-status { font-family: var(--font-mono); font-size: 0.9rem; padding: 0.75rem; background: var(--bg); border-radius: 4px; margin-top: 0.5rem; }
-      .admin-page .bot-status .row { display: flex; gap: 1rem; margin-bottom: 0.25rem; }
-      .admin-page .bot-status .key { color: var(--text-muted); min-width: 140px; }
-      .admin-page .bot-status .errors { color: #f56565; font-size: 0.85rem; max-height: 120px; overflow-y: auto; }
-      .admin-page .ws-badge { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); margin-right: 0.5rem; }
-      .admin-page .ws-badge.connected { background: #48bb78; }
-      .admin-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
-      .admin-console { font-family: var(--font-mono); font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.75rem; max-height: 280px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
-      .admin-console .log-line { margin-bottom: 0.2rem; }
-      .admin-console .log-time { color: var(--text-muted); margin-right: 0.5rem; }
-      .admin-chart-wrap { position: relative; height: 220px; display: flex; align-items: center; justify-content: center; }
-      .admin-chart-wrap canvas { max-width: 100%; }
-      .admin-empty-msg { color: var(--text-muted); font-size: 0.9rem; margin: 0; padding: 1.5rem; text-align: center; }
-      .admin-chart-wrap .admin-empty-msg { position: absolute; }
-      .admin-console:empty::before { content: attr(data-placeholder); color: var(--text-muted); font-size: 0.9rem; }
+      .admin-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+      .admin-page h2 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+      }
+      .admin-page .panel {
+        background: var(--bg-card);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      .admin-page label {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+      .admin-page input {
+        width: 100%;
+        max-width: 400px;
+        padding: 0.5rem;
+        margin-bottom: 0.75rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 4px;
+      }
+      .admin-page button {
+        padding: 0.5rem 1rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        background: var(--accent);
+        color: var(--bg);
+        border: none;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      .admin-page button:hover {
+        background: var(--accent-hover);
+      }
+      .admin-page button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .admin-page button.danger {
+        background: #c53030;
+      }
+      .admin-page button.danger:hover {
+        background: #e53e3e;
+      }
+      .admin-page .bot-status {
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        padding: 0.75rem;
+        background: var(--bg);
+        border-radius: 4px;
+        margin-top: 0.5rem;
+      }
+      .admin-page .bot-status .row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 0.25rem;
+      }
+      .admin-page .bot-status .key {
+        color: var(--text-muted);
+        min-width: 140px;
+      }
+      .admin-page .bot-status .errors {
+        color: #f56565;
+        font-size: 0.85rem;
+        max-height: 120px;
+        overflow-y: auto;
+      }
+      .ws-badge {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        margin-right: 0.5rem;
+        box-shadow: 0 0 0 1px rgba(99, 110, 123, 0.6);
+      }
+      .ws-badge.connected {
+        background: #3fbf7f;
+        box-shadow:
+          0 0 0 1px rgba(63, 191, 127, 0.7),
+          0 0 0 4px rgba(63, 191, 127, 0.15);
+      }
+      .admin-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1040px;
+        margin: 0.15rem auto 0.1rem;
+      }
+      .header-actions.admin-header {
+        flex-wrap: nowrap;
+        justify-content: space-between;
+      }
+      .admin-header .header-actions-left,
+      .admin-header .header-actions-right {
+        flex: 0 0 auto;
+      }
+      .admin-header-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+      .admin-header-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        border: 1px solid rgba(88, 166, 255, 0.4);
+        background: rgba(22, 27, 34, 0.9);
+      }
+      .admin-header-status-label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .admin-logout-btn {
+        padding-inline: 1.25rem;
+      }
+      .admin-console {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.75rem;
+        max-height: 280px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .admin-console .log-line {
+        margin-bottom: 0.2rem;
+      }
+      .admin-console .log-time {
+        color: var(--text-muted);
+        margin-right: 0.5rem;
+      }
+      .admin-chart-wrap {
+        position: relative;
+        height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .admin-chart-wrap canvas {
+        max-width: 100%;
+      }
+      .admin-empty-msg {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin: 0;
+        padding: 1.5rem;
+        text-align: center;
+      }
+      .admin-chart-wrap .admin-empty-msg {
+        position: absolute;
+      }
+      .admin-console:empty::before {
+        content: attr(data-placeholder);
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
     </style>
     <script src="/i18n.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   </head>
   <body>
     <header>
-      <h1><a href="/" class="header-home-link">Steam Ban Tracker</a></h1>
-      <p class="subtitle" data-i18n="admin.subtitle">Panel admin</p>
-      <div class="admin-header">
-        <span><span id="ws-badge" class="ws-badge"></span> <span data-i18n="admin.ws.label">Temps réel</span></span>
-        <div class="lang-switch">
-          <label for="admin-lang-switcher" data-i18n="lang.label">Langue</label>
-          <select id="admin-lang-switcher" data-lang-switcher>
-            <option value="fr" data-i18n="lang.fr">Français</option>
-            <option value="en" data-i18n="lang.en">English</option>
-          </select>
+      <div class="header-main">
+        <div class="header-title">
+          <h1><a href="/" class="header-home-link">Steam Ban Tracker</a></h1>
+          <p class="subtitle" data-i18n="admin.subtitle">Panel admin</p>
         </div>
-        <a href="/admin/logout" class="btn-search-submit" style="text-decoration: none;" data-i18n="admin.logout">Déconnexion</a>
+        <div class="header-title-actions">
+          <div class="lang-switch">
+            <label for="admin-lang-switcher" data-i18n="lang.label"
+              >Langue</label
+            >
+            <select id="admin-lang-switcher" data-lang-switcher>
+              <option value="fr" data-i18n="lang.fr">Français</option>
+              <option value="en" data-i18n="lang.en">English</option>
+            </select>
+          </div>
+        </div>
       </div>
     </header>
 
     <main class="admin-page">
       <div class="panel">
-        <h2 data-i18n="admin.settings.title">Paramètres (sauvegardés en base)</h2>
-        <label for="admin-steam-api-key" data-i18n="admin.settings.steamApiKey">Clé API Steam</label>
-        <input type="password" id="admin-steam-api-key" placeholder="Laisser vide pour garder l’actuelle" autocomplete="off" />
-        <label for="admin-start-steamid64" data-i18n="admin.settings.startProfile">Profil de départ (SteamID64)</label>
-        <input type="text" id="admin-start-steamid64" placeholder="76561198011775992" />
-        <label for="admin-max-depth" data-i18n="admin.settings.maxDepth">Profondeur max (0 = illimité)</label>
+        <div class="admin-header">
+          <div class="header-actions-left">
+            <div class="admin-header-meta">
+              <div class="admin-header-status-pill">
+                <span id="ws-badge" class="ws-badge"></span>
+                <span
+                  class="admin-header-status-label"
+                  data-i18n="admin.ws.label"
+                  >Temps réel</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="header-actions-right">
+            <a
+              href="/admin/logout"
+              class="btn-search-submit admin-logout-btn"
+              style="text-decoration: none"
+              data-i18n="admin.logout"
+              >Déconnexion</a
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 data-i18n="admin.settings.title">
+          Paramètres (sauvegardés en base)
+        </h2>
+        <label for="admin-steam-api-key" data-i18n="admin.settings.steamApiKey"
+          >Clé API Steam</label
+        >
+        <input
+          type="password"
+          id="admin-steam-api-key"
+          placeholder="Laisser vide pour garder l’actuelle"
+          autocomplete="off"
+        />
+        <label
+          for="admin-start-steamid64"
+          data-i18n="admin.settings.startProfile"
+          >Profil de départ (SteamID64)</label
+        >
+        <input
+          type="text"
+          id="admin-start-steamid64"
+          placeholder="76561198011775992"
+        />
+        <label for="admin-max-depth" data-i18n="admin.settings.maxDepth"
+          >Profondeur max (0 = illimité)</label
+        >
         <input type="number" id="admin-max-depth" min="0" value="2" />
-        <label for="admin-max-profiles" data-i18n="admin.settings.maxProfiles">Profils max (0 = illimité)</label>
+        <label for="admin-max-profiles" data-i18n="admin.settings.maxProfiles"
+          >Profils max (0 = illimité)</label
+        >
         <input type="number" id="admin-max-profiles" min="0" value="500" />
-        <button type="button" id="admin-save-settings" data-i18n="admin.settings.save">Enregistrer les paramètres</button>
+        <button
+          type="button"
+          id="admin-save-settings"
+          data-i18n="admin.settings.save"
+        >
+          Enregistrer les paramètres
+        </button>
       </div>
 
       <div class="panel">
         <h2 data-i18n="admin.bot.title">Contrôle du bot</h2>
-        <button type="button" id="admin-bot-start" data-i18n="admin.bot.start">Démarrer</button>
-        <button type="button" id="admin-bot-pause" data-i18n="admin.bot.pause">Pause</button>
-        <button type="button" id="admin-bot-resume" data-i18n="admin.bot.resume">Reprendre</button>
-        <button type="button" id="admin-bot-stop" class="danger" data-i18n="admin.bot.stop">Arrêter</button>
-        <div id="admin-bot-message" style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;"></div>
-        <div id="admin-bot-status" class="bot-status" style="display: none;">
-          <div class="row"><span class="key" data-i18n="admin.bot.status">Statut</span><span id="bot-status-status">—</span></div>
-          <div class="row"><span class="key" data-i18n="admin.bot.status.profiles">Profils scrapés</span><span id="bot-status-profiles">—</span></div>
-          <div class="row"><span class="key" data-i18n="admin.bot.status.depth">Profondeur actuelle</span><span id="bot-status-depth">—</span></div>
-          <div class="row"><span class="key" data-i18n="admin.bot.status.batches">Batches</span><span id="bot-status-batches">—</span></div>
-          <div class="row"><span class="key" data-i18n="admin.bot.status.start">Début</span><span id="bot-status-start">—</span></div>
-          <div class="row"><span class="key" data-i18n="admin.bot.status.end">Fin</span><span id="bot-status-end">—</span></div>
-          <div class="row"><span class="key" data-i18n="admin.bot.status.ratelimit">Pauses rate limit</span><span id="bot-status-ratelimit">—</span></div>
+        <button type="button" id="admin-bot-start" data-i18n="admin.bot.start">
+          Démarrer
+        </button>
+        <button type="button" id="admin-bot-pause" data-i18n="admin.bot.pause">
+          Pause
+        </button>
+        <button
+          type="button"
+          id="admin-bot-resume"
+          data-i18n="admin.bot.resume"
+        >
+          Reprendre
+        </button>
+        <button
+          type="button"
+          id="admin-bot-stop"
+          class="danger"
+          data-i18n="admin.bot.stop"
+        >
+          Arrêter
+        </button>
+        <div
+          id="admin-bot-message"
+          style="
+            margin-top: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+          "
+        ></div>
+        <div id="admin-bot-status" class="bot-status" style="display: none">
+          <div class="row">
+            <span class="key" data-i18n="admin.bot.status">Statut</span
+            ><span id="bot-status-status">—</span>
+          </div>
+          <div class="row">
+            <span class="key" data-i18n="admin.bot.status.profiles"
+              >Profils scrapés</span
+            ><span id="bot-status-profiles">—</span>
+          </div>
+          <div class="row">
+            <span class="key" data-i18n="admin.bot.status.depth"
+              >Profondeur actuelle</span
+            ><span id="bot-status-depth">—</span>
+          </div>
+          <div class="row">
+            <span class="key" data-i18n="admin.bot.status.batches">Batches</span
+            ><span id="bot-status-batches">—</span>
+          </div>
+          <div class="row">
+            <span class="key" data-i18n="admin.bot.status.start">Début</span
+            ><span id="bot-status-start">—</span>
+          </div>
+          <div class="row">
+            <span class="key" data-i18n="admin.bot.status.end">Fin</span
+            ><span id="bot-status-end">—</span>
+          </div>
+          <div class="row">
+            <span class="key" data-i18n="admin.bot.status.ratelimit"
+              >Pauses rate limit</span
+            ><span id="bot-status-ratelimit">—</span>
+          </div>
           <div id="bot-status-errors" class="errors"></div>
         </div>
       </div>
@@ -91,90 +351,177 @@
       <div class="panel">
         <h2 data-i18n="admin.bot.chart.title">Activité du bot (graphique)</h2>
         <div class="admin-chart-wrap">
-          <p id="admin-chart-empty" class="admin-empty-msg" data-i18n="admin.bot.chart.empty">Aucune donnée pour le moment. Démarrez le bot pour voir le graphique.</p>
-          <canvas id="admin-bot-chart" style="display: none;"></canvas>
+          <p
+            id="admin-chart-empty"
+            class="admin-empty-msg"
+            data-i18n="admin.bot.chart.empty"
+          >
+            Aucune donnée pour le moment. Démarrez le bot pour voir le
+            graphique.
+          </p>
+          <canvas id="admin-bot-chart" style="display: none"></canvas>
         </div>
       </div>
 
       <div class="panel">
         <h2 data-i18n="admin.bot.console.title">Console du bot</h2>
-        <div id="admin-bot-console" class="admin-console" data-placeholder="Aucune activité pour le moment. Démarrez le bot pour voir les logs." aria-live="polite"></div>
+        <div
+          id="admin-bot-console"
+          class="admin-console"
+          data-placeholder="Aucune activité pour le moment. Démarrez le bot pour voir les logs."
+          aria-live="polite"
+        ></div>
       </div>
 
       <div class="panel">
-        <h2 data-i18n="admin.dbStats.title">Stats globales (base de données)</h2>
-        <div id="admin-db-stats" class="bot-status" data-i18n="admin.dbStats.loading">Chargement…</div>
+        <h2 data-i18n="admin.dbStats.title">
+          Stats globales (base de données)
+        </h2>
+        <div
+          id="admin-db-stats"
+          class="bot-status"
+          data-i18n="admin.dbStats.loading"
+        >
+          Chargement…
+        </div>
       </div>
     </main>
 
     <script>
       (function () {
-        const api = (path, opts = {}) => fetch(path, { credentials: 'include', ...opts }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))));
+        const api = (path, opts = {}) =>
+          fetch(path, { credentials: "include", ...opts }).then((r) =>
+            r.ok ? r.json() : Promise.reject(new Error(r.statusText)),
+          );
         const setMessage = (text, isError = false) => {
-          const el = document.getElementById('admin-bot-message');
-          el.textContent = text || '';
-          el.style.color = isError ? '#f56565' : 'var(--text-muted)';
+          const el = document.getElementById("admin-bot-message");
+          el.textContent = text || "";
+          el.style.color = isError ? "#f56565" : "var(--text-muted)";
         };
 
         if (window.I18N && window.I18N.init) {
           window.I18N.init();
           // Adjust console placeholder when language changes
-          const consoleEl = document.getElementById('admin-bot-console');
+          const consoleEl = document.getElementById("admin-bot-console");
           if (consoleEl && window.I18N.t) {
-            consoleEl.setAttribute('data-placeholder', window.I18N.t('admin.bot.console.placeholder'));
+            consoleEl.setAttribute(
+              "data-placeholder",
+              window.I18N.t("admin.bot.console.placeholder"),
+            );
           }
         }
 
         // Load settings
-        api('/api/admin/settings').then((s) => {
-          const masked = (window.I18N && window.I18N.t && window.I18N.t('admin.settings.steamApiKey.placeholder.masked')) || '••••••••';
-          const empty = (window.I18N && window.I18N.t && window.I18N.t('admin.settings.steamApiKey.placeholder.empty')) || 'Clé API Steam';
-          document.getElementById('admin-steam-api-key').placeholder = s.steam_api_key ? masked : empty;
-          document.getElementById('admin-start-steamid64').value = s.start_steamid64 || '';
-          document.getElementById('admin-max-depth').value = s.max_depth || '2';
-          document.getElementById('admin-max-profiles').value = s.max_profiles || '500';
-        }).catch(() => {
-          const msg = (window.I18N && window.I18N.t && window.I18N.t('admin.settings.loadError')) || 'Impossible de charger les paramètres';
-          setMessage(msg, true);
-        });
+        api("/api/admin/settings")
+          .then((s) => {
+            const masked =
+              (window.I18N &&
+                window.I18N.t &&
+                window.I18N.t(
+                  "admin.settings.steamApiKey.placeholder.masked",
+                )) ||
+              "••••••••";
+            const empty =
+              (window.I18N &&
+                window.I18N.t &&
+                window.I18N.t(
+                  "admin.settings.steamApiKey.placeholder.empty",
+                )) ||
+              "Clé API Steam";
+            document.getElementById("admin-steam-api-key").placeholder =
+              s.steam_api_key ? masked : empty;
+            document.getElementById("admin-start-steamid64").value =
+              s.start_steamid64 || "";
+            document.getElementById("admin-max-depth").value =
+              s.max_depth || "2";
+            document.getElementById("admin-max-profiles").value =
+              s.max_profiles || "500";
+          })
+          .catch(() => {
+            const msg =
+              (window.I18N &&
+                window.I18N.t &&
+                window.I18N.t("admin.settings.loadError")) ||
+              "Impossible de charger les paramètres";
+            setMessage(msg, true);
+          });
 
         // Save settings
-        document.getElementById('admin-save-settings').onclick = () => {
-          const steamApiKey = document.getElementById('admin-steam-api-key').value.trim();
-          api('/api/admin/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+        document.getElementById("admin-save-settings").onclick = () => {
+          const steamApiKey = document
+            .getElementById("admin-steam-api-key")
+            .value.trim();
+          api("/api/admin/settings", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               steam_api_key: steamApiKey || undefined,
-              start_steamid64: document.getElementById('admin-start-steamid64').value.trim() || undefined,
-              max_depth: document.getElementById('admin-max-depth').value,
-              max_profiles: document.getElementById('admin-max-profiles').value,
+              start_steamid64:
+                document.getElementById("admin-start-steamid64").value.trim() ||
+                undefined,
+              max_depth: document.getElementById("admin-max-depth").value,
+              max_profiles: document.getElementById("admin-max-profiles").value,
             }),
-          }).then(() => {
-            const msg = (window.I18N && window.I18N.t && window.I18N.t('admin.settings.saved')) || 'Paramètres enregistrés.';
-            setMessage(msg);
-          }).catch((e) => setMessage('Erreur: ' + e.message, true));
+          })
+            .then(() => {
+              const msg =
+                (window.I18N &&
+                  window.I18N.t &&
+                  window.I18N.t("admin.settings.saved")) ||
+                "Paramètres enregistrés.";
+              setMessage(msg);
+            })
+            .catch((e) => setMessage("Erreur: " + e.message, true));
         };
 
         // Bot controls
         function botAction(path, body) {
-          setMessage('');
-          return api('/api/admin/bot/' + path, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { method: 'POST' });
+          setMessage("");
+          return api(
+            "/api/admin/bot/" + path,
+            body
+              ? {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(body),
+                }
+              : { method: "POST" },
+          );
         }
-        document.getElementById('admin-bot-start').onclick = () => {
-          const steamApiKey = document.getElementById('admin-steam-api-key').value.trim();
-          botAction('start', {
+        document.getElementById("admin-bot-start").onclick = () => {
+          const steamApiKey = document
+            .getElementById("admin-steam-api-key")
+            .value.trim();
+          botAction("start", {
             steam_api_key: steamApiKey || undefined,
-            start_steamid64: document.getElementById('admin-start-steamid64').value.trim() || undefined,
-            max_depth: parseInt(document.getElementById('admin-max-depth').value, 10),
-            max_profiles: parseInt(document.getElementById('admin-max-profiles').value, 10),
-          }).then((r) => {
-            if (r.ok) setMessage('Bot démarré.'); else setMessage(r.error || 'Erreur', true);
-          }).catch((e) => setMessage(e.message, true));
+            start_steamid64:
+              document.getElementById("admin-start-steamid64").value.trim() ||
+              undefined,
+            max_depth: parseInt(
+              document.getElementById("admin-max-depth").value,
+              10,
+            ),
+            max_profiles: parseInt(
+              document.getElementById("admin-max-profiles").value,
+              10,
+            ),
+          })
+            .then((r) => {
+              if (r.ok) setMessage("Bot démarré.");
+              else setMessage(r.error || "Erreur", true);
+            })
+            .catch((e) => setMessage(e.message, true));
         };
-        document.getElementById('admin-bot-pause').onclick = () => botAction('pause').then((r) => setMessage(r.ok ? 'Pause demandée.' : ''));
-        document.getElementById('admin-bot-resume').onclick = () => botAction('resume').then((r) => setMessage(r.ok ? 'Reprise.' : ''));
-        document.getElementById('admin-bot-stop').onclick = () => botAction('stop').then((r) => setMessage(r.ok ? 'Arrêt demandé.' : ''));
+        document.getElementById("admin-bot-pause").onclick = () =>
+          botAction("pause").then((r) =>
+            setMessage(r.ok ? "Pause demandée." : ""),
+          );
+        document.getElementById("admin-bot-resume").onclick = () =>
+          botAction("resume").then((r) => setMessage(r.ok ? "Reprise." : ""));
+        document.getElementById("admin-bot-stop").onclick = () =>
+          botAction("stop").then((r) =>
+            setMessage(r.ok ? "Arrêt demandé." : ""),
+          );
 
         // Chart: time-series of profiles count and rate-limit pauses
         const chartData = { times: [], profiles: [], rateLimit: [] };
@@ -182,41 +529,79 @@
         const maxChartPoints = 200;
         function ensureChart() {
           if (adminChart) return;
-          const ctx = document.getElementById('admin-bot-chart').getContext('2d');
+          const ctx = document
+            .getElementById("admin-bot-chart")
+            .getContext("2d");
           adminChart = new Chart(ctx, {
-            type: 'line',
+            type: "line",
             data: {
               labels: chartData.times,
               datasets: [
-                { label: 'Profils scrapés', data: chartData.profiles, borderColor: '#58a6ff', backgroundColor: 'rgba(88, 166, 255, 0.1)', fill: true, tension: 0.2, yAxisID: 'y' },
-                { label: 'Pauses rate limit', data: chartData.rateLimit, borderColor: '#f56565', backgroundColor: 'rgba(245, 101, 101, 0.1)', fill: true, tension: 0.2, yAxisID: 'y1' }
-              ]
+                {
+                  label: "Profils scrapés",
+                  data: chartData.profiles,
+                  borderColor: "#58a6ff",
+                  backgroundColor: "rgba(88, 166, 255, 0.1)",
+                  fill: true,
+                  tension: 0.2,
+                  yAxisID: "y",
+                },
+                {
+                  label: "Pauses rate limit",
+                  data: chartData.rateLimit,
+                  borderColor: "#f56565",
+                  backgroundColor: "rgba(245, 101, 101, 0.1)",
+                  fill: true,
+                  tension: 0.2,
+                  yAxisID: "y1",
+                },
+              ],
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
-              interaction: { intersect: false, mode: 'index' },
+              interaction: { intersect: false, mode: "index" },
               scales: {
-                x: { type: 'linear', title: { display: true, text: 'Temps (s)' }, ticks: { maxTicksLimit: 10 } },
-                y: { type: 'linear', position: 'left', title: { display: true, text: 'Profils' }, min: 0 },
-                y1: { type: 'linear', position: 'right', title: { display: true, text: 'Pauses' }, min: 0, grid: { drawOnChartArea: false } }
+                x: {
+                  type: "linear",
+                  title: { display: true, text: "Temps (s)" },
+                  ticks: { maxTicksLimit: 10 },
+                },
+                y: {
+                  type: "linear",
+                  position: "left",
+                  title: { display: true, text: "Profils" },
+                  min: 0,
+                },
+                y1: {
+                  type: "linear",
+                  position: "right",
+                  title: { display: true, text: "Pauses" },
+                  min: 0,
+                  grid: { drawOnChartArea: false },
+                },
               },
-              plugins: { legend: { position: 'top' } }
-            }
+              plugins: { legend: { position: "top" } },
+            },
           });
         }
         function updateChartPlaceholder() {
-          const emptyEl = document.getElementById('admin-chart-empty');
-          const canvasEl = document.getElementById('admin-bot-chart');
+          const emptyEl = document.getElementById("admin-chart-empty");
+          const canvasEl = document.getElementById("admin-bot-chart");
           const hasData = chartData.times.length > 0;
-          if (emptyEl) emptyEl.style.display = hasData ? 'none' : 'block';
-          if (canvasEl) canvasEl.style.display = hasData ? 'block' : 'none';
+          if (emptyEl) emptyEl.style.display = hasData ? "none" : "block";
+          if (canvasEl) canvasEl.style.display = hasData ? "block" : "none";
         }
         function pushChartPoint(s) {
-          const t = s.startTime ? (Date.now() - new Date(s.startTime).getTime()) / 1000 : 0;
+          const t = s.startTime
+            ? (Date.now() - new Date(s.startTime).getTime()) / 1000
+            : 0;
           const profiles = s.stats?.profilesCount ?? 0;
           const rl = s.stats?.rateLimitPauses ?? 0;
-          if (chartData.times.length === 0 || chartData.times[chartData.times.length - 1] !== t) {
+          if (
+            chartData.times.length === 0 ||
+            chartData.times[chartData.times.length - 1] !== t
+          ) {
             chartData.times.push(t);
             chartData.profiles.push(profiles);
             chartData.rateLimit.push(rl);
@@ -233,7 +618,7 @@
           adminChart.data.labels = chartData.times;
           adminChart.data.datasets[0].data = chartData.profiles;
           adminChart.data.datasets[1].data = chartData.rateLimit;
-          adminChart.update('none');
+          adminChart.update("none");
           updateChartPlaceholder();
         }
 
@@ -241,69 +626,140 @@
         let ws = null;
         let chartBaseTime = null;
         function connectWs() {
-          api('/api/admin/ws-token').then(({ token }) => {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(protocol + '//' + window.location.host + '/admin/ws?token=' + token);
-            ws.onopen = () => document.getElementById('ws-badge').classList.add('connected');
-            ws.onclose = () => {
-              document.getElementById('ws-badge').classList.remove('connected');
-              setTimeout(connectWs, 3000);
-            };
-            ws.onmessage = (ev) => {
-              const s = JSON.parse(ev.data);
-              document.getElementById('admin-bot-status').style.display = 'block';
-              document.getElementById('bot-status-status').textContent = s.status || '—';
-              document.getElementById('bot-status-profiles').textContent = s.stats?.profilesCount ?? '—';
-              document.getElementById('bot-status-depth').textContent = s.stats?.currentDepth ?? '—';
-              document.getElementById('bot-status-batches').textContent = s.stats?.batchCount ?? '—';
-              document.getElementById('bot-status-start').textContent = s.startTime ? new Date(s.startTime).toLocaleString() : '—';
-              document.getElementById('bot-status-end').textContent = s.endTime ? new Date(s.endTime).toLocaleString() : '—';
-              document.getElementById('bot-status-ratelimit').textContent = s.stats?.rateLimitPauses ?? 0;
-              const errEl = document.getElementById('bot-status-errors');
-              if (s.stats?.errors?.length) errEl.innerHTML = s.stats.errors.slice(-5).map((e) => '<div>' + escapeHtml(e) + '</div>').join(''); else errEl.innerHTML = '';
-              if (s.error) errEl.innerHTML = '<div>' + escapeHtml(s.error) + '</div>' + errEl.innerHTML;
+          api("/api/admin/ws-token")
+            .then(({ token }) => {
+              const protocol =
+                window.location.protocol === "https:" ? "wss:" : "ws:";
+              ws = new WebSocket(
+                protocol +
+                  "//" +
+                  window.location.host +
+                  "/admin/ws?token=" +
+                  token,
+              );
+              ws.onopen = () =>
+                document.getElementById("ws-badge").classList.add("connected");
+              ws.onclose = () => {
+                document
+                  .getElementById("ws-badge")
+                  .classList.remove("connected");
+                setTimeout(connectWs, 3000);
+              };
+              ws.onmessage = (ev) => {
+                const s = JSON.parse(ev.data);
+                document.getElementById("admin-bot-status").style.display =
+                  "block";
+                document.getElementById("bot-status-status").textContent =
+                  s.status || "—";
+                document.getElementById("bot-status-profiles").textContent =
+                  s.stats?.profilesCount ?? "—";
+                document.getElementById("bot-status-depth").textContent =
+                  s.stats?.currentDepth ?? "—";
+                document.getElementById("bot-status-batches").textContent =
+                  s.stats?.batchCount ?? "—";
+                document.getElementById("bot-status-start").textContent =
+                  s.startTime ? new Date(s.startTime).toLocaleString() : "—";
+                document.getElementById("bot-status-end").textContent =
+                  s.endTime ? new Date(s.endTime).toLocaleString() : "—";
+                document.getElementById("bot-status-ratelimit").textContent =
+                  s.stats?.rateLimitPauses ?? 0;
+                const errEl = document.getElementById("bot-status-errors");
+                if (s.stats?.errors?.length)
+                  errEl.innerHTML = s.stats.errors
+                    .slice(-5)
+                    .map((e) => "<div>" + escapeHtml(e) + "</div>")
+                    .join("");
+                else errEl.innerHTML = "";
+                if (s.error)
+                  errEl.innerHTML =
+                    "<div>" + escapeHtml(s.error) + "</div>" + errEl.innerHTML;
 
-              // Console: replace with server log lines
-              const consoleEl = document.getElementById('admin-bot-console');
-              if (s.log && Array.isArray(s.log)) {
-                consoleEl.innerHTML = s.log.map((e) => {
-                  const timeStr = e.t ? new Date(e.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '';
-                  return '<div class="log-line"><span class="log-time">[' + timeStr + ']</span>' + escapeHtml(e.msg) + '</div>';
-                }).join('');
-                consoleEl.scrollTop = consoleEl.scrollHeight;
-              }
-
-              // Chart: add point when bot is running/paused or we have startTime; reset on new run
-              if (s.startTime && (s.status === 'running' || s.status === 'paused' || s.status === 'stopping')) {
-                if (chartBaseTime === null) {
-                  chartData.times = [];
-                  chartData.profiles = [];
-                  chartData.rateLimit = [];
-                  if (adminChart) { adminChart.data.labels = []; adminChart.data.datasets[0].data = []; adminChart.data.datasets[1].data = []; adminChart.update('none'); }
-                  updateChartPlaceholder();
+                // Console: replace with server log lines
+                const consoleEl = document.getElementById("admin-bot-console");
+                if (s.log && Array.isArray(s.log)) {
+                  consoleEl.innerHTML = s.log
+                    .map((e) => {
+                      const timeStr = e.t
+                        ? new Date(e.t).toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: false,
+                          })
+                        : "";
+                      return (
+                        '<div class="log-line"><span class="log-time">[' +
+                        timeStr +
+                        "]</span>" +
+                        escapeHtml(e.msg) +
+                        "</div>"
+                      );
+                    })
+                    .join("");
+                  consoleEl.scrollTop = consoleEl.scrollHeight;
                 }
-                chartBaseTime = new Date(s.startTime).getTime();
-                pushChartPoint(s);
-              }
-              if (s.status === 'idle') {
-                if (chartData.times.length > 0) pushChartPoint(s);
-                chartBaseTime = null;
-              }
-            };
-          }).catch(() => setTimeout(connectWs, 5000));
+
+                // Chart: add point when bot is running/paused or we have startTime; reset on new run
+                if (
+                  s.startTime &&
+                  (s.status === "running" ||
+                    s.status === "paused" ||
+                    s.status === "stopping")
+                ) {
+                  if (chartBaseTime === null) {
+                    chartData.times = [];
+                    chartData.profiles = [];
+                    chartData.rateLimit = [];
+                    if (adminChart) {
+                      adminChart.data.labels = [];
+                      adminChart.data.datasets[0].data = [];
+                      adminChart.data.datasets[1].data = [];
+                      adminChart.update("none");
+                    }
+                    updateChartPlaceholder();
+                  }
+                  chartBaseTime = new Date(s.startTime).getTime();
+                  pushChartPoint(s);
+                }
+                if (s.status === "idle") {
+                  if (chartData.times.length > 0) pushChartPoint(s);
+                  chartBaseTime = null;
+                }
+              };
+            })
+            .catch(() => setTimeout(connectWs, 5000));
         }
-        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        function escapeHtml(t) {
+          const d = document.createElement("div");
+          d.textContent = t;
+          return d.innerHTML;
+        }
         connectWs();
 
         // DB stats
-        api('/api/stats').then((stats) => {
-          document.getElementById('admin-db-stats').innerHTML =
-            '<div class="row"><span class="key">Profils</span><span>' + (stats.totalProfiles ?? 0) + '</span></div>' +
-            '<div class="row"><span class="key">Amitiés</span><span>' + (stats.totalFriendships ?? 0) + '</span></div>' +
-            '<div class="row"><span class="key">VAC bannis</span><span>' + (stats.vacBannedCount ?? 0) + '</span></div>' +
-            '<div class="row"><span class="key">Game bannis</span><span>' + (stats.gameBannedCount ?? 0) + '</span></div>' +
-            '<div class="row"><span class="key">Community bannis</span><span>' + (stats.communityBannedCount ?? 0) + '</span></div>';
-        }).catch(() => { document.getElementById('admin-db-stats').textContent = 'Erreur chargement stats.'; });
+        api("/api/stats")
+          .then((stats) => {
+            document.getElementById("admin-db-stats").innerHTML =
+              '<div class="row"><span class="key">Profils</span><span>' +
+              (stats.totalProfiles ?? 0) +
+              "</span></div>" +
+              '<div class="row"><span class="key">Amitiés</span><span>' +
+              (stats.totalFriendships ?? 0) +
+              "</span></div>" +
+              '<div class="row"><span class="key">VAC bannis</span><span>' +
+              (stats.vacBannedCount ?? 0) +
+              "</span></div>" +
+              '<div class="row"><span class="key">Game bannis</span><span>' +
+              (stats.gameBannedCount ?? 0) +
+              "</span></div>" +
+              '<div class="row"><span class="key">Community bannis</span><span>' +
+              (stats.communityBannedCount ?? 0) +
+              "</span></div>";
+          })
+          .catch(() => {
+            document.getElementById("admin-db-stats").textContent =
+              "Erreur chargement stats.";
+          });
       })();
     </script>
   </body>
