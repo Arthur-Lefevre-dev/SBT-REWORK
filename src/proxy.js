@@ -93,16 +93,36 @@ export async function verifyDecodoProxy() {
 }
 
 /**
+ * Convert ISO country code (e.g. 'FR') to flag emoji (🇫🇷).
+ * Returns empty string on invalid code.
+ */
+function countryCodeToFlag(code) {
+  if (!code || typeof code !== 'string') return '';
+  const upper = code.trim().toUpperCase();
+  if (upper.length !== 2) return '';
+  const A = 'A'.charCodeAt(0);
+  const codePoints = [
+    0x1f1e6 + (upper.charCodeAt(0) - A),
+    0x1f1e6 + (upper.charCodeAt(1) - A),
+  ];
+  return String.fromCodePoint(...codePoints);
+}
+
+/**
  * Fetch approximate location for an IP (city, region, country) via ip-api.com.
+ * Returns a human-friendly string with a flag emoji when possible.
  * @param {string} ip
- * @returns {Promise<string>} e.g. "Paris, France" or "IP" on failure
+ * @returns {Promise<string>} e.g. "🇫🇷 Paris, Île-de-France, France" or "IP" on failure
  */
 async function getLocationForIp(ip) {
   try {
-    const url = `${GEO_IP_BASE}/${encodeURIComponent(ip)}?fields=city,regionName,country`;
+    const url = `${GEO_IP_BASE}/${encodeURIComponent(ip)}?fields=city,regionName,country,countryCode`;
     const { data } = await axios.get(url, { timeout: 5000 });
     const parts = [data?.city, data?.regionName, data?.country].filter(Boolean);
-    return parts.length ? parts.join(', ') : ip;
+    let label = parts.length ? parts.join(', ') : ip;
+    const flag = countryCodeToFlag(data?.countryCode);
+    if (flag) label = `${flag} ${label}`;
+    return label;
   } catch (_) {
     return ip;
   }

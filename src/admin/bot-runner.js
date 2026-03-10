@@ -28,11 +28,26 @@ let logLines = [];
 
 export function addLog(msg) {
   if (typeof msg !== 'string') return;
-  // Mirror admin console logs to server CLI for easier monitoring
+  // Mirror admin console logs to server CLI with basic ANSI colors
   // (only non-empty messages are logged).
   if (msg.trim()) {
+    const RESET = '\x1b[0m';
+    const CYAN = '\x1b[36m';
+    const GREEN = '\x1b[32m';
+    const YELLOW = '\x1b[33m';
+    const RED = '\x1b[31m';
+    const prefix = `${CYAN}[BOT]${RESET}`;
+    const lower = msg.toLowerCase();
+    let color = GREEN;
+    if (lower.includes('erreur') || lower.includes('error') || lower.includes('échouée')) {
+      color = RED;
+    } else if (lower.includes('rate limit')) {
+      color = YELLOW;
+    } else if (msg.startsWith('[Proxy Decodo]')) {
+      color = CYAN;
+    }
     // eslint-disable-next-line no-console
-    console.log('[BOT]', msg);
+    console.log(prefix, `${color}${msg}${RESET}`);
   }
   logLines.push({ t: new Date().toISOString(), msg });
   if (logLines.length > MAX_LOG_LINES) logLines = logLines.slice(-MAX_LOG_LINES);
