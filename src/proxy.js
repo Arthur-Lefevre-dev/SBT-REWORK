@@ -11,6 +11,8 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 const DECODO_HOST = 'gate.decodo.com';
 const DECODO_PORT = 7000;
 const IP_CHECK_URL = 'https://api.ipify.org?format=json';
+/** Geo IP base URL (no key, non-commercial). Append IP: /json/1.2.3.4?fields=... */
+const GEO_IP_BASE = 'http://ip-api.com/json';
 
 /** Last IP seen when checking through proxy (to log changes). */
 let lastKnownProxyIp = null;
@@ -91,15 +93,41 @@ export async function verifyDecodoProxy() {
 }
 
 /**
- * Check current proxy IP and log when it changes (e.g. rotation).
- * Call periodically during scraping.
+ * Fetch approximate location for an IP (city, region, country) via ip-api.com.
+ * @param {string} ip
+ * @returns {Promise<string>} e.g. "Paris, France" or "IP" on failure
  */
-export async function checkAndLogProxyIpChange() {
+async function getLocationForIp(ip) {
+  try {
+    const url = `${GEO_IP_BASE}/${encodeURIComponent(ip)}?fields=city,regionName,country`;
+    const { data } = await axios.get(url, { timeout: 5000 });
+    const parts = [data?.city, data?.regionName, data?.country].filter(Boolean);
+    return parts.length ? parts.join(', ') : ip;
+  } catch (_) {
+    return ip;
+  }
+}
+
+/**
+ * Check current proxy IP and log when it changes (e.g. rotation).
+ * Optionally call onLog with a message (for admin console) including location.
+ * @param {{ onLog?: (msg: string) => void }} options
+ */
+export async function checkAndLogProxyIpChange(options = {}) {
   if (!isDecodoProxyEnabled()) return;
   const ip = await getCurrentProxyIp();
   if (!ip) return;
+  const onLog = options.onLog;
   if (lastKnownProxyIp !== null && lastKnownProxyIp !== ip) {
-    console.log(`[Proxy Decodo] IP changée: ${lastKnownProxyIp} → ${ip}`);
+    const msg = `[Proxy Decodo] IP changée: ${lastKnownProxyIp} → ${ip}`;
+    console.log(msg);
+    if (onLog) {
+      const location = await getLocationForIp(ip);
+      onLog(`[Proxy Decodo] IP changée: ${lastKnownProxyIp} → ${ip} (${location})`);
+    }
+  } else if (lastKnownProxyIp === null && onLog) {
+    const location = await getLocationForIp(ip);
+    onLog(`[Proxy Decodo] IP actuelle: ${ip} (${location})`);
   }
   lastKnownProxyIp = ip;
 }

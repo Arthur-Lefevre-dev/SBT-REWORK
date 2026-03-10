@@ -29,8 +29,11 @@
       .admin-console { font-family: var(--font-mono); font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.75rem; max-height: 280px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
       .admin-console .log-line { margin-bottom: 0.2rem; }
       .admin-console .log-time { color: var(--text-muted); margin-right: 0.5rem; }
-      .admin-chart-wrap { position: relative; height: 220px; }
+      .admin-chart-wrap { position: relative; height: 220px; display: flex; align-items: center; justify-content: center; }
       .admin-chart-wrap canvas { max-width: 100%; }
+      .admin-empty-msg { color: var(--text-muted); font-size: 0.9rem; margin: 0; padding: 1.5rem; text-align: center; }
+      .admin-chart-wrap .admin-empty-msg { position: absolute; }
+      .admin-console:empty::before { content: attr(data-placeholder); color: var(--text-muted); font-size: 0.9rem; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   </head>
@@ -80,13 +83,14 @@
       <div class="panel">
         <h2>Activité du bot (graphique)</h2>
         <div class="admin-chart-wrap">
-          <canvas id="admin-bot-chart"></canvas>
+          <p id="admin-chart-empty" class="admin-empty-msg">Aucune donnée pour le moment. Démarrez le bot pour voir le graphique.</p>
+          <canvas id="admin-bot-chart" style="display: none;"></canvas>
         </div>
       </div>
 
       <div class="panel">
         <h2>Console du bot</h2>
-        <div id="admin-bot-console" class="admin-console" aria-live="polite"></div>
+        <div id="admin-bot-console" class="admin-console" data-placeholder="Aucune activité pour le moment. Démarrez le bot pour voir les logs." aria-live="polite"></div>
       </div>
 
       <div class="panel">
@@ -176,6 +180,13 @@
             }
           });
         }
+        function updateChartPlaceholder() {
+          const emptyEl = document.getElementById('admin-chart-empty');
+          const canvasEl = document.getElementById('admin-bot-chart');
+          const hasData = chartData.times.length > 0;
+          if (emptyEl) emptyEl.style.display = hasData ? 'none' : 'block';
+          if (canvasEl) canvasEl.style.display = hasData ? 'block' : 'none';
+        }
         function pushChartPoint(s) {
           const t = s.startTime ? (Date.now() - new Date(s.startTime).getTime()) / 1000 : 0;
           const profiles = s.stats?.profilesCount ?? 0;
@@ -198,6 +209,7 @@
           adminChart.data.datasets[0].data = chartData.profiles;
           adminChart.data.datasets[1].data = chartData.rateLimit;
           adminChart.update('none');
+          updateChartPlaceholder();
         }
 
         // WebSocket + live state
@@ -229,7 +241,10 @@
               // Console: replace with server log lines
               const consoleEl = document.getElementById('admin-bot-console');
               if (s.log && Array.isArray(s.log)) {
-                consoleEl.innerHTML = s.log.map((e) => '<div class="log-line"><span class="log-time">' + escapeHtml(e.t) + '</span>' + escapeHtml(e.msg) + '</div>').join('');
+                consoleEl.innerHTML = s.log.map((e) => {
+                  const timeStr = e.t ? new Date(e.t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '';
+                  return '<div class="log-line"><span class="log-time">[' + timeStr + ']</span>' + escapeHtml(e.msg) + '</div>';
+                }).join('');
                 consoleEl.scrollTop = consoleEl.scrollHeight;
               }
 
@@ -240,6 +255,7 @@
                   chartData.profiles = [];
                   chartData.rateLimit = [];
                   if (adminChart) { adminChart.data.labels = []; adminChart.data.datasets[0].data = []; adminChart.data.datasets[1].data = []; adminChart.update('none'); }
+                  updateChartPlaceholder();
                 }
                 chartBaseTime = new Date(s.startTime).getTime();
                 pushChartPoint(s);

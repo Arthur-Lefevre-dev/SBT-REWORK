@@ -269,7 +269,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
         isDecodoProxyEnabled() &&
         batchRoundIndex % PROXY_IP_CHECK_EVERY_ROUNDS === 0
       ) {
-        await checkAndLogProxyIpChange();
+        await checkAndLogProxyIpChange({ onLog });
       }
 
       while (
