@@ -13,7 +13,7 @@
     />
     <style>
       .admin-page {
-        max-width: 900px;
+        max-width: 1040px;
         margin: 0 auto;
         padding: 1rem;
       }
@@ -46,8 +46,6 @@
       }
       .admin-page button {
         padding: 0.5rem 1rem;
-        margin-right: 0.5rem;
-        margin-bottom: 0.5rem;
         cursor: pointer;
         background: var(--accent);
         color: var(--bg);
@@ -90,6 +88,21 @@
         font-size: 0.85rem;
         max-height: 120px;
         overflow-y: auto;
+      }
+      .admin-settings-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.5rem;
+        margin-top: 0.75rem;
+      }
+      .admin-settings-col {
+        flex: 1 1 320px;
+        min-width: 260px;
+      }
+      .admin-settings-actions {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: flex-start;
       }
       .ws-badge {
         display: inline-block;
@@ -245,40 +258,56 @@
         <h2 data-i18n="admin.settings.title">
           Paramètres (sauvegardés en base)
         </h2>
-        <label for="admin-steam-api-key" data-i18n="admin.settings.steamApiKey"
-          >Clé API Steam</label
-        >
-        <input
-          type="password"
-          id="admin-steam-api-key"
-          placeholder="Laisser vide pour garder l’actuelle"
-          autocomplete="off"
-        />
-        <label
-          for="admin-start-steamid64"
-          data-i18n="admin.settings.startProfile"
-          >Profil de départ (SteamID64)</label
-        >
-        <input
-          type="text"
-          id="admin-start-steamid64"
-          placeholder="76561198011775992"
-        />
-        <label for="admin-max-depth" data-i18n="admin.settings.maxDepth"
-          >Profondeur max (0 = illimité)</label
-        >
-        <input type="number" id="admin-max-depth" min="0" value="2" />
-        <label for="admin-max-profiles" data-i18n="admin.settings.maxProfiles"
-          >Profils max (0 = illimité)</label
-        >
-        <input type="number" id="admin-max-profiles" min="0" value="500" />
-        <button
-          type="button"
-          id="admin-save-settings"
-          data-i18n="admin.settings.save"
-        >
-          Enregistrer les paramètres
-        </button>
+        <div class="admin-settings-grid">
+          <div class="admin-settings-col">
+            <label
+              for="admin-steam-api-key"
+              data-i18n="admin.settings.steamApiKey"
+              >Clé API Steam</label
+            >
+            <input
+              type="password"
+              id="admin-steam-api-key"
+              placeholder="Laisser vide pour garder l’actuelle"
+              autocomplete="off"
+            />
+          </div>
+          <div class="admin-settings-col">
+            <label
+              for="admin-start-steamid64"
+              data-i18n="admin.settings.startProfile"
+              >Profil de départ (SteamID64)</label
+            >
+            <input
+              type="text"
+              id="admin-start-steamid64"
+              placeholder="76561198011775992"
+            />
+          </div>
+          <div class="admin-settings-col">
+            <label for="admin-max-depth" data-i18n="admin.settings.maxDepth"
+              >Profondeur max (0 = illimité)</label
+            >
+            <input type="number" id="admin-max-depth" min="0" value="2" />
+          </div>
+          <div class="admin-settings-col">
+            <label
+              for="admin-max-profiles"
+              data-i18n="admin.settings.maxProfiles"
+              >Profils max (0 = illimité)</label
+            >
+            <input type="number" id="admin-max-profiles" min="0" value="500" />
+          </div>
+        </div>
+        <div class="admin-settings-actions">
+          <button
+            type="button"
+            id="admin-save-settings"
+            data-i18n="admin.settings.save"
+          >
+            Enregistrer les paramètres
+          </button>
+        </div>
       </div>
 
       <div class="panel">
