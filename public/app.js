@@ -87,6 +87,7 @@ function banTypeBadges(r) {
 function renderPagination(containerId, page, total, pageSize, onPrev, onNext) {
   const el = document.getElementById(containerId);
   if (!el) return;
+  const t = (window.I18N && window.I18N.t) ? window.I18N.t.bind(window.I18N) : (k) => k;
   if (total === 0) {
     el.innerHTML = "";
     return;
@@ -94,11 +95,13 @@ function renderPagination(containerId, page, total, pageSize, onPrev, onNext) {
   const start = page * pageSize + 1;
   const end = Math.min((page + 1) * pageSize, total);
   const totalPages = Math.ceil(total / pageSize);
+  const infoText = (t('home.pagination.info') || '{start}–{end} sur {total}')
+    .replace('{start}', start).replace('{end}', end).replace('{total}', total);
   el.innerHTML = `
-    <span class="pagination-info">${start}–${end} sur ${total}</span>
+    <span class="pagination-info">${infoText}</span>
     <div class="pagination-btns">
-      <button type="button" data-action="prev" ${page === 0 ? "disabled" : ""}>Précédent</button>
-      <button type="button" data-action="next" ${page >= totalPages - 1 ? "disabled" : ""}>Suivant</button>
+      <button type="button" data-action="prev" ${page === 0 ? "disabled" : ""}>${t('home.pagination.prev') || 'Précédent'}</button>
+      <button type="button" data-action="next" ${page >= totalPages - 1 ? "disabled" : ""}>${t('home.pagination.next') || 'Suivant'}</button>
     </div>
   `;
   el.querySelector('[data-action="prev"]')?.addEventListener("click", onPrev);
@@ -117,7 +120,7 @@ async function loadAllBanned() {
   const tbody = document.getElementById("all-banned-table");
   if (rows.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="7" class="empty-msg">Aucun bannissement détecté</td></tr>';
+      '<tr><td colspan="7" class="empty-msg">' + ((window.I18N && window.I18N.t && window.I18N.t('home.table.empty.banned')) || 'Aucun bannissement détecté') + '</td></tr>';
   } else {
     tbody.innerHTML = rows
       .map((r) => {
@@ -171,7 +174,7 @@ async function loadVacBanned() {
   const tbody = document.getElementById("vac-banned-table");
   if (rows.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="7" class="empty-msg">Aucun profil VAC banni</td></tr>';
+      '<tr><td colspan="7" class="empty-msg">' + ((window.I18N && window.I18N.t && window.I18N.t('home.table.empty.vac')) || 'Aucun VAC ban détecté') + '</td></tr>';
   } else {
     tbody.innerHTML = rows
       .map(
@@ -207,7 +210,7 @@ async function loadGameBanned() {
   const tbody = document.getElementById("game-banned-table");
   if (rows.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="6" class="empty-msg">Aucun profil Game banni</td></tr>';
+      '<tr><td colspan="6" class="empty-msg">' + ((window.I18N && window.I18N.t && window.I18N.t('home.table.empty.game')) || 'Aucun Game ban détecté') + '</td></tr>';
   } else {
     tbody.innerHTML = rows
       .map(
@@ -242,7 +245,7 @@ async function loadCommunityBanned() {
   const tbody = document.getElementById("community-banned-table");
   if (rows.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="4" class="empty-msg">Aucun profil Community banni</td></tr>';
+      '<tr><td colspan="4" class="empty-msg">' + ((window.I18N && window.I18N.t && window.I18N.t('home.table.empty.community')) || 'Aucun Community ban détecté') + '</td></tr>';
   } else {
     tbody.innerHTML = rows
       .map(
@@ -340,7 +343,7 @@ async function loadChart() {
   if (rows.length === 0) {
     if (emptyMsg) {
       emptyMsg.textContent =
-        "Aucune donnée temporelle (scraper au moins une fois).";
+        (window.I18N && window.I18N.t && window.I18N.t('home.chart.empty')) || "Aucune donnée temporelle (scraper au moins une fois).";
       emptyMsg.style.display = "block";
     }
     canvas.style.display = "none";
@@ -621,7 +624,7 @@ async function loadProfiles() {
   const tbody = document.getElementById("profiles-table");
   if (rows.length === 0) {
     tbody.innerHTML =
-      '<tr><td colspan="6" class="empty-msg">Aucun profil</td></tr>';
+      '<tr><td colspan="6" class="empty-msg">' + ((window.I18N && window.I18N.t && window.I18N.t('home.table.empty.profiles')) || 'Aucun profil dans la base pour le moment') + '</td></tr>';
   } else {
     tbody.innerHTML = rows
       .map((r) => {
@@ -676,12 +679,12 @@ async function refresh() {
     ]);
   } catch (err) {
     console.error(err);
-    alert(
-      "Erreur de chargement. Vérifiez que le serveur tourne (npm run server) et que steam-data.db existe.",
-    );
+    const msg = (window.I18N && window.I18N.t && window.I18N.t('home.refresh.error'))
+      || "Erreur de chargement. Vérifiez que le serveur tourne (npm run server) et que steam-data.db existe.";
+    alert(msg);
   } finally {
     btn.disabled = false;
-    btn.textContent = "Actualiser";
+    btn.textContent = (window.I18N && window.I18N.t && window.I18N.t('home.refresh')) || "Actualiser";
   }
 }
 
@@ -872,5 +875,11 @@ if (searchClear) {
 document.getElementById("chart-year")?.addEventListener("change", loadChart);
 document.getElementById("chart-view")?.addEventListener("change", () => {
   loadChartYears().then(loadChart);
+});
+if (window.I18N && window.I18N.init) {
+  window.I18N.init();
+}
+window.addEventListener('sbt:lang-changed', function () {
+  refresh();
 });
 refresh();

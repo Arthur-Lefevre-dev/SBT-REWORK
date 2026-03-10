@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Profil Steam – Ban Tracker</title>
     <link rel="stylesheet" href="/style.css" />
+    <script src="/i18n.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,17 +16,26 @@
   <body>
     <header>
       <h1><a href="/" class="header-home-link">Steam Ban Tracker</a></h1>
-      <p class="subtitle">Profil</p>
+      <p class="subtitle" data-i18n="profile.subtitle">Profil</p>
+      <div class="header-actions">
+        <div class="lang-switch">
+          <label for="profile-lang-switcher" data-i18n="lang.label">Langue</label>
+          <select id="profile-lang-switcher" data-lang-switcher>
+            <option value="fr" data-i18n="lang.fr">Français</option>
+            <option value="en" data-i18n="lang.en">English</option>
+          </select>
+        </div>
+      </div>
     </header>
 
     <main class="profile-page">
-      <div id="profile-loading" class="profile-loading">
+      <div id="profile-loading" class="profile-loading" data-i18n="profile.loading">
         Chargement du profil…
       </div>
       <div id="profile-error" class="profile-error" style="display: none"></div>
       <div id="profile-content" style="display: none">
         <div class="profile-panel">
-          <h2>Profil</h2>
+          <h2 data-i18n="profile.panel.title">Profil</h2>
           <div class="profile-header-wrap">
             <img id="profile-avatar" class="profile-avatar" src="" alt="" />
             <div>
@@ -36,7 +46,7 @@
           <div class="profile-stats">
             <div class="profile-stat">
               <span id="profile-friends" class="stat-value">—</span>
-              <span class="stat-label">Amis (connus)</span>
+              <span class="stat-label" data-i18n="profile.stats.friends">Amis (connus)</span>
             </div>
             <div class="profile-stat">
               <span id="profile-friends-banned" class="stat-value">—</span>
@@ -45,11 +55,11 @@
                 class="stat-detail"
                 style="display: none"
               ></span>
-              <span class="stat-label">Amis bannis</span>
+              <span class="stat-label" data-i18n="profile.stats.friendsBanned">Amis bannis</span>
             </div>
             <div class="profile-stat">
               <span id="profile-vac" class="stat-value">—</span>
-              <span class="stat-label">VAC</span>
+              <span class="stat-label" data-i18n="profile.stats.vac">VAC</span>
             </div>
             <div class="profile-stat">
               <span id="profile-game" class="stat-value">—</span>
@@ -58,19 +68,19 @@
                 class="stat-detail"
                 style="display: none"
               ></span>
-              <span class="stat-label">Game bans</span>
+              <span class="stat-label" data-i18n="profile.stats.game">Game bans</span>
             </div>
             <div class="profile-stat">
               <span id="profile-community" class="stat-value">—</span>
-              <span class="stat-label">Community bans</span>
+              <span class="stat-label" data-i18n="profile.stats.community">Community bans</span>
             </div>
             <div class="profile-stat" id="profile-leetify-stat">
               <span id="profile-leetify-winrate" class="stat-value">—</span>
-              <span class="stat-label">Winrate Leetify</span>
+              <span class="stat-label" data-i18n="profile.stats.leetifyWinrate">Winrate Leetify</span>
             </div>
             <div class="profile-stat" id="profile-leetify-matches-stat">
               <span id="profile-leetify-matches" class="stat-value">—</span>
-              <span class="stat-label">Matchs Leetify</span>
+              <span class="stat-label" data-i18n="profile.stats.leetifyMatches">Matchs Leetify</span>
             </div>
             <div class="profile-stat" id="profile-leetify-premier-stat">
               <div
@@ -91,7 +101,7 @@
                 </div>
               </div>
               <span id="profile-premier-fallback" class="stat-value">—</span>
-              <span class="stat-label">Premier</span>
+              <span class="stat-label" data-i18n="profile.stats.premier">Premier</span>
             </div>
             <div class="profile-stat" id="profile-leetify-wingman-stat">
               <img
@@ -101,7 +111,7 @@
                 alt=""
                 style="display: none"
               />
-              <span class="stat-label">Wingman</span>
+              <span class="stat-label" data-i18n="profile.stats.wingman">Wingman</span>
             </div>
             <div class="profile-stat" id="profile-elo-stat">
               <img
@@ -112,7 +122,7 @@
                 style="display: none"
               />
               <span id="profile-elo" class="stat-value">—</span>
-              <span class="stat-label">ELO Faceit</span>
+              <span class="stat-label" data-i18n="profile.stats.eloFaceit">ELO Faceit</span>
             </div>
           </div>
           <p
@@ -135,13 +145,13 @@
             class="profile-leetify-matches-wrap"
             style="display: none"
           >
-            <h3 class="profile-leetify-matches-title">10 derniers matchs</h3>
+            <h3 class="profile-leetify-matches-title" data-i18n="profile.leetify.matchesTitle">10 derniers matchs</h3>
             <div class="profile-leetify-matches-header" aria-hidden="true">
-              <span class="profile-leetify-matches-h-cell">Plateforme</span>
-              <span class="profile-leetify-matches-h-cell">Map</span>
-              <span class="profile-leetify-matches-h-cell">Résultat</span>
-              <span class="profile-leetify-matches-h-cell">Score</span>
-              <span class="profile-leetify-matches-h-cell">Date</span>
+              <span class="profile-leetify-matches-h-cell" data-i18n="profile.leetify.platform">Plateforme</span>
+              <span class="profile-leetify-matches-h-cell" data-i18n="profile.leetify.map">Map</span>
+              <span class="profile-leetify-matches-h-cell" data-i18n="profile.leetify.result">Résultat</span>
+              <span class="profile-leetify-matches-h-cell" data-i18n="profile.leetify.score">Score</span>
+              <span class="profile-leetify-matches-h-cell" data-i18n="profile.leetify.date">Date</span>
             </div>
             <div
               id="profile-leetify-matches-list"
@@ -153,9 +163,7 @@
             class="profile-leetify-attribution-wrap"
             style="display: none"
           >
-            <span class="profile-leetify-attribution-text"
-              >Data provided by</span
-            >
+            <span class="profile-leetify-attribution-text" data-i18n="profile.leetify.dataBy">Data provided by</span>
             <a
               href="https://leetify.com"
               target="_blank"
@@ -170,15 +178,15 @@
             style="display: none"
           >
             <div class="profile-friends-banned-header">
-              <h3 class="profile-friends-banned-title">Amis bannis</h3>
+              <h3 class="profile-friends-banned-title" data-i18n="profile.friendsBanned.title">Amis bannis</h3>
               <div class="profile-friends-banned-sort">
-                <label for="profile-friends-banned-sort-select" class="profile-friends-banned-sort-label">Trier par</label>
-                <select id="profile-friends-banned-sort-select" class="profile-friends-banned-sort-select" aria-label="Trier la liste des amis bannis">
-                  <option value="date-desc">Date (récent)</option>
-                  <option value="date-asc">Date (ancien)</option>
-                  <option value="type">Type de ban</option>
-                  <option value="name-asc">Nom (A–Z)</option>
-                  <option value="name-desc">Nom (Z–A)</option>
+                <label for="profile-friends-banned-sort-select" class="profile-friends-banned-sort-label" data-i18n="profile.friendsBanned.sortBy">Trier par</label>
+                <select id="profile-friends-banned-sort-select" class="profile-friends-banned-sort-select" data-i18n-aria-label="profile.friendsBanned.sortBy">
+                  <option value="date-desc" data-i18n="profile.friendsBanned.sortDateDesc">Date (récent)</option>
+                  <option value="date-asc" data-i18n="profile.friendsBanned.sortDateAsc">Date (ancien)</option>
+                  <option value="type" data-i18n="profile.friendsBanned.sortType">Type de ban</option>
+                  <option value="name-asc" data-i18n="profile.friendsBanned.sortNameAsc">Nom (A–Z)</option>
+                  <option value="name-desc" data-i18n="profile.friendsBanned.sortNameDesc">Nom (Z–A)</option>
                 </select>
               </div>
             </div>
@@ -200,7 +208,8 @@
                   type="button"
                   id="profile-friends-banned-prev"
                   class="profile-friends-banned-btn"
-                  aria-label="Précédent"
+                  data-i18n="profile.friendsBanned.prev"
+                  data-i18n-aria-label="profile.friendsBanned.prev"
                 >
                   Précédent
                 </button>
@@ -208,7 +217,8 @@
                   type="button"
                   id="profile-friends-banned-next"
                   class="profile-friends-banned-btn"
-                  aria-label="Suivant"
+                  data-i18n="profile.friendsBanned.next"
+                  data-i18n-aria-label="profile.friendsBanned.next"
                 >
                   Suivant
                 </button>
@@ -222,17 +232,19 @@
       </div>
     </main>
 
-    <footer>made by Drago</footer>
+    <footer data-i18n="profile.footer">made by Drago</footer>
 
     <script>
       (function () {
+        var t = window.I18N && window.I18N.t ? function (k) { return window.I18N.t(k); } : function (k) { return k; };
+        if (window.I18N && window.I18N.init) window.I18N.init();
+
         const pathParts = window.location.pathname.split("/").filter(Boolean);
         const steamid64 = pathParts[pathParts.length - 1];
         if (!steamid64 || steamid64 === "profile") {
           document.getElementById("profile-loading").style.display = "none";
           document.getElementById("profile-error").style.display = "block";
-          document.getElementById("profile-error").textContent =
-            "URL de profil invalide.";
+          document.getElementById("profile-error").textContent = t("profile.error.invalidUrl");
           return;
         }
 
@@ -244,7 +256,7 @@
           .then(function (res) {
             if (!res.ok)
               throw new Error(
-                res.status === 404 ? "Profil non trouvé" : res.statusText,
+                res.status === 404 ? t("profile.error.notFound") : res.statusText,
               );
             return res.json();
           })
@@ -266,12 +278,11 @@
             var scrapedEl = document.getElementById("profile-scraped-at");
             if (scrapedEl && data.scraped_at) {
               try {
-                scrapedEl.textContent =
-                  "Dernière mise à jour : " +
-                  new Date(data.scraped_at).toLocaleString("fr-FR", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  });
+                var dateStr = new Date(data.scraped_at).toLocaleString(document.documentElement.lang === "fr" ? "fr-FR" : "en-GB", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                });
+                scrapedEl.textContent = t("profile.lastUpdate").replace("{date}", dateStr);
                 scrapedEl.style.display = "block";
               } catch (e) {
                 scrapedEl.style.display = "none";
@@ -319,8 +330,7 @@
             var gameDetailEl = document.getElementById("profile-game-detail");
             if (gameDetailEl) {
               if (data.game_ban_days_since_last != null) {
-                gameDetailEl.textContent =
-                  "(il y a " + data.game_ban_days_since_last + " j)";
+                gameDetailEl.textContent = t("profile.gameBanDaysAgo").replace("{n}", data.game_ban_days_since_last);
                 gameDetailEl.style.display = "";
               } else {
                 gameDetailEl.style.display = "none";
@@ -524,16 +534,18 @@
               if (total > FRIENDS_BANNED_PAGE_SIZE && paginationWrap) {
                 paginationWrap.style.display = "flex";
                 if (rangeEl)
-                  rangeEl.textContent =
-                    "Affichage " + (start + 1) + "–" + end + " sur " + total;
+                  rangeEl.textContent = t("profile.friendsBanned.range")
+                    .replace("{start}", start + 1).replace("{end}", end).replace("{total}", total);
                 if (prevBtn) {
                   prevBtn.disabled = p <= 1;
+                  prevBtn.textContent = t("profile.friendsBanned.prev");
                   prevBtn.onclick = function () {
                     renderFriendsBannedPage(p - 1);
                   };
                 }
                 if (nextBtn) {
                   nextBtn.disabled = p >= totalPages;
+                  nextBtn.textContent = t("profile.friendsBanned.next");
                   nextBtn.onclick = function () {
                     renderFriendsBannedPage(p + 1);
                   };

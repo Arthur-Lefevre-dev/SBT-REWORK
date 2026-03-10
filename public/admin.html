@@ -35,67 +35,75 @@
       .admin-chart-wrap .admin-empty-msg { position: absolute; }
       .admin-console:empty::before { content: attr(data-placeholder); color: var(--text-muted); font-size: 0.9rem; }
     </style>
+    <script src="/i18n.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   </head>
   <body>
     <header>
       <h1><a href="/" class="header-home-link">Steam Ban Tracker</a></h1>
-      <p class="subtitle">Panel admin</p>
+      <p class="subtitle" data-i18n="admin.subtitle">Panel admin</p>
       <div class="admin-header">
-        <span><span id="ws-badge" class="ws-badge"></span> Temps réel</span>
-        <a href="/admin/logout" class="btn-search-submit" style="text-decoration: none;">Déconnexion</a>
+        <span><span id="ws-badge" class="ws-badge"></span> <span data-i18n="admin.ws.label">Temps réel</span></span>
+        <div class="lang-switch">
+          <label for="admin-lang-switcher" data-i18n="lang.label">Langue</label>
+          <select id="admin-lang-switcher" data-lang-switcher>
+            <option value="fr" data-i18n="lang.fr">Français</option>
+            <option value="en" data-i18n="lang.en">English</option>
+          </select>
+        </div>
+        <a href="/admin/logout" class="btn-search-submit" style="text-decoration: none;" data-i18n="admin.logout">Déconnexion</a>
       </div>
     </header>
 
     <main class="admin-page">
       <div class="panel">
-        <h2>Paramètres (sauvegardés en base)</h2>
-        <label for="admin-steam-api-key">Clé API Steam</label>
+        <h2 data-i18n="admin.settings.title">Paramètres (sauvegardés en base)</h2>
+        <label for="admin-steam-api-key" data-i18n="admin.settings.steamApiKey">Clé API Steam</label>
         <input type="password" id="admin-steam-api-key" placeholder="Laisser vide pour garder l’actuelle" autocomplete="off" />
-        <label for="admin-start-steamid64">Profil de départ (SteamID64)</label>
+        <label for="admin-start-steamid64" data-i18n="admin.settings.startProfile">Profil de départ (SteamID64)</label>
         <input type="text" id="admin-start-steamid64" placeholder="76561198011775992" />
-        <label for="admin-max-depth">Profondeur max (0 = illimité)</label>
+        <label for="admin-max-depth" data-i18n="admin.settings.maxDepth">Profondeur max (0 = illimité)</label>
         <input type="number" id="admin-max-depth" min="0" value="2" />
-        <label for="admin-max-profiles">Profils max (0 = illimité)</label>
+        <label for="admin-max-profiles" data-i18n="admin.settings.maxProfiles">Profils max (0 = illimité)</label>
         <input type="number" id="admin-max-profiles" min="0" value="500" />
-        <button type="button" id="admin-save-settings">Enregistrer les paramètres</button>
+        <button type="button" id="admin-save-settings" data-i18n="admin.settings.save">Enregistrer les paramètres</button>
       </div>
 
       <div class="panel">
-        <h2>Contrôle du bot</h2>
-        <button type="button" id="admin-bot-start">Démarrer</button>
-        <button type="button" id="admin-bot-pause">Pause</button>
-        <button type="button" id="admin-bot-resume">Reprendre</button>
-        <button type="button" id="admin-bot-stop" class="danger">Arrêter</button>
+        <h2 data-i18n="admin.bot.title">Contrôle du bot</h2>
+        <button type="button" id="admin-bot-start" data-i18n="admin.bot.start">Démarrer</button>
+        <button type="button" id="admin-bot-pause" data-i18n="admin.bot.pause">Pause</button>
+        <button type="button" id="admin-bot-resume" data-i18n="admin.bot.resume">Reprendre</button>
+        <button type="button" id="admin-bot-stop" class="danger" data-i18n="admin.bot.stop">Arrêter</button>
         <div id="admin-bot-message" style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;"></div>
         <div id="admin-bot-status" class="bot-status" style="display: none;">
-          <div class="row"><span class="key">Statut</span><span id="bot-status-status">—</span></div>
-          <div class="row"><span class="key">Profils scrapés</span><span id="bot-status-profiles">—</span></div>
-          <div class="row"><span class="key">Profondeur actuelle</span><span id="bot-status-depth">—</span></div>
-          <div class="row"><span class="key">Batches</span><span id="bot-status-batches">—</span></div>
-          <div class="row"><span class="key">Début</span><span id="bot-status-start">—</span></div>
-          <div class="row"><span class="key">Fin</span><span id="bot-status-end">—</span></div>
-          <div class="row"><span class="key">Pauses rate limit</span><span id="bot-status-ratelimit">—</span></div>
+          <div class="row"><span class="key" data-i18n="admin.bot.status">Statut</span><span id="bot-status-status">—</span></div>
+          <div class="row"><span class="key" data-i18n="admin.bot.status.profiles">Profils scrapés</span><span id="bot-status-profiles">—</span></div>
+          <div class="row"><span class="key" data-i18n="admin.bot.status.depth">Profondeur actuelle</span><span id="bot-status-depth">—</span></div>
+          <div class="row"><span class="key" data-i18n="admin.bot.status.batches">Batches</span><span id="bot-status-batches">—</span></div>
+          <div class="row"><span class="key" data-i18n="admin.bot.status.start">Début</span><span id="bot-status-start">—</span></div>
+          <div class="row"><span class="key" data-i18n="admin.bot.status.end">Fin</span><span id="bot-status-end">—</span></div>
+          <div class="row"><span class="key" data-i18n="admin.bot.status.ratelimit">Pauses rate limit</span><span id="bot-status-ratelimit">—</span></div>
           <div id="bot-status-errors" class="errors"></div>
         </div>
       </div>
 
       <div class="panel">
-        <h2>Activité du bot (graphique)</h2>
+        <h2 data-i18n="admin.bot.chart.title">Activité du bot (graphique)</h2>
         <div class="admin-chart-wrap">
-          <p id="admin-chart-empty" class="admin-empty-msg">Aucune donnée pour le moment. Démarrez le bot pour voir le graphique.</p>
+          <p id="admin-chart-empty" class="admin-empty-msg" data-i18n="admin.bot.chart.empty">Aucune donnée pour le moment. Démarrez le bot pour voir le graphique.</p>
           <canvas id="admin-bot-chart" style="display: none;"></canvas>
         </div>
       </div>
 
       <div class="panel">
-        <h2>Console du bot</h2>
+        <h2 data-i18n="admin.bot.console.title">Console du bot</h2>
         <div id="admin-bot-console" class="admin-console" data-placeholder="Aucune activité pour le moment. Démarrez le bot pour voir les logs." aria-live="polite"></div>
       </div>
 
       <div class="panel">
-        <h2>Stats globales (base de données)</h2>
-        <div id="admin-db-stats" class="bot-status">Chargement…</div>
+        <h2 data-i18n="admin.dbStats.title">Stats globales (base de données)</h2>
+        <div id="admin-db-stats" class="bot-status" data-i18n="admin.dbStats.loading">Chargement…</div>
       </div>
     </main>
 
@@ -108,13 +116,27 @@
           el.style.color = isError ? '#f56565' : 'var(--text-muted)';
         };
 
+        if (window.I18N && window.I18N.init) {
+          window.I18N.init();
+          // Adjust console placeholder when language changes
+          const consoleEl = document.getElementById('admin-bot-console');
+          if (consoleEl && window.I18N.t) {
+            consoleEl.setAttribute('data-placeholder', window.I18N.t('admin.bot.console.placeholder'));
+          }
+        }
+
         // Load settings
         api('/api/admin/settings').then((s) => {
-          document.getElementById('admin-steam-api-key').placeholder = s.steam_api_key ? '••••••••' : 'Clé API Steam';
+          const masked = (window.I18N && window.I18N.t && window.I18N.t('admin.settings.steamApiKey.placeholder.masked')) || '••••••••';
+          const empty = (window.I18N && window.I18N.t && window.I18N.t('admin.settings.steamApiKey.placeholder.empty')) || 'Clé API Steam';
+          document.getElementById('admin-steam-api-key').placeholder = s.steam_api_key ? masked : empty;
           document.getElementById('admin-start-steamid64').value = s.start_steamid64 || '';
           document.getElementById('admin-max-depth').value = s.max_depth || '2';
           document.getElementById('admin-max-profiles').value = s.max_profiles || '500';
-        }).catch(() => setMessage('Impossible de charger les paramètres', true));
+        }).catch(() => {
+          const msg = (window.I18N && window.I18N.t && window.I18N.t('admin.settings.loadError')) || 'Impossible de charger les paramètres';
+          setMessage(msg, true);
+        });
 
         // Save settings
         document.getElementById('admin-save-settings').onclick = () => {
@@ -128,7 +150,10 @@
               max_depth: document.getElementById('admin-max-depth').value,
               max_profiles: document.getElementById('admin-max-profiles').value,
             }),
-          }).then(() => setMessage('Paramètres enregistrés.')).catch((e) => setMessage('Erreur: ' + e.message, true));
+          }).then(() => {
+            const msg = (window.I18N && window.I18N.t && window.I18N.t('admin.settings.saved')) || 'Paramètres enregistrés.';
+            setMessage(msg);
+          }).catch((e) => setMessage('Erreur: ' + e.message, true));
         };
 
         // Bot controls

@@ -11,11 +11,12 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
+    <script src="i18n.js"></script>
   </head>
   <body>
     <header>
       <h1>Steam Ban Tracker</h1>
-      <p class="subtitle">
+      <p class="subtitle" data-i18n="home.subtitle">
         Suivi des bannissements VAC, Game et Community sur Steam
       </p>
       <div class="header-actions">
@@ -25,6 +26,7 @@
               type="text"
               id="search-input"
               placeholder="Rechercher (pseudo, SteamID, SteamID64, URL profil Steam)..."
+              data-i18n-placeholder="home.search.placeholder"
               autocomplete="off"
             />
             <button
@@ -43,8 +45,15 @@
             style="display: none"
           ></div>
         </div>
-        <button type="button" id="search-submit" class="btn-search-submit">Chercher</button>
-        <button id="refresh" class="btn-refresh">Actualiser</button>
+        <button type="button" id="search-submit" class="btn-search-submit" data-i18n="home.search.button">Chercher</button>
+        <button id="refresh" class="btn-refresh" data-i18n="home.refresh">Actualiser</button>
+        <div class="lang-switch">
+          <label for="lang-switcher" data-i18n="lang.label">Langue</label>
+          <select id="lang-switcher" data-lang-switcher>
+            <option value="fr" data-i18n="lang.fr">Français</option>
+            <option value="en" data-i18n="lang.en">English</option>
+          </select>
+        </div>
       </div>
     </header>
 
@@ -52,37 +61,37 @@
       <section class="stats-grid" id="stats-grid">
         <div class="stat-card">
           <span class="stat-value" id="total-profiles">—</span>
-          <span class="stat-label">Profils analysés</span>
+          <span class="stat-label" data-i18n="home.stats.totalProfiles">Profils analysés</span>
         </div>
         <div class="stat-card stat-warn">
           <span class="stat-value" id="vac-banned">—</span>
-          <span class="stat-label">VAC ban</span>
+          <span class="stat-label" data-i18n="home.stats.vac">VAC ban</span>
         </div>
         <div class="stat-card stat-warn">
           <span class="stat-value" id="game-banned">—</span>
-          <span class="stat-label">Game ban</span>
+          <span class="stat-label" data-i18n="home.stats.game">Game ban</span>
         </div>
         <div class="stat-card stat-warn">
           <span class="stat-value" id="community-banned">—</span>
-          <span class="stat-label">Community ban</span>
+          <span class="stat-label" data-i18n="home.stats.community">Community ban</span>
         </div>
       </section>
 
       <section class="tables">
         <div class="panel panel-chart">
-          <h2>Bans dans le temps</h2>
+          <h2 data-i18n="home.chart.title">Bans dans le temps</h2>
           <div class="chart-controls">
-            <label for="chart-view">Vue :</label>
+            <label for="chart-view" data-i18n="home.chart.view.label">Vue :</label>
             <select id="chart-view">
-              <option value="ban">Bans par date</option>
-              <option value="scrape">Par date de scraping</option>
+              <option value="ban" data-i18n="home.chart.view.ban">Bans par date</option>
+              <option value="scrape" data-i18n="home.chart.view.scrape">Par date de scraping</option>
             </select>
-            <label for="chart-year">Année :</label>
+            <label for="chart-year" data-i18n="home.chart.year.label">Année :</label>
             <select id="chart-year">
-              <option value="">Toutes</option>
+              <option value="" data-i18n="home.chart.year.all">Toutes</option>
             </select>
           </div>
-          <p class="chart-desc" id="chart-desc">
+          <p class="chart-desc" id="chart-desc" data-i18n="home.chart.desc.ban">
             Nombre de bans VAC par jour (date estimée du ban)
           </p>
           <div class="chart-actions">
@@ -91,33 +100,32 @@
               class="btn-reset-zoom"
               style="display: none"
             >
-              Réinitialiser zoom
+              <span data-i18n="home.chart.resetZoom">Réinitialiser zoom</span>
             </button>
-            <span class="chart-hint"
-              >💡 Molette pour zoomer, clic-glisser pour déplacer</span
-            >
+            <span class="chart-hint" data-i18n="home.chart.hint"
+              >💡 Molette pour zoomer, clic-glisser pour déplacer</span>
           </div>
           <div class="chart-wrap">
             <p id="chart-empty-msg" class="empty-msg" style="display: none">
-              Aucune donnée temporelle (scraper au moins une fois)
+              <span data-i18n="home.chart.empty">Aucune donnée temporelle (scraper au moins une fois)</span>
             </p>
             <canvas id="chart-bans-time"></canvas>
           </div>
         </div>
 
         <div class="panel">
-          <h2>Tous les bannis</h2>
+          <h2 data-i18n="home.table.allBanned">Tous les bannis</h2>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Avatar</th>
-                  <th>Pseudo</th>
-                  <th>SteamID64</th>
-                  <th>SteamID</th>
-                  <th>Type</th>
-                  <th>Détails</th>
-                  <th>Liens</th>
+                  <th data-i18n="home.table.col.avatar">Avatar</th>
+                  <th data-i18n="home.table.col.name">Pseudo</th>
+                  <th data-i18n="home.table.col.steamid64">SteamID64</th>
+                  <th data-i18n="home.table.col.steamid">SteamID</th>
+                  <th data-i18n="home.table.col.type">Type</th>
+                  <th data-i18n="home.table.col.details">Détails</th>
+                  <th data-i18n="home.table.col.links">Liens</th>
                 </tr>
               </thead>
               <tbody id="all-banned-table"></tbody>
@@ -127,18 +135,18 @@
         </div>
 
         <div class="panel">
-          <h2>VAC ban</h2>
+          <h2 data-i18n="home.table.vac">VAC ban</h2>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Avatar</th>
-                  <th>Pseudo</th>
-                  <th>SteamID</th>
-                  <th>Bans VAC</th>
-                  <th>Jours depuis dernier ban</th>
-                  <th>Date estimée</th>
-                  <th>Liens</th>
+                  <th data-i18n="home.table.col.avatar">Avatar</th>
+                  <th data-i18n="home.table.col.name">Pseudo</th>
+                  <th data-i18n="home.table.col.steamid">SteamID</th>
+                  <th data-i18n="home.table.col.vacCount">Bans VAC</th>
+                  <th data-i18n="home.table.col.daysSinceBan">Jours depuis dernier ban</th>
+                  <th data-i18n="home.table.col.estimatedDate">Date estimée</th>
+                  <th data-i18n="home.table.col.links">Liens</th>
                 </tr>
               </thead>
               <tbody id="vac-banned-table"></tbody>
@@ -148,17 +156,17 @@
         </div>
 
         <div class="panel">
-          <h2>Game ban</h2>
+          <h2 data-i18n="home.table.game">Game ban</h2>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Avatar</th>
-                  <th>Pseudo</th>
-                  <th>SteamID</th>
-                  <th>Nb bans</th>
-                  <th>Jours depuis dernier ban</th>
-                  <th>Liens</th>
+                  <th data-i18n="home.table.col.avatar">Avatar</th>
+                  <th data-i18n="home.table.col.name">Pseudo</th>
+                  <th data-i18n="home.table.col.steamid">SteamID</th>
+                  <th data-i18n="home.table.col.gameCount">Nb bans</th>
+                  <th data-i18n="home.table.col.daysSinceBan">Jours depuis dernier ban</th>
+                  <th data-i18n="home.table.col.links">Liens</th>
                 </tr>
               </thead>
               <tbody id="game-banned-table"></tbody>
@@ -168,15 +176,15 @@
         </div>
 
         <div class="panel">
-          <h2>Community ban</h2>
+          <h2 data-i18n="home.table.community">Community ban</h2>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Avatar</th>
-                  <th>Pseudo</th>
-                  <th>SteamID</th>
-                  <th>Liens</th>
+                  <th data-i18n="home.table.col.avatar">Avatar</th>
+                  <th data-i18n="home.table.col.name">Pseudo</th>
+                  <th data-i18n="home.table.col.steamid">SteamID</th>
+                  <th data-i18n="home.table.col.links">Liens</th>
                 </tr>
               </thead>
               <tbody id="community-banned-table"></tbody>
@@ -186,17 +194,17 @@
         </div>
 
         <div class="panel">
-          <h2>Profils récents</h2>
+          <h2 data-i18n="home.table.recentProfiles">Profils récents</h2>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Avatar</th>
-                  <th>Pseudo</th>
-                  <th>SteamID64</th>
-                  <th>Ban</th>
-                  <th>Analysé</th>
-                  <th>Liens</th>
+                  <th data-i18n="home.table.col.avatar">Avatar</th>
+                  <th data-i18n="home.table.col.name">Pseudo</th>
+                  <th data-i18n="home.table.col.steamid64">SteamID64</th>
+                  <th data-i18n="home.table.col.ban">Ban</th>
+                  <th data-i18n="home.table.col.scrapedAt">Analysé</th>
+                  <th data-i18n="home.table.col.links">Liens</th>
                 </tr>
               </thead>
               <tbody id="profiles-table"></tbody>
@@ -207,7 +215,7 @@
       </section>
     </main>
 
-    <footer>made by Drago</footer>
+    <footer data-i18n="home.footer">made by Drago</footer>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>

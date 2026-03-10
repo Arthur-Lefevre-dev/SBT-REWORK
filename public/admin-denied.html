@@ -15,19 +15,29 @@
       .denied-page .btn-home { display: inline-block; padding: 0.75rem 1.5rem; background: var(--accent); color: var(--bg); text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 1rem; }
       .denied-page .btn-home:hover { background: var(--accent-hover); }
     </style>
+    <script src="/i18n.js"></script>
   </head>
   <body>
     <header>
       <h1><a href="/" class="header-home-link">Steam Ban Tracker</a></h1>
-      <p class="subtitle">Panel admin</p>
+      <p class="subtitle" data-i18n="admin.denied.subtitle">Panel admin</p>
+      <div class="header-actions">
+        <div class="lang-switch">
+          <label for="denied-lang-switcher" data-i18n="lang.label">Langue</label>
+          <select id="denied-lang-switcher" data-lang-switcher>
+            <option value="fr" data-i18n="lang.fr">Français</option>
+            <option value="en" data-i18n="lang.en">English</option>
+          </select>
+        </div>
+      </div>
     </header>
 
     <main class="denied-page">
-      <h1>Accès refusé</h1>
-      <p class="message">
+      <h1 data-i18n="admin.denied.title">Accès refusé</h1>
+      <p class="message" data-i18n="admin.denied.message">
         Votre compte Steam n’est pas autorisé à accéder au panel admin. Seuls les comptes figurant dans la liste des administrateurs peuvent s’y connecter.
       </p>
-      <a href="/" class="btn-home">Retour à l’accueil</a>
+      <a href="/" class="btn-home" data-i18n="admin.denied.back">Retour à l’accueil</a>
     </main>
   </body>
 </html>
