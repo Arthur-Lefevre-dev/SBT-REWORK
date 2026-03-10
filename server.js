@@ -1,13 +1,15 @@
 /**
- * Web server for Steam ban tracking dashboard
+ * Web server for Steam ban tracking dashboard + admin panel
  * Run: npm run server
  */
 
 import 'dotenv/config';
+import http from 'http';
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { WebSocketServer } from 'ws';
 import {
   getStats,
   getVacBanned,
@@ -29,16 +31,39 @@ import {
   getBanStatsYears,
   getBanStatsByBanDate,
   getBanStatsYearsByBanDate,
-  getDbBackend
+  getDbBackend,
+  getSetting,
+  setSetting,
 } from './src/db/index.js';
 import { resolveVanityUrl } from './src/steam/api.js';
+import {
+  getSessionMiddleware,
+  getSteamAuth,
+  isAdmin,
+  requireAdmin,
+  requireAdminPage,
+} from './src/admin/auth.js';
+import { createToken, consumeToken } from './src/admin/ws-tokens.js';
+import {
+  getBotState,
+  setBroadcast,
+  startBot,
+  pauseBot,
+  resumeBot,
+  stopBot,
+} from './src/admin/bot-runner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
+app.use(express.json());
+app.use(getSessionMiddleware());
+
 // Verify DB connection before accepting requests; then start server
 const dbBackend = getDbBackend();
+let httpServer = null;
+
 async function start() {
   try {
     await getStats();
@@ -53,8 +78,50 @@ async function start() {
     }
     process.exit(1);
   }
-  app.listen(PORT, () => {
+
+  const adminClients = new Set();
+  setBroadcast(() => {
+    const payload = JSON.stringify(getBotState());
+    adminClients.forEach((ws) => {
+      if (ws.readyState === 1) ws.send(payload);
+    });
+  });
+
+  httpServer = http.createServer(app);
+  const wss = new WebSocketServer({ noServer: true });
+  httpServer.on('upgrade', (req, socket, head) => {
+    const url = new URL(req.url || '', `http://${req.headers.host}`);
+    if (url.pathname !== '/admin/ws') {
+      socket.destroy();
+      return;
+    }
+    const token = url.searchParams.get('token');
+    const steamId = token ? consumeToken(token) : null;
+    if (!steamId || !isAdmin(steamId)) {
+      socket.destroy();
+      return;
+    }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
+    });
+  });
+  wss.on('connection', (ws) => {
+    adminClients.add(ws);
+    ws.send(JSON.stringify(getBotState()));
+    ws.on('message', (data) => {
+      try {
+        const msg = JSON.parse(data.toString());
+        if (msg.cmd === 'pause') pauseBot();
+        else if (msg.cmd === 'resume') resumeBot();
+        else if (msg.cmd === 'stop') stopBot();
+      } catch (_) {}
+    });
+    ws.on('close', () => adminClients.delete(ws));
+  });
+
+  httpServer.listen(PORT, () => {
     console.log(`Interface stats: http://localhost:${PORT}`);
+    if (process.env.ADMIN_STEAM_IDS) console.log('Admin panel: http://localhost:' + PORT + '/admin');
   });
 }
 
@@ -67,6 +134,148 @@ app.get('/profile/:steamid64', (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, staticDir)));
+
+// ----- Admin: Steam OpenID login -----
+const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+
+// Public config for login page (e.g. Turnstile site key)
+app.get('/api/admin/login-config', (req, res) => {
+  res.json({ turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '' });
+});
+
+// POST /admin/login: verify Turnstile then return Steam redirect URL (used when Turnstile is enabled)
+app.post('/admin/login', async (req, res) => {
+  try {
+    const token = req.body?.turnstile_token || req.body?.['cf-turnstile-response'];
+    const secret = process.env.TURNSTILE_SECRET_KEY;
+
+    if (secret && token) {
+      const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          secret,
+          response: token,
+          ...(req.ip && { remoteip: req.ip }),
+        }),
+      });
+      const data = await verifyRes.json();
+      if (!data.success) {
+        return res.status(400).json({ error: 'Vérification Turnstile échouée', errorCodes: data['error-codes'] });
+      }
+    } else if (secret && !token) {
+      return res.status(400).json({ error: 'Captcha requis' });
+    }
+
+    const steam = getSteamAuth(baseUrl);
+    const redirectUrl = await steam.getRedirectUrl();
+    res.json({ redirectUrl });
+  } catch (err) {
+    res.status(500).json({ error: 'Steam login error: ' + (err?.message || err) });
+  }
+});
+
+app.get('/admin/login', async (req, res) => {
+  try {
+    const steam = getSteamAuth(baseUrl);
+    const redirectUrl = await steam.getRedirectUrl();
+    res.redirect(redirectUrl);
+  } catch (err) {
+    res.status(500).send('Steam login error: ' + (err?.message || err));
+  }
+});
+app.get('/admin/callback', async (req, res) => {
+  try {
+    const steam = getSteamAuth(baseUrl);
+    const user = await steam.authenticate(req);
+    req.session.steamId = user.steamid;
+    res.redirect('/admin');
+  } catch (err) {
+    res.redirect('/admin?error=auth');
+  }
+});
+app.get('/admin/logout', (req, res) => {
+  req.session.destroy(() => res.redirect('/admin'));
+});
+
+app.get('/admin/denied', (req, res) => {
+  res.sendFile(path.join(__dirname, staticDir, 'admin-denied.html'));
+});
+
+app.get('/admin', (req, res) => {
+  if (!req.session?.steamId) {
+    return res.sendFile(path.join(__dirname, staticDir, 'admin-login.html'));
+  }
+  if (!isAdmin(req.session.steamId)) {
+    return res.redirect('/admin/denied');
+  }
+  res.sendFile(path.join(__dirname, staticDir, 'admin.html'));
+});
+
+// ----- Admin API (require admin session) -----
+app.get('/api/admin/ws-token', requireAdmin, (req, res) => {
+  const token = createToken(req.session.steamId);
+  res.json({ token });
+});
+
+app.get('/api/admin/settings', requireAdmin, async (req, res) => {
+  try {
+    const steamApiKey = await getSetting(undefined, 'steam_api_key');
+    const startSteamid64 = await getSetting(undefined, 'start_steamid64');
+    const maxDepth = await getSetting(undefined, 'max_depth');
+    const maxProfiles = await getSetting(undefined, 'max_profiles');
+    res.json({
+      steam_api_key: steamApiKey || '',
+      start_steamid64: startSteamid64 || '',
+      max_depth: maxDepth || '2',
+      max_profiles: maxProfiles || '500',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err?.message || err });
+  }
+});
+
+app.put('/api/admin/settings', requireAdmin, async (req, res) => {
+  try {
+    const { steam_api_key, start_steamid64, max_depth, max_profiles } = req.body || {};
+    if (steam_api_key !== undefined) await setSetting(undefined, 'steam_api_key', steam_api_key);
+    if (start_steamid64 !== undefined) await setSetting(undefined, 'start_steamid64', start_steamid64);
+    if (max_depth !== undefined) await setSetting(undefined, 'max_depth', String(max_depth));
+    if (max_profiles !== undefined) await setSetting(undefined, 'max_profiles', String(max_profiles));
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err?.message || err });
+  }
+});
+
+app.get('/api/admin/bot/state', requireAdmin, (req, res) => {
+  res.json(getBotState());
+});
+
+app.post('/api/admin/bot/start', requireAdmin, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const result = await startBot({
+      steamApiKey: body.steam_api_key,
+      startSteamId64: body.start_steamid64,
+      maxDepth: body.max_depth != null ? parseInt(body.max_depth, 10) : undefined,
+      maxProfiles: body.max_profiles != null ? parseInt(body.max_profiles, 10) : undefined,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err?.message || err });
+  }
+});
+
+app.post('/api/admin/bot/pause', requireAdmin, (req, res) => {
+  res.json({ ok: pauseBot() });
+});
+app.post('/api/admin/bot/resume', requireAdmin, (req, res) => {
+  res.json({ ok: resumeBot() });
+});
+app.post('/api/admin/bot/stop', requireAdmin, (req, res) => {
+  res.json({ ok: stopBot() });
+});
 
 // API: summary stats
 app.get('/api/stats', async (req, res) => {

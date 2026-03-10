@@ -80,6 +80,13 @@ Opens **http://localhost:3000** (or **http://localhost:5173** if using Vite dev)
 
 On startup, the server prints `DB: sqlite — Connexion OK` or `DB: supabase — Connexion OK`; on failure, it suggests what to check (`.env`, Supabase key, schema).
 
+#### Admin panel (optional)
+
+- **URL**: **http://localhost:3000/admin** (when `ADMIN_STEAM_IDS` is set in `.env`).
+- **Auth**: Steam OpenID. Only SteamID64 listed in `ADMIN_STEAM_IDS` (comma-separated) can access the panel. Set `SESSION_SECRET` in production.
+- **Features**: change Steam API key (stored in DB), set default starting profile and limits, **start / pause / resume / stop** the scraper from the UI, view **live stats** (profiles scraped, depth, batches, errors) via **WebSocket**. DB stats (profiles, friendships, bans) are shown on the page.
+- **WebSocket**: the panel connects to `/admin/ws` with a short-lived token; the bot pushes state in real time so you see progress and can pause/stop without refreshing.
+
 #### Frontend with Vite (optional)
 
 - **Dev** (hot reload): run `npm run dev` or `npm run Server` — starts **both** the Express API (port 3000) and Vite (port 5173). Open **http://localhost:5173**; Vite proxies `/api` and `/profile` to the API.

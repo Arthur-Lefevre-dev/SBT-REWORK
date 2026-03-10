@@ -15,6 +15,8 @@ export default {
       input: {
         main: path.join(__dirname, 'public', 'index.html'),
         profile: path.join(__dirname, 'public', 'profile.html'),
+        admin: path.join(__dirname, 'public', 'admin.html'),
+        'admin-login': path.join(__dirname, 'public', 'admin-login.html'),
       },
     },
   },

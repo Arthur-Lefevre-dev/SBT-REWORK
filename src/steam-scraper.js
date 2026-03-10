@@ -170,6 +170,8 @@ function popBatch(queue, visited, knownIds, batchSize, maxProfiles, maxDepth) {
  * @param {number} options.saveInterval
  * @param {Function} options.onSave
  * @param {boolean} options.verbose
+ * @param {{ paused: boolean, aborted: boolean, setStats: (s: object) => void }} options.controller - optional: pause/abort and live stats for admin panel
+ * @param {(msg: string) => void} options.onLog - optional: callback for each log line (e.g. admin console)
  */
 export async function scrape(apiKey, startSteamId64, options = {}) {
   const {
@@ -182,6 +184,8 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
     saveInterval = 0,
     onSave = null,
     verbose = true,
+    controller = null,
+    onLog = null,
   } = options;
 
   const knownIds = knownIdsOption instanceof Set ? knownIdsOption : new Set();
@@ -196,11 +200,19 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
   const MAX_PENDING_SAVES = 3; // Cap queue to avoid heap growth from long promise chains
 
   const log = verbose ? (...a) => console.log(...a) : () => {};
+  const out = (msg) => {
+    log(msg);
+    if (onLog && typeof msg === 'string') onLog(msg);
+  };
 
   while (
     queue.length > 0 &&
     (maxProfiles === Infinity || visited.size < maxProfiles)
   ) {
+    if (controller?.aborted) break;
+    while (controller?.paused) await sleep(1000);
+    if (controller?.aborted) break;
+
     // Pop N batches in parallel (each batch is processed independently)
     const batches = [];
     for (let p = 0; p < parallelBatches; p++) {
@@ -217,8 +229,16 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
     if (batches.length === 0) break;
 
     const totalInBatches = batches.reduce((s, b) => s + b.length, 0);
-    log(
-      `[${visited.size}${maxProfiles === Infinity ? "" : "/" + maxProfiles}] ${batches.length} batch(es) × ${totalInBatches} profiles (depth ${batches[0][0].depth})`,
+    const currentDepth = batches[0]?.[0]?.depth ?? 0;
+    controller?.setStats?.({
+      profilesCount: visited.size,
+      currentDepth,
+      batchCount: batchRoundIndex + 1,
+      lastSaveCount,
+      pendingSaves: pendingSaveCount,
+    });
+    out(
+      `[${visited.size}${maxProfiles === Infinity ? "" : "/" + maxProfiles}] ${batches.length} batch(es) × ${totalInBatches} profiles (depth ${currentDepth})`,
     );
 
     try {
@@ -266,20 +286,20 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
         pendingSaveCount += 1;
         const queueLabel =
           pendingSaveCount > 1 ? ` (file: ${pendingSaveCount} en attente)` : "";
-        log(
+        out(
           `  → Sauvegarde DB (${count} profils) en arrière-plan${queueLabel}`,
         );
         const doSave = () =>
           onSave(graph)
             .then(() => {
               pendingSaveCount -= 1;
-              log(
+              out(
                 `  → Sauvegarde DB OK (${count} profils) — file: ${pendingSaveCount} en attente`,
               );
             })
             .catch((err) => {
               pendingSaveCount -= 1;
-              log(
+              out(
                 `  → Sauvegarde DB échouée: ${err?.message || err} — file: ${pendingSaveCount} en attente`,
               );
             });
@@ -293,10 +313,12 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
 
       await sleep(delayMs);
     } catch (err) {
+      controller?.setStats?.({ lastError: err?.message || String(err) });
       const rateLimited = isSteamRateLimitError(err);
       if (rateLimited) {
+        controller?.setStats?.({ rateLimitPauses: 1 });
         const pauseMs = 90000; // 90s pause then retry batch
-        log(`  → Rate limit Steam API, pause ${pauseMs / 1000}s puis retry...`);
+        out(`  → Rate limit Steam API, pause ${pauseMs / 1000}s puis retry...`);
         await sleep(pauseMs);
         for (const batch of batches) {
           for (const { steamId64, depth } of batch) {
@@ -305,7 +327,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
           }
         }
       } else {
-        log("Error batch:", err.message);
+        out("Error batch: " + err.message);
         for (const batch of batches) {
           for (const { steamId64 } of batch) visited.delete(steamId64);
         }
@@ -315,7 +337,7 @@ export async function scrape(apiKey, startSteamId64, options = {}) {
 
   if (pendingSavePromise) {
     await pendingSavePromise.catch((err) => {
-      log(`  → Sauvegarde DB (finale) échouée: ${err?.message || err}`);
+      out(`  → Sauvegarde DB (finale) échouée: ${err?.message || err}`);
     });
   }
   return graph;

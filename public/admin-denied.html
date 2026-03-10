@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accès refusé — Steam Ban Tracker</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+      .denied-page { max-width: 480px; margin: 4rem auto; padding: 2rem; text-align: center; }
+      .denied-page h1 { margin-bottom: 0.5rem; }
+      .denied-page .message { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); border-radius: var(--radius); padding: 1.25rem; margin: 1.5rem 0; font-size: 0.95rem; }
+      .denied-page .btn-home { display: inline-block; padding: 0.75rem 1.5rem; background: var(--accent); color: var(--bg); text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 1rem; }
+      .denied-page .btn-home:hover { background: var(--accent-hover); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1><a href="/" class="header-home-link">Steam Ban Tracker</a></h1>
+      <p class="subtitle">Panel admin</p>
+    </header>
+
+    <main class="denied-page">
+      <h1>Accès refusé</h1>
+      <p class="message">
+        Votre compte Steam n’est pas autorisé à accéder au panel admin. Seuls les comptes figurant dans la liste des administrateurs peuvent s’y connecter.
+      </p>
+      <a href="/" class="btn-home">Retour à l’accueil</a>
+    </main>
+  </body>
+</html>

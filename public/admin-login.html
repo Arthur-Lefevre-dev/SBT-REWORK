@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connexion admin — Steam Ban Tracker</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="preconnect" href="https://challenges.cloudflare.com" />
+    <style>
+      .login-page { max-width: 400px; margin: 4rem auto; padding: 2rem; text-align: center; }
+      .login-page h1 { margin-bottom: 0.5rem; }
+      .login-page p { color: var(--text-muted); margin-bottom: 1.5rem; }
+      .login-page .btn-login { display: inline-block; padding: 0.75rem 1.5rem; background: var(--accent); color: var(--bg); text-decoration: none; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; font-family: inherit; }
+      .login-page .btn-login:hover { background: var(--accent-hover); }
+      .login-page .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+      .login-page .turnstile-wrap { display: flex; justify-content: center; margin: 1.25rem 0; min-height: 65px; }
+      .login-page .error { color: #f56565; margin-top: 1rem; }
+    </style>
+  </head>
+  <body>
+    <main class="login-page">
+      <h1>Steam Ban Tracker</h1>
+      <p>Panel admin — connectez-vous avec Steam</p>
+
+      <div id="login-with-turnstile" style="display: none;">
+        <div id="turnstile-container" class="turnstile-wrap"></div>
+        <button type="button" id="btn-login-steam" class="btn-login" disabled>Se connecter avec Steam</button>
+      </div>
+      <div id="login-without-turnstile" style="display: none;">
+        <a href="/admin/login" class="btn-login">Se connecter avec Steam</a>
+      </div>
+
+      <p id="login-error" class="error"></p>
+    </main>
+
+    <script>
+      (function () {
+        const errorEl = document.getElementById('login-error');
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('error') === 'auth') {
+          errorEl.textContent = 'Échec de l’authentification Steam. Réessayez.';
+        }
+
+        function setError(msg) {
+          errorEl.textContent = msg || '';
+        }
+
+        fetch('/api/admin/login-config')
+          .then((r) => r.json())
+          .then((config) => {
+            if (config.turnstileSiteKey) {
+              document.getElementById('login-without-turnstile').style.display = 'none';
+              document.getElementById('login-with-turnstile').style.display = 'block';
+
+              const script = document.createElement('script');
+              script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileReady';
+              script.async = true;
+              script.defer = true;
+              document.head.appendChild(script);
+
+              window.onTurnstileReady = function () {
+                const widgetId = turnstile.render('#turnstile-container', {
+                  sitekey: config.turnstileSiteKey,
+                  theme: 'dark',
+                  size: 'normal',
+                  callback: function (token) {
+                    document.getElementById('btn-login-steam').disabled = false;
+                  },
+                  'error-callback': function () {
+                    document.getElementById('btn-login-steam').disabled = true;
+                  },
+                  'expired-callback': function () {
+                    document.getElementById('btn-login-steam').disabled = true;
+                  },
+                });
+
+                document.getElementById('btn-login-steam').onclick = function () {
+                  const token = turnstile.getResponse(widgetId);
+                  if (!token) {
+                    setError('Veuillez valider le captcha.');
+                    return;
+                  }
+                  setError('');
+                  this.disabled = true;
+                  fetch('/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ turnstile_token: token }),
+                  })
+                    .then((r) => r.json())
+                    .then((data) => {
+                      if (data.redirectUrl) {
+                        window.location.href = data.redirectUrl;
+                      } else {
+                        setError(data.error || 'Erreur');
+                        document.getElementById('btn-login-steam').disabled = false;
+                      }
+                    })
+                    .catch((err) => {
+                      setError(err.message || 'Erreur réseau');
+                      document.getElementById('btn-login-steam').disabled = false;
+                    });
+                };
+              };
+            } else {
+              document.getElementById('login-with-turnstile').style.display = 'none';
+              document.getElementById('login-without-turnstile').style.display = 'block';
+            }
+          })
+          .catch(() => {
+            document.getElementById('login-with-turnstile').style.display = 'none';
+            document.getElementById('login-without-turnstile').style.display = 'block';
+          });
+      })();
+    </script>
+  </body>
+</html>

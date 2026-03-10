@@ -74,6 +74,27 @@ function initSchema(database) {
     CREATE INDEX IF NOT EXISTS idx_friendships_a ON friendships(steamid64_a);
     CREATE INDEX IF NOT EXISTS idx_friendships_b ON friendships(steamid64_b);
   `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+}
+
+export function getSetting(database, key) {
+  const row = (database || getDb())
+    .prepare("SELECT value FROM settings WHERE key = ?")
+    .get(String(key));
+  return row?.value ?? null;
+}
+
+export function setSetting(database, key, value) {
+  const db = database || getDb();
+  db.prepare(
+    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+  ).run(String(key), value == null ? "" : String(value));
 }
 
 export function saveProfile(database, profile) {

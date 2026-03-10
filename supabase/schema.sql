@@ -33,10 +33,17 @@ CREATE TABLE IF NOT EXISTS friendships (
 CREATE INDEX IF NOT EXISTS idx_friendships_a ON friendships(steamid64_a);
 CREATE INDEX IF NOT EXISTS idx_friendships_b ON friendships(steamid64_b);
 
+-- Settings table (admin: Steam API key override, default starting profile, etc.)
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+
 -- Row Level Security: enabled on both tables. Backend using SUPABASE_SERVICE_ROLE_KEY bypasses RLS.
 -- Without policies, anon/authenticated roles have no access (secure by default).
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friendships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
 -- Optional: allow public read-only for dashboard (uncomment if you use anon key from a client).
 -- CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);

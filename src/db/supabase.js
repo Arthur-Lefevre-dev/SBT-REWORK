@@ -395,4 +395,13 @@ export async function getFriendshipPairs(limit = 500) {
   }));
 }
 
+export async function getSetting(database, key) {
+  const { data } = await sb().from('settings').select('value').eq('key', String(key)).maybeSingle();
+  return data?.value ?? null;
+}
+
+export async function setSetting(database, key, value) {
+  await sb().from('settings').upsert({ key: String(key), value: value == null ? '' : String(value) }, { onConflict: 'key' });
+}
+
 export { isSupabaseConfigured };

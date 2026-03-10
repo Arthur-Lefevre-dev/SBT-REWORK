@@ -151,4 +151,15 @@ export async function getFriendshipPairs(database, limit) {
   return Promise.resolve(sqlite.getFriendshipPairs(database || sqlite.getDb(), limit));
 }
 
+export async function getSetting(database, key) {
+  if (useSupabase()) return supabase.getSetting(database, key);
+  return Promise.resolve(sqlite.getSetting(database || sqlite.getDb(), key));
+}
+
+export async function setSetting(database, key, value) {
+  if (useSupabase()) return supabase.setSetting(database, key, value);
+  sqlite.setSetting(database || sqlite.getDb(), key, value);
+  return Promise.resolve();
+}
+
 export { isSupabaseConfigured } from '../../lib/supabase.js';
