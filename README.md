@@ -1,9 +1,8 @@
 # Steam Ban Tracker
 
-This project is a rework of my [Steam Ban Tracker](https://github.com/Arthur-Lefevre-dev/STEAM-BAN-TRACKER) project, but with a better architecture and more features.
-This project is still a work in progress, but it is already usable, please report any issues you find. And use it by respecting the [Steam Web API Terms of Use](https://steamcommunity.com/dev/apiterms) and Steam Terms of Service.
+This project is a rework of my [Steam Ban Tracker](https://github.com/Arthur-Lefevre-dev/STEAM-BAN-TRACKER) project, with a better architecture and more features. It is still a work in progress; please report any issues. Use it in accordance with the [Steam Web API Terms of Use](https://steamcommunity.com/dev/apiterms) and Steam Terms of Service.
 
-Translations is coming soon. Sorry is you don't understand the language, you can use the English version soon.
+Translations are coming soon.
 
 Tool to **track Steam bans** (VAC, Game, Community). Profiles are discovered through the friends network from a starting profile. Web interface with dashboard, charts, and enriched profile pages (Faceit, Leetify).
 
@@ -33,14 +32,22 @@ FACEIT_API_KEY=your_faceit_key
 # Optional: Leetify (CS stats, Premier, winrate)
 LEETIFY_API_KEY=your_leetify_key
 
-# Optional: Decodo proxy for scraping (Steam Community HTML only; Steam Web API stays direct to avoid 403)
+# Optional: Decodo proxy for scraping (Steam Community HTML; Steam Web API stays direct)
 # gate.decodo.com:7000 — set both to enable
 # DECODO_PROXY_USER=your_decodo_username
 # DECODO_PROXY_PASSWORD=your_decodo_password
 
+# Admin panel (optional)
+# ADMIN_STEAM_IDS=76561198011775992,76561197982036918
+# SESSION_SECRET=change-this-in-production-random-string
+# BASE_URL=https://your-domain.com
+# ENCRYPTION_KEY=optional-32-char-secret-for-encrypting-steam-api-key-in-db
+# Cloudflare Turnstile (captcha on admin login)
+# TURNSTILE_SITE_KEY=your_site_key
+# TURNSTILE_SECRET_KEY=your_secret_key
+
 # Supabase (only when DATABASE=supabase)
 # Run supabase/schema.sql in the SQL Editor first.
-# Use Secret key (new format) or service_role JWT. With RLS, use the backend key.
 # SUPABASE_URL=http://127.0.0.1:54321
 # SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxx
 ```
@@ -52,7 +59,7 @@ LEETIFY_API_KEY=your_leetify_key
 ```bash
 # Run scraper (checks DB connection on startup)
 npm start
-# Or with args: node index.js [steamId64] [depth] [max profiles]
+# Or: node index.js [steamId64] [depth] [max profiles]
 
 # Example: depth 2, max 100 profiles
 node index.js 76561198011775992 2 100
@@ -64,8 +71,8 @@ node index.js 76561198011775992 0 0
 - **Friends** are used to discover new profiles; only scraped profiles are stored in the database.
 - **Database saves** run in the background (every 800 profiles) so the crawl is not blocked.
 - On Steam **rate limit** (429/503), automatic retry with backoff, then a 90s pause if needed.
-- **Decodo proxy** (optional): set `DECODO_PROXY_USER` and `DECODO_PROXY_PASSWORD` in `.env` to route **Steam Community** (profile HTML) traffic via [Decodo](https://decodo.com) (gate.decodo.com:7000). Steam Web API calls stay direct (Steam often returns 403 for proxy IPs). Connection is verified at startup; IP changes are logged during scraping.
-- **Memory**: `npm start` / `npm run scrape` use a 8 GB Node heap by default. For 50k+ profiles, if you still hit "JavaScript heap out of memory", run `node --max-old-space-size=16384 index.js` (16 GB) or set `NODE_OPTIONS=--max-old-space-size=16384`.
+- **Decodo proxy** (optional): set `DECODO_PROXY_USER` and `DECODO_PROXY_PASSWORD` in `.env` to route **Steam Community** (profile HTML) traffic via [Decodo](https://decodo.com) (gate.decodo.com:7000). Steam Web API calls stay direct. Connection is verified at startup; IP changes and proxy location (geo) are logged during scraping.
+- **Memory**: `npm start` / `npm run scrape` use an 8 GB Node heap by default. For 50k+ profiles, use `node --max-old-space-size=16384 index.js` or `NODE_OPTIONS=--max-old-space-size=16384` if you hit heap limits.
 
 ### Web interface
 
@@ -73,7 +80,7 @@ node index.js 76561198011775992 0 0
 npm run server
 ```
 
-Opens **http://localhost:3000** (or **http://localhost:5173** if using Vite dev):
+Opens **http://localhost:3000** (or **http://localhost:5173** when using Vite dev):
 
 - **Dashboard**: global stats, paginated lists (VAC, Game, Community, all banned), profile search, ban trend charts (by scrape date or by ban date).
 - **Profile page** (`/profile/:steamid64`): display name, avatar, friends (count, % banned), bans (VAC, Game, Community), **Faceit ELO** (if `FACEIT_API_KEY` is set), **Leetify stats** (if `LEETIFY_API_KEY` is set) — winrate, matches, Premier rank, rating bars, **banned friends list** (sort by date / ban type), “Data provided by Leetify” attribution.
@@ -82,56 +89,66 @@ On startup, the server prints `DB: sqlite — Connexion OK` or `DB: supabase —
 
 #### Admin panel (optional)
 
-- **URL**: **http://localhost:3000/admin** (when `ADMIN_STEAM_IDS` is set in `.env`).
-- **Auth**: Steam OpenID. Only SteamID64 listed in `ADMIN_STEAM_IDS` (comma-separated) can access the panel. Set `SESSION_SECRET` in production.
-- **Features**: change Steam API key (stored in DB), set default starting profile and limits, **start / pause / resume / stop** the scraper from the UI, view **live stats** (profiles scraped, depth, batches, errors) via **WebSocket**. DB stats (profiles, friendships, bans) are shown on the page.
-- **WebSocket**: the panel connects to `/admin/ws` with a short-lived token; the bot pushes state in real time so you see progress and can pause/stop without refreshing.
+- **URL**: **http://localhost:3000/admin** when `ADMIN_STEAM_IDS` is set in `.env`.
+- **Auth**: Steam OpenID. Only SteamID64 listed in `ADMIN_STEAM_IDS` (comma-separated) can access. Set `SESSION_SECRET` in production. Set `BASE_URL` in production for Steam redirect.
+- **Captcha**: optional [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) on the login page; set `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`. Without them, login is a direct Steam link.
+- **Access denied**: users who sign in with Steam but are not in `ADMIN_STEAM_IDS` see a dedicated “Access denied” page with a link back to the home page.
+- **Settings**: Steam API key (stored **encrypted** in DB when set via the panel), default starting profile, max depth, max profiles. Optional `ENCRYPTION_KEY` in `.env` for the API key cipher (defaults to `SESSION_SECRET`).
+- **Bot control**: start / pause / resume / stop the scraper from the UI.
+- **Live stats**: WebSocket pushes state in real time — status, profiles scraped, depth, batches, errors, rate-limit pauses.
+- **Bot console**: live log of scraper activity (batches, DB saves, rate limits, errors) and **proxy changes** with IP and geo location when using Decodo proxy.
+- **Activity chart**: line chart of profiles scraped and rate-limit pauses over time during a run.
 
 #### Frontend with Vite (optional)
 
-- **Dev** (hot reload): run `npm run dev` or `npm run Server` — starts **both** the Express API (port 3000) and Vite (port 5173). Open **http://localhost:5173**; Vite proxies `/api` and `/profile` to the API.
-  WIP: Vite dev server is not working properly, so we need to use the Express server to test the frontend.
-- **Build**: `npm run build` — outputs to `dist/` and runs `scripts/copy-img-to-dist.cjs` to copy **all** of `public/img` to `dist/img` (so every image is available under `/img/`). The Express server automatically serves `dist/` when present.
-- **Preview**: `npm run preview` — serves only the static `dist/` at port 5173. **No API and no `.env`** (Vite preview does not run Node/Express). To test the full app with API and `.env`, run `npm run server` after a build and open **http://localhost:3000** (serves `dist/` and uses `.env`).
+- **Dev** (hot reload): `npm run dev` — starts the Express API (port 3000) and Vite (port 5173). Open **http://localhost:5173**; Vite proxies `/api` and `/profile` to the API.  
+  Note: Vite dev server may have quirks; for full testing use the Express server.
+- **Build**: `npm run build` — outputs to `dist/` and copies `public/img` to `dist/img`. The Express server serves `dist/` when present.
+- **Preview**: `npm run preview` — serves only static `dist/` on port 5173 (no API, no `.env`). To test the full app with API and `.env`, run `npm run server` after a build and open **http://localhost:3000**.
 
 ### Other commands
 
 ```bash
-npm run Scrape [steamId64] [depth] [max profiles] # Scrape profiles from a starting profile
-npm run Server                                    # Start web server (serves public/ or dist/ if present; uses .env)
-npm run Dev                                       # Vite dev server (port 5173, proxy to API)
-npm run Build                                     # Vite build → dist/ + copy public/img → dist/img
-npm run Preview                                   # Static only: serve dist/ with Vite (no API, no .env)
-npm run Migrate:sqlite-to-supabase                # Migrate SQLite data to Supabase
+npm run scrape              # Same as npm start
+npm run server              # Web server (public/ or dist/, uses .env)
+npm run dev                 # Vite dev + API
+npm run build               # Vite build → dist/ + copy img
+npm run preview             # Static only (no API)
+npm run migrate:sqlite-to-supabase   # Migrate SQLite data to Supabase
 ```
 
 ## Project structure
 
 ```
-├── index.js              # Scrape entry point (npm start)
-├── server.js             # Web server (npm run server)
+├── index.js                 # Scrape entry point (npm start)
+├── server.js                # Web server (npm run server)
 ├── lib/
-│   └── supabase.js      # Supabase client (when DATABASE=supabase)
+│   └── supabase.js          # Supabase client (when DATABASE=supabase)
 ├── src/
-│   ├── db/              # Database layer
-│   │   ├── index.js     # Facade (SQLite/Supabase via .env)
+│   ├── admin/               # Admin panel
+│   │   ├── auth.js          # Steam OpenID, session, requireAdmin
+│   │   ├── bot-runner.js    # Start/pause/stop scraper, logs, broadcast
+│   │   └── ws-tokens.js     # Short-lived tokens for /admin/ws
+│   ├── db/
+│   │   ├── index.js         # Facade (SQLite/Supabase, secret settings)
+│   │   ├── secret-settings.js  # Encrypt/decrypt steam_api_key at rest
 │   │   ├── sqlite.js
 │   │   └── supabase.js
-│   ├── steam/           # Steam API and HTML scraping
-│   │   ├── api.js       # Steam Web API (summaries, bans, friends, vanity) + rate limit retry
+│   ├── steam/
+│   │   ├── api.js           # Steam Web API + rate limit retry
 │   │   └── profile-scrape.js   # Game ban days from profile page
-│   ├── proxy.js         # Optional Decodo proxy config (env: DECODO_PROXY_*)
-│   ├── steam-scraper.js # Crawl orchestration (batches, background saves)
+│   ├── proxy.js             # Decodo proxy, IP check, geo for logs
+│   ├── steam-scraper.js     # Crawl (batches, saves, onLog, controller)
 │   ├── friendship-graph.js
-│   └── stats.js         # Graph stats (computeStats, printStats)
+│   └── stats.js             # Graph stats
 ├── scripts/
 │   ├── migrate-sqlite-to-supabase.js
-│   └── stats-from-file.js
+│   └── copy-img-to-dist.cjs
 ├── supabase/
-│   └── schema.sql       # Run in Supabase SQL Editor (tables + RLS)
-├── public/              # Frontend source (dashboard, profile page, assets)
-├── dist/                # Vite build output (after npm run build)
-└── vite.config.js       # Vite config (root: public, proxy to API)
+│   └── schema.sql           # Run in Supabase SQL Editor (tables + RLS)
+├── public/                  # Frontend (dashboard, profile, admin)
+├── dist/                    # Vite build output (after npm run build)
+└── vite.config.js          # Vite (root: public, proxy to API)
 ```
 
 ## Data collected
@@ -142,16 +159,18 @@ npm run Migrate:sqlite-to-supabase                # Migrate SQLite data to Supab
 
 ## Database
 
-- **SQLite** (default): `steam-data.db` at project root, tables `profiles` and `friendships`. Created automatically on first run.
-- **Supabase**: set `DATABASE=supabase`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` in `.env`. Run `supabase/schema.sql` in the project’s SQL Editor. With RLS enabled, use the **Secret** key (or service_role JWT), not the anon/publishable key.
+- **SQLite** (default): `steam-data.db` at project root, tables `profiles`, `friendships`, and `settings`. Created automatically on first run.
+- **Supabase**: set `DATABASE=supabase`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` in `.env`. Run `supabase/schema.sql` in the SQL Editor. With RLS, use the **Secret** key (or service_role JWT), not the anon key.
 
-Migration SQLite → Supabase: after creating tables via `schema.sql`, run `npm run migrate:sqlite-to-supabase`.
+Migration: after creating tables via `schema.sql`, run `npm run migrate:sqlite-to-supabase`.
+
+**Sensitive settings**: the Steam API key stored via the admin panel is **encrypted at rest** (AES-256-GCM) in the `settings` table. Use `ENCRYPTION_KEY` in production (or it falls back to `SESSION_SECRET`). Existing plaintext keys in DB remain readable until re-saved; then they are stored encrypted.
 
 ## Rate limits and robustness
 
-- **Steam Web API**: on 429/503/403, automatic retry (3 times) with backoff 15s → 45s → 90s. Log: `[Steam API] Rate limit (429), retry in Xs`.
-- **Steam Community** (HTML pages for game bans): one retry after 20s on rate limit.
-- **Scraper**: if a batch still fails after retries (rate limit), 90s pause then the batch’s profiles are re-queued and retried.
+- **Steam Web API**: on 429/503/403, automatic retry (3 times) with backoff 15s → 45s → 90s.
+- **Steam Community** (HTML for game bans): one retry after 20s on rate limit.
+- **Scraper**: if a batch still fails after retries, 90s pause then the batch is re-queued.
 - **DB saves** in the background are chained; one failed save does not stop the next (error logged).
 
 ## Notes
@@ -159,4 +178,4 @@ Migration SQLite → Supabase: after creating tables via `schema.sql`, run `npm 
 - Comply with the [Steam Web API Terms of Use](https://steamcommunity.com/dev/apiterms). Delays are applied between requests.
 - **Private profiles** do not expose their friend list.
 - **Faceit**: [developers.faceit.com](https://developers.faceit.com/).
-- **Leetify**: [leetify.com/app/developer](https://leetify.com/app/developer) — “Data provided by Leetify” attribution is shown on profile pages when Leetify data is used.
+- **Leetify**: [leetify.com/app/developer](https://leetify.com/app/developer) — “Data provided by Leetify” is shown on profile pages when Leetify data is used.

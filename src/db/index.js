@@ -6,6 +6,7 @@
 import { isSupabaseConfigured } from '../../lib/supabase.js';
 import * as sqlite from './sqlite.js';
 import * as supabase from './supabase.js';
+import { encryptSecret, decryptSecret, SECRET_SETTING_KEYS } from './secret-settings.js';
 
 function useSupabase() {
   const db = (process.env.DATABASE || 'sqlite').toLowerCase();
@@ -152,13 +153,23 @@ export async function getFriendshipPairs(database, limit) {
 }
 
 export async function getSetting(database, key) {
-  if (useSupabase()) return supabase.getSetting(database, key);
-  return Promise.resolve(sqlite.getSetting(database || sqlite.getDb(), key));
+  const raw = useSupabase()
+    ? await supabase.getSetting(database, key)
+    : sqlite.getSetting(database || sqlite.getDb(), key);
+  if (SECRET_SETTING_KEYS.has(key) && raw) {
+    const decrypted = decryptSecret(raw);
+    return decrypted !== null ? decrypted : raw;
+  }
+  return raw;
 }
 
 export async function setSetting(database, key, value) {
-  if (useSupabase()) return supabase.setSetting(database, key, value);
-  sqlite.setSetting(database || sqlite.getDb(), key, value);
+  let valueToStore = value;
+  if (SECRET_SETTING_KEYS.has(key) && value != null && value !== '') {
+    valueToStore = encryptSecret(String(value));
+  }
+  if (useSupabase()) await supabase.setSetting(database, key, valueToStore);
+  else sqlite.setSetting(database || sqlite.getDb(), key, valueToStore);
   return Promise.resolve();
 }
 
