@@ -119,18 +119,54 @@ export async function getTopFriends(limit = 20) {
     .slice(0, limit);
 }
 
-export async function getVacBanned(limit = 100, offset = 0) {
-  const { data } = await sb()
+export async function getVacBanned(limit = 100, offset = 0, filters = null) {
+  let q = sb()
     .from('profiles')
     .select('steamid64, steamid, persona_name, profile_url, friends_page_url, avatar, vac_count, days_since_last_ban, last_ban_date')
-    .eq('vac_banned', 1)
-    .order('days_since_last_ban', { ascending: true, nullsFirst: false })
-    .range(offset, offset + limit - 1);
+    .eq('vac_banned', 1);
+  if (filters) {
+    if (filters.search && filters.search.trim()) {
+      const pattern = '%' + filters.search.trim().replace(/,/g, '') + '%';
+      q = q.or(`persona_name.ilike.${pattern},steamid.ilike.${pattern},steamid64.ilike.${pattern}`);
+    }
+    if (filters.minVacCount != null && !Number.isNaN(Number(filters.minVacCount))) {
+      q = q.gte('vac_count', Number(filters.minVacCount));
+    }
+    if (filters.maxVacCount != null && !Number.isNaN(Number(filters.maxVacCount))) {
+      q = q.lte('vac_count', Number(filters.maxVacCount));
+    }
+    if (filters.dateFrom) {
+      q = q.gte('last_ban_date', String(filters.dateFrom).slice(0, 10));
+    }
+    if (filters.dateTo) {
+      q = q.lte('last_ban_date', String(filters.dateTo).slice(0, 10));
+    }
+  }
+  const { data } = await q.order('days_since_last_ban', { ascending: true, nullsFirst: false }).range(offset, offset + limit - 1);
   return data || [];
 }
 
-export async function getVacBannedCount() {
-  const { count } = await sb().from('profiles').select('*', { count: 'exact', head: true }).eq('vac_banned', 1);
+export async function getVacBannedCount(filters = null) {
+  let q = sb().from('profiles').select('*', { count: 'exact', head: true }).eq('vac_banned', 1);
+  if (filters) {
+    if (filters.search && filters.search.trim()) {
+      const pattern = '%' + filters.search.trim().replace(/,/g, '') + '%';
+      q = q.or(`persona_name.ilike.${pattern},steamid.ilike.${pattern},steamid64.ilike.${pattern}`);
+    }
+    if (filters.minVacCount != null && !Number.isNaN(Number(filters.minVacCount))) {
+      q = q.gte('vac_count', Number(filters.minVacCount));
+    }
+    if (filters.maxVacCount != null && !Number.isNaN(Number(filters.maxVacCount))) {
+      q = q.lte('vac_count', Number(filters.maxVacCount));
+    }
+    if (filters.dateFrom) {
+      q = q.gte('last_ban_date', String(filters.dateFrom).slice(0, 10));
+    }
+    if (filters.dateTo) {
+      q = q.lte('last_ban_date', String(filters.dateTo).slice(0, 10));
+    }
+  }
+  const { count } = await q;
   return count ?? 0;
 }
 

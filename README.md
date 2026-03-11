@@ -95,9 +95,11 @@ On startup, the server prints `DB: sqlite — Connexion OK` or `DB: supabase —
 - **Access denied**: users who sign in with Steam but are not in `ADMIN_STEAM_IDS` see a dedicated “Access denied” page with a link back to the home page.
 - **Settings**: Steam API key (stored **encrypted** in DB when set via the panel), default starting profile, max depth, max profiles. Optional `ENCRYPTION_KEY` in `.env` for the API key cipher (defaults to `SESSION_SECRET`).
 - **Bot control**: start / pause / resume / stop the scraper from the UI.
+- **VAC verification**: re-check profiles without VAC ban by scraping Steam profile pages (optional confirmation via Steam API). Limit, progress bar, export VAC banned (CSV/JSON). See **ADMIN.md** for details.
 - **Live stats**: WebSocket pushes state in real time — status, profiles scraped, depth, batches, errors, rate-limit pauses.
 - **Bot console**: live log of scraper activity (batches, DB saves, rate limits, errors) and **proxy changes** with IP and geo location when using Decodo proxy.
 - **Activity chart**: line chart of profiles scraped and rate-limit pauses over time during a run.
+- **Healthcheck**: `GET /api/health` returns `{ ok, db, proxy }` for monitoring (no auth).
 
 #### Frontend with Vite (optional)
 

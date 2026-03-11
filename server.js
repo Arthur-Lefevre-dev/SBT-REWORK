@@ -58,6 +58,7 @@ import {
   startVacVerify,
   stopVacVerify,
 } from './src/admin/vac-verify-runner.js';
+import { isDecodoProxyEnabled, getCurrentProxyIp } from './src/proxy.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -311,6 +312,53 @@ app.post('/api/admin/verify-vac/stop', requireAdmin, (req, res) => {
   res.json({ ok: stopVacVerify() });
 });
 
+// Export VAC banned (CSV or JSON, admin only)
+const EXPORT_CHUNK = 5000;
+const EXPORT_MAX_ROWS = 100000;
+app.get('/api/admin/export/vac-banned', requireAdmin, async (req, res) => {
+  try {
+    const format = (req.query.format || 'json').toLowerCase();
+    if (format !== 'csv' && format !== 'json') {
+      return res.status(400).json({ error: 'format must be csv or json' });
+    }
+    const total = await getVacBannedCount();
+    const rows = [];
+    for (let offset = 0; offset < Math.min(EXPORT_MAX_ROWS, total); offset += EXPORT_CHUNK) {
+      const chunk = await getVacBanned(undefined, EXPORT_CHUNK, offset);
+      rows.push(...chunk);
+    }
+    if (format === 'csv') {
+      const header = 'steamid64;steamid;persona_name;profile_url;vac_count;days_since_last_ban;last_ban_date';
+      const escape = (v) => (v == null ? '' : String(v).replace(/"/g, '""'));
+      const lines = [header, ...rows.map((r) => [r.steamid64, r.steamid, r.persona_name, r.profile_url, r.vac_count, r.days_since_last_ban, r.last_ban_date].map(escape).join(';'))];
+      res.setHeader('Content-Disposition', 'attachment; filename="vac-banned.csv"');
+      res.type('text/csv; charset=utf-8');
+      res.send('\uFEFF' + lines.join('\n'));
+    } else {
+      res.setHeader('Content-Disposition', 'attachment; filename="vac-banned.json"');
+      res.type('application/json');
+      res.json(rows);
+    }
+  } catch (err) {
+    res.status(500).json({ error: err?.message || err });
+  }
+});
+
+// Healthcheck (DB + optional proxy)
+app.get('/api/health', async (req, res) => {
+  try {
+    await getStats();
+    let proxy = 'not configured';
+    if (isDecodoProxyEnabled()) {
+      const ip = await getCurrentProxyIp();
+      proxy = ip ? 'ok' : 'error';
+    }
+    res.json({ ok: true, db: 'ok', proxy });
+  } catch (err) {
+    res.status(500).json({ ok: false, db: 'error', error: err?.message });
+  }
+});
+
 // API: summary stats
 app.get('/api/stats', async (req, res) => {
   try {
@@ -337,14 +385,23 @@ app.get('/api/banned', async (req, res) => {
   }
 });
 
-// API: VAC banned (paginated)
+// API: VAC banned (paginated, optional filters: search, min_vac_count, max_vac_count, date_from, date_to)
 app.get('/api/vac-banned', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit ?? '10', 10);
     const offset = parseInt(req.query.offset ?? '0', 10);
+    const filters = {
+      search: req.query.search || null,
+      minVacCount: req.query.min_vac_count != null ? parseInt(req.query.min_vac_count, 10) : null,
+      maxVacCount: req.query.max_vac_count != null ? parseInt(req.query.max_vac_count, 10) : null,
+      dateFrom: req.query.date_from || null,
+      dateTo: req.query.date_to || null,
+    };
+    if (Number.isNaN(filters.minVacCount)) filters.minVacCount = null;
+    if (Number.isNaN(filters.maxVacCount)) filters.maxVacCount = null;
     const [rows, total] = await Promise.all([
-      getVacBanned(undefined, limit, offset),
-      getVacBannedCount()
+      getVacBanned(undefined, limit, offset, filters),
+      getVacBannedCount(undefined, filters)
     ]);
     res.json({ rows, total });
   } catch (err) {

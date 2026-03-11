@@ -18,10 +18,12 @@ import {
   checkAndLogProxyIpChange,
 } from "../proxy.js";
 
-const CONCURRENCY = 50; // max 50 requests in flight ≈ 50 actions/sec
-const IP_ROTATE_EVERY = 100; // new Decodo session (new IP) every N verifications
-const FETCH_BATCH = 1000; // DB batch size
+const CONCURRENCY = 50;
+const IP_ROTATE_EVERY = 100;
+const FETCH_BATCH = 1000;
 const MAX_LOG_LINES = 150;
+const RETRY_407_429_PAUSE_MS = 90000; // 1.5 min pause after 407/429 then retry once
+const API_RATE_LIMIT_PAUSE_MS = 60000; // 1 min pause then retry API once
 
 let state = {
   status: "idle", // 'idle' | 'running' | 'stopping'
@@ -145,18 +147,32 @@ export async function startVacVerify(options = {}) {
 
   const pool = createPool(CONCURRENCY);
 
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  const skipProxy = !!options.skipProxy;
+  let useProxyForScraping = !skipProxy;
+
   runPromise = (async () => {
     let offset = 0;
     let requestIndex = 0;
     let useProxySession = true;
     try {
-      if (isDecodoProxyEnabled()) {
+      if (skipProxy) {
+        addLog(
+          "Sans proxy (Decodo ignoré — ex. maintenance). Connexion directe à Steam, risque de rate limit.",
+        );
+        useProxyForScraping = false;
+      } else if (!isDecodoProxyEnabled()) {
+        addLog("Pas de proxy : risque de rate limit Steam.");
+      } else if (isDecodoProxyEnabled()) {
         addLog("Vérification de la connexion proxy Decodo…");
         const ip = await getCurrentProxyIp();
         if (!ip) {
           state.status = "idle";
           state.error =
-            "Proxy Decodo: connexion échouée (407 ou identifiants invalides). Vérifiez DECODO_PROXY_USER / DECODO_PROXY_PASSWORD.";
+            "Proxy Decodo: connexion échouée (407 ou identifiants invalides). Vérifiez DECODO_PROXY_USER / DECODO_PROXY_PASSWORD ou cochez « Sans proxy » si en maintenance.";
           addLog(state.error);
           if (broadcastFn) broadcastFn(getVacVerifyState());
           return;
@@ -229,16 +245,43 @@ export async function startVacVerify(options = {}) {
             );
           }
           const steamid64 = String(row.steamid64);
-          const sessionId = useProxySession
-            ? `vac-${Math.floor(idx / IP_ROTATE_EVERY)}`
-            : undefined;
+          const sessionId =
+            useProxyForScraping && useProxySession
+              ? `vac-${Math.floor(idx / IP_ROTATE_EVERY)}`
+              : undefined;
 
           const p = (async () => {
             try {
-              const result = await getVacBanFromProfilePage(steamid64, {
-                delayMs: 0,
-                sessionId,
-              });
+              let result;
+              try {
+                result = await getVacBanFromProfilePage(steamid64, {
+                  delayMs: 0,
+                  sessionId,
+                  useProxy: useProxyForScraping,
+                });
+              } catch (scrapeErr) {
+                const msg = scrapeErr?.message || "";
+                const is407or429 =
+                  /407|429|Rate limit|Proxy auth/.test(msg);
+                if (
+                  is407or429 &&
+                  (state.status === "running" || state.status === "stopping")
+                ) {
+                  addLog(
+                    "Pause " +
+                      RETRY_407_429_PAUSE_MS / 1000 +
+                      "s (407/429) puis retry…",
+                  );
+                  await sleep(RETRY_407_429_PAUSE_MS);
+                  result = await getVacBanFromProfilePage(steamid64, {
+                    delayMs: 0,
+                    sessionId,
+                    useProxy: useProxyForScraping,
+                  });
+                } else {
+                  throw scrapeErr;
+                }
+              }
               state.stats.checked++;
               if (state.stats.checked % 500 === 0) {
                 addLog(
@@ -272,22 +315,73 @@ export async function startVacVerify(options = {}) {
                     }
                   } catch (apiErr) {
                     const status = apiErr?.response?.status;
-                    const msg =
-                      status === 429 || status === 503
-                        ? "API Steam rate limit (" + status + ")"
-                        : status === 403
-                          ? "API Steam forbidden (403)"
-                          : status === 401
-                            ? "API Steam clé invalide (401)"
-                            : status != null
-                              ? "API Steam HTTP " + status
-                              : apiErr?.code === "ECONNABORTED" ||
-                                  apiErr?.code === "ETIMEDOUT"
-                                ? "API Steam timeout"
-                                : "API Steam indisponible";
-                    addLog(steamid64 + " — " + msg + ", mise à jour ignorée.");
-                    pool.release();
-                    return;
+                    const isRateLimit = status === 429 || status === 503;
+                    if (
+                      useApi &&
+                      isRateLimit &&
+                      (state.status === "running" ||
+                        state.status === "stopping")
+                    ) {
+                      addLog(
+                        "API Steam rate limit (" +
+                          status +
+                          ") — pause " +
+                          API_RATE_LIMIT_PAUSE_MS / 1000 +
+                          "s puis retry…",
+                      );
+                      await sleep(API_RATE_LIMIT_PAUSE_MS);
+                      try {
+                        const apiPlayers = await getPlayerBans(apiKey, [
+                          steamid64,
+                        ]);
+                        const player =
+                          apiPlayers && apiPlayers[0]
+                            ? apiPlayers[0]
+                            : null;
+                        if (player && player.VACBanned) {
+                          vacCount = player.NumberOfVACBans ?? vacCount;
+                          daysSinceLastBan =
+                            player.DaysSinceLastBan ?? daysSinceLastBan;
+                          if (
+                            daysSinceLastBan != null &&
+                            daysSinceLastBan >= 0
+                          ) {
+                            lastBanDate = new Date(
+                              Date.now() -
+                                daysSinceLastBan * 24 * 60 * 60 * 1000,
+                            ).toISOString();
+                          }
+                        } else {
+                          vacBanned = false;
+                        }
+                      } catch (retryErr) {
+                        addLog(
+                          steamid64 +
+                            " — API Steam indisponible après retry, mise à jour ignorée.",
+                        );
+                        pool.release();
+                        return;
+                      }
+                    } else {
+                      const msg =
+                        status === 429 || status === 503
+                          ? "API Steam rate limit (" + status + ")"
+                          : status === 403
+                            ? "API Steam forbidden (403)"
+                            : status === 401
+                              ? "API Steam clé invalide (401)"
+                              : status != null
+                                ? "API Steam HTTP " + status
+                                : apiErr?.code === "ECONNABORTED" ||
+                                    apiErr?.code === "ETIMEDOUT"
+                                  ? "API Steam timeout"
+                                  : "API Steam indisponible";
+                      addLog(
+                        steamid64 + " — " + msg + ", mise à jour ignorée.",
+                      );
+                      pool.release();
+                      return;
+                    }
                   }
                 }
 

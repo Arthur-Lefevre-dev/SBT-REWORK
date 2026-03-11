@@ -74,9 +74,9 @@ function profileFetchError(status, err) {
 }
 
 export async function fetchProfilePageHtml(steamid64, options = {}) {
-  const { delayMs = DELAY_MS, sessionId } = options;
+  const { delayMs = DELAY_MS, sessionId, useProxy = true } = options;
   const url = PROFILE_URL(steamid64);
-  const proxyConfig = getDecodoAxiosConfig(sessionId != null ? { sessionId } : {});
+  const proxyConfig = useProxy ? getDecodoAxiosConfig(sessionId != null ? { sessionId } : {}) : {};
   let lastStatus = null;
   let lastErr = null;
   for (let tryIndex = 0; tryIndex < 2; tryIndex++) {
@@ -114,7 +114,7 @@ export async function fetchProfilePageHtml(steamid64, options = {}) {
 /**
  * Get VAC ban status by scraping profile page (no Steam API).
  * @param {string} steamid64
- * @param {{ delayMs?: number, sessionId?: string }} options - sessionId: Decodo sticky session (new ID = new IP)
+ * @param {{ delayMs?: number, sessionId?: string, useProxy?: boolean }} options - useProxy: false = direct (no Decodo)
  * @returns {Promise<{ vacBanned: boolean, vacCount: number, daysSinceLastBan?: number, lastBanDate?: string } | null>}
  */
 export async function getVacBanFromProfilePage(steamid64, options = {}) {

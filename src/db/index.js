@@ -52,14 +52,14 @@ export async function getTopFriends(database, limit) {
   return Promise.resolve(sqlite.getTopFriends(database || sqlite.getDb(), limit));
 }
 
-export async function getVacBanned(database, limit, offset) {
-  if (useSupabase()) return supabase.getVacBanned(limit, offset);
-  return Promise.resolve(sqlite.getVacBanned(database || sqlite.getDb(), limit, offset));
+export async function getVacBanned(database, limit, offset, filters) {
+  if (useSupabase()) return supabase.getVacBanned(limit, offset, filters);
+  return Promise.resolve(sqlite.getVacBanned(database || sqlite.getDb(), limit, offset, filters));
 }
 
-export async function getVacBannedCount(database) {
-  if (useSupabase()) return supabase.getVacBannedCount();
-  return Promise.resolve(sqlite.getVacBannedCount(database || sqlite.getDb()));
+export async function getVacBannedCount(database, filters) {
+  if (useSupabase()) return supabase.getVacBannedCount(filters);
+  return Promise.resolve(sqlite.getVacBannedCount(database || sqlite.getDb(), filters));
 }
 
 export async function getProfilesWithoutVacBan(database, limit, offset) {

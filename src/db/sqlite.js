@@ -187,18 +187,68 @@ export function getTopFriends(database = getDb(), limit = 20) {
     .all(limit);
 }
 
-export function getVacBanned(database = getDb(), limit = 100, offset = 0) {
-  return database.prepare(`
+export function getVacBanned(database = getDb(), limit = 100, offset = 0, filters = null) {
+  let query = `
     SELECT steamid64, steamid, persona_name, profile_url, friends_page_url, avatar,
            vac_count, days_since_last_ban, last_ban_date
     FROM profiles WHERE vac_banned = 1
-    ORDER BY days_since_last_ban ASC
-    LIMIT ? OFFSET ?
-  `).all(limit, offset);
+  `;
+  const params = [];
+  if (filters) {
+    if (filters.search && filters.search.trim()) {
+      const s = `%${filters.search.trim()}%`;
+      query += ` AND (persona_name LIKE ? OR steamid LIKE ? OR steamid64 LIKE ?)`;
+      params.push(s, s, s);
+    }
+    if (filters.minVacCount != null && !Number.isNaN(Number(filters.minVacCount))) {
+      query += ` AND vac_count >= ?`;
+      params.push(Number(filters.minVacCount));
+    }
+    if (filters.maxVacCount != null && !Number.isNaN(Number(filters.maxVacCount))) {
+      query += ` AND vac_count <= ?`;
+      params.push(Number(filters.maxVacCount));
+    }
+    if (filters.dateFrom) {
+      query += ` AND date(last_ban_date) >= date(?)`;
+      params.push(String(filters.dateFrom).slice(0, 10));
+    }
+    if (filters.dateTo) {
+      query += ` AND date(last_ban_date) <= date(?)`;
+      params.push(String(filters.dateTo).slice(0, 10));
+    }
+  }
+  query += ` ORDER BY days_since_last_ban ASC LIMIT ? OFFSET ?`;
+  params.push(limit, offset);
+  return database.prepare(query).all(...params);
 }
 
-export function getVacBannedCount(database = getDb()) {
-  return database.prepare("SELECT COUNT(*) as count FROM profiles WHERE vac_banned = 1").get().count;
+export function getVacBannedCount(database = getDb(), filters = null) {
+  let query = `SELECT COUNT(*) as count FROM profiles WHERE vac_banned = 1`;
+  const params = [];
+  if (filters) {
+    if (filters.search && filters.search.trim()) {
+      const s = `%${filters.search.trim()}%`;
+      query += ` AND (persona_name LIKE ? OR steamid LIKE ? OR steamid64 LIKE ?)`;
+      params.push(s, s, s);
+    }
+    if (filters.minVacCount != null && !Number.isNaN(Number(filters.minVacCount))) {
+      query += ` AND vac_count >= ?`;
+      params.push(Number(filters.minVacCount));
+    }
+    if (filters.maxVacCount != null && !Number.isNaN(Number(filters.maxVacCount))) {
+      query += ` AND vac_count <= ?`;
+      params.push(Number(filters.maxVacCount));
+    }
+    if (filters.dateFrom) {
+      query += ` AND date(last_ban_date) >= date(?)`;
+      params.push(String(filters.dateFrom).slice(0, 10));
+    }
+    if (filters.dateTo) {
+      query += ` AND date(last_ban_date) <= date(?)`;
+      params.push(String(filters.dateTo).slice(0, 10));
+    }
+  }
+  return database.prepare(query).get(...params).count;
 }
 
 /** Profiles with vac_banned = 0 for VAC re-check (scrape profile page). */

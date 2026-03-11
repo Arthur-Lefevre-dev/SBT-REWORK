@@ -396,6 +396,12 @@
           Revérifier les profils en base qui n’ont pas encore de VAC ban en scrapant les pages profil Steam (sans API).
         </p>
         <p id="vac-verify-total" style="font-size: 0.9rem; margin-bottom: 0.5rem;"></p>
+        <label for="admin-vac-verify-limit" style="display: block; margin-bottom: 0.25rem; color: var(--text-muted); font-size: 0.9rem;">Limite (0 = illimité)</label>
+        <input type="number" id="admin-vac-verify-limit" min="0" value="0" style="width: 120px; padding: 0.35rem; margin-bottom: 0.5rem; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 4px;" />
+        <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.9rem;">
+          <input type="checkbox" id="admin-vac-verify-skip-proxy" />
+          <span>Sans proxy (ex. Decodo en maintenance — connexion directe, risque de rate limit)</span>
+        </label>
         <div id="vac-verify-progress-wrap" style="display: none; margin-bottom: 0.75rem;">
           <div class="vac-verify-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
             <div id="vac-verify-progress-fill" class="vac-verify-progress-fill"></div>
@@ -411,6 +417,11 @@
           <div class="row"><span class="key">Erreurs</span><span id="vac-verify-errors">—</span></div>
         </div>
         <div id="admin-vac-verify-console" class="admin-console" style="max-height: 160px; margin-top: 0.5rem;" data-placeholder="Logs de la vérification VAC." aria-live="polite"></div>
+        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+          <span style="font-size: 0.9rem; color: var(--text-muted);">Export VAC bannis :</span>
+          <button type="button" id="admin-export-vac-csv" style="margin-left: 0.5rem;">Exporter CSV</button>
+          <button type="button" id="admin-export-vac-json">Exporter JSON</button>
+        </div>
       </div>
 
       <div class="panel">
@@ -874,6 +885,9 @@
           .catch(() => {});
         document.getElementById("admin-vac-verify-start").addEventListener("click", () => {
           const btn = document.getElementById("admin-vac-verify-start");
+          const limitInput = document.getElementById("admin-vac-verify-limit");
+          const limit = limitInput ? parseInt(limitInput.value, 10) : 0;
+          const skipProxy = document.getElementById("admin-vac-verify-skip-proxy")?.checked ?? false;
           btn.disabled = true;
           document.getElementById("admin-vac-verify-stop").style.display = "inline-block";
           document.getElementById("admin-vac-verify-status").style.display = "block";
@@ -881,7 +895,7 @@
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: "{}",
+            body: JSON.stringify({ limit: Number.isNaN(limit) ? 0 : limit, skipProxy }),
           })
             .then((r) => r.json())
             .then((res) => {
@@ -903,6 +917,25 @@
             });
           if (ws && ws.readyState === 1) ws.send(JSON.stringify({ cmd: "vacVerifyStop" }));
         });
+
+        function downloadExport(format) {
+          fetch("/api/admin/export/vac-banned?format=" + format, { credentials: "include" })
+            .then((r) => {
+              if (!r.ok) throw new Error(r.statusText);
+              return format === "json" ? r.json() : r.text();
+            })
+            .then((data) => {
+              const blob = new Blob([format === "json" ? JSON.stringify(data) : data], { type: format === "json" ? "application/json" : "text/csv" });
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = "vac-banned." + format;
+              a.click();
+              URL.revokeObjectURL(a.href);
+            })
+            .catch((e) => alert("Export échoué : " + (e.message || e)));
+        }
+        document.getElementById("admin-export-vac-csv").addEventListener("click", () => downloadExport("csv"));
+        document.getElementById("admin-export-vac-json").addEventListener("click", () => downloadExport("json"));
 
         // DB stats
         api("/api/stats")
