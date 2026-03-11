@@ -201,6 +201,29 @@ export function getVacBannedCount(database = getDb()) {
   return database.prepare("SELECT COUNT(*) as count FROM profiles WHERE vac_banned = 1").get().count;
 }
 
+/** Profiles with vac_banned = 0 for VAC re-check (scrape profile page). */
+export function getProfilesWithoutVacBan(database = getDb(), limit = 100, offset = 0) {
+  return database.prepare(`
+    SELECT steamid64 FROM profiles WHERE vac_banned = 0
+    ORDER BY steamid64 ASC
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+}
+
+/** Update only VAC-related fields for a profile (e.g. after profile-page scrape). */
+export function updateProfileVacStatus(database, steamid64, { vac_banned, vac_count, days_since_last_ban, last_ban_date }) {
+  database.prepare(`
+    UPDATE profiles SET vac_banned = ?, vac_count = ?, days_since_last_ban = ?, last_ban_date = ?
+    WHERE steamid64 = ?
+  `).run(
+    vac_banned ? 1 : 0,
+    vac_count ?? 0,
+    days_since_last_ban ?? null,
+    last_ban_date ?? null,
+    String(steamid64),
+  );
+}
+
 export function getGameBanned(database = getDb(), limit = 100, offset = 0) {
   return database.prepare(`
     SELECT steamid64, steamid, persona_name, profile_url, friends_page_url, avatar,

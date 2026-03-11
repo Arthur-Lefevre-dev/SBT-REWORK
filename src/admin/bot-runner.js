@@ -5,6 +5,7 @@
 
 import { scrape } from '../steam-scraper.js';
 import { saveGraph, getExistingSteamIds, getSetting } from '../db/index.js';
+import { isDecodoProxyEnabled, getCurrentProxyIp, checkAndLogProxyIpChange } from '../proxy.js';
 
 const MAX_LOG_LINES = 200;
 
@@ -185,6 +186,19 @@ export async function startBot(options = {}) {
 
   runPromise = (async () => {
     try {
+      if (isDecodoProxyEnabled()) {
+        addLog('Vérification de la connexion proxy Decodo…');
+        const ip = await getCurrentProxyIp();
+        if (!ip) {
+          state.status = 'idle';
+          state.error = 'Proxy Decodo: connexion échouée (407 ou identifiants invalides). Vérifiez DECODO_PROXY_USER / DECODO_PROXY_PASSWORD.';
+          addLog(state.error);
+          if (broadcastFn) broadcastFn(getBotState());
+          return null;
+        }
+        await checkAndLogProxyIpChange({ onLog: addLog });
+        addLog('Proxy Decodo: connexion OK, démarrage du scraping.');
+      }
       const graph = await scrape(apiKey, startSteamId64, {
         maxDepth: maxDepth === 0 ? Infinity : maxDepth,
         maxProfiles: maxProfiles === 0 ? Infinity : maxProfiles,

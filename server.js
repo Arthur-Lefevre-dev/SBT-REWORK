@@ -52,6 +52,12 @@ import {
   resumeBot,
   stopBot,
 } from './src/admin/bot-runner.js';
+import {
+  getVacVerifyState,
+  setBroadcast as setVacVerifyBroadcast,
+  startVacVerify,
+  stopVacVerify,
+} from './src/admin/vac-verify-runner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -80,12 +86,14 @@ async function start() {
   }
 
   const adminClients = new Set();
-  setBroadcast(() => {
-    const payload = JSON.stringify(getBotState());
+  const broadcastAdmin = () => {
+    const payload = JSON.stringify({ bot: getBotState(), vacVerify: getVacVerifyState() });
     adminClients.forEach((ws) => {
       if (ws.readyState === 1) ws.send(payload);
     });
-  });
+  };
+  setBroadcast(broadcastAdmin);
+  setVacVerifyBroadcast(broadcastAdmin);
 
   httpServer = http.createServer(app);
   const wss = new WebSocketServer({ noServer: true });
@@ -107,13 +115,14 @@ async function start() {
   });
   wss.on('connection', (ws) => {
     adminClients.add(ws);
-    ws.send(JSON.stringify(getBotState()));
+    ws.send(JSON.stringify({ bot: getBotState(), vacVerify: getVacVerifyState() }));
     ws.on('message', (data) => {
       try {
         const msg = JSON.parse(data.toString());
         if (msg.cmd === 'pause') pauseBot();
         else if (msg.cmd === 'resume') resumeBot();
         else if (msg.cmd === 'stop') stopBot();
+        else if (msg.cmd === 'vacVerifyStop') stopVacVerify();
       } catch (_) {}
     });
     ws.on('close', () => adminClients.delete(ws));
@@ -275,6 +284,31 @@ app.post('/api/admin/bot/resume', requireAdmin, (req, res) => {
 });
 app.post('/api/admin/bot/stop', requireAdmin, (req, res) => {
   res.json({ ok: stopBot() });
+});
+
+// VAC verification (scrape profile pages for profiles without VAC ban)
+app.get('/api/admin/verify-vac/state', requireAdmin, async (req, res) => {
+  try {
+    const vacState = getVacVerifyState();
+    const stats = await getStats();
+    res.json({
+      ...vacState,
+      totalToVerify: Math.max(0, (stats.totalProfiles ?? 0) - (stats.vacBannedCount ?? 0)),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err?.message || err });
+  }
+});
+app.post('/api/admin/verify-vac/start', requireAdmin, async (req, res) => {
+  try {
+    const result = await startVacVerify(req.body || {});
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err?.message || err });
+  }
+});
+app.post('/api/admin/verify-vac/stop', requireAdmin, (req, res) => {
+  res.json({ ok: stopVacVerify() });
 });
 
 // API: summary stats

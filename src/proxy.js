@@ -35,12 +35,16 @@ export function getDecodoProxyConfig() {
 /**
  * Axios config to route HTTPS requests via Decodo proxy (when credentials are set).
  * Use: axios.get(url, { ...getDecodoAxiosConfig(), ...otherOptions }).
+ * @param {{ sessionId?: string }} options - sessionId: use a sticky session (new ID = new IP after rotation)
  * @returns {{ httpsAgent?: HttpsProxyAgent, proxy: boolean }}
  */
-export function getDecodoAxiosConfig() {
+export function getDecodoAxiosConfig(options = {}) {
   const proxy = getDecodoProxyConfig();
   if (!proxy) return { proxy: false };
-  const url = `http://${encodeURIComponent(proxy.auth.username)}:${encodeURIComponent(proxy.auth.password)}@${proxy.host}:${proxy.port}`;
+  const username = options.sessionId
+    ? `${proxy.auth.username}-session-${options.sessionId}`
+    : proxy.auth.username;
+  const url = `http://${encodeURIComponent(username)}:${encodeURIComponent(proxy.auth.password)}@${proxy.host}:${proxy.port}`;
   return {
     httpsAgent: new HttpsProxyAgent(url),
     proxy: false,
@@ -59,12 +63,13 @@ export function isDecodoProxyEnabled() {
 
 /**
  * Fetch current outbound IP via the Decodo proxy (uses proxy config).
+ * @param {{ sessionId?: string }} options - optional sessionId (same format as used for scraping, e.g. 'vac-0')
  * @returns {Promise<string|null>} IP string or null on failure
  */
-export async function getCurrentProxyIp() {
+export async function getCurrentProxyIp(options = {}) {
   if (!isDecodoProxyEnabled()) return null;
   try {
-    const config = getDecodoAxiosConfig();
+    const config = getDecodoAxiosConfig(options.sessionId != null ? { sessionId: options.sessionId } : {});
     const { data } = await axios.get(IP_CHECK_URL, {
       ...config,
       timeout: 10000,

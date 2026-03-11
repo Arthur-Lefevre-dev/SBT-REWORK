@@ -62,6 +62,17 @@ export async function getVacBannedCount(database) {
   return Promise.resolve(sqlite.getVacBannedCount(database || sqlite.getDb()));
 }
 
+export async function getProfilesWithoutVacBan(database, limit, offset) {
+  if (useSupabase()) return supabase.getProfilesWithoutVacBan(limit, offset);
+  return Promise.resolve(sqlite.getProfilesWithoutVacBan(database || sqlite.getDb(), limit, offset));
+}
+
+export async function updateProfileVacStatus(database, steamid64, payload) {
+  if (useSupabase()) return supabase.updateProfileVacStatus(steamid64, payload);
+  sqlite.updateProfileVacStatus(database || sqlite.getDb(), steamid64, payload);
+  return Promise.resolve();
+}
+
 export async function getGameBanned(database, limit, offset) {
   if (useSupabase()) return supabase.getGameBanned(limit, offset);
   return Promise.resolve(sqlite.getGameBanned(database || sqlite.getDb(), limit, offset));

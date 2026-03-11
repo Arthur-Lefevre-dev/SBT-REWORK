@@ -22,6 +22,108 @@ function isRateLimit(res) {
 }
 
 /**
+ * Parse VAC ban status from profile HTML (no Steam API).
+ * Looks for "VAC ban on record" / "VAC bans on record" in profile_ban blocks and optional "X day(s) since last ban".
+ * @param {string} html - Profile page HTML
+ * @returns {{ vacBanned: boolean, vacCount: number, daysSinceLastBan?: number, lastBanDate?: string } | null}
+ */
+export function parseVacBanFromHtml(html) {
+  if (!html || typeof html !== 'string') return null;
+  const lower = html.toLowerCase();
+  const vacIdx = lower.indexOf('vac ban');
+  if (vacIdx === -1) return { vacBanned: false, vacCount: 0 };
+  const vacOnRecord = /vac\s+ban(s?)\s+on\s+record/i.test(html.slice(Math.max(0, vacIdx - 20), vacIdx + 80));
+  if (!vacOnRecord) return { vacBanned: false, vacCount: 0 };
+  const countMatch = html.slice(vacIdx, vacIdx + 100).match(/(\d+)\s*vac\s+ban/i) || html.slice(Math.max(0, vacIdx - 50), vacIdx + 50).match(/(\d+)\s*ban/i);
+  const vacCount = countMatch ? Math.max(1, parseInt(countMatch[1], 10)) : 1;
+  const block = html.slice(Math.max(0, vacIdx - 100), vacIdx + 600);
+  const dayMatch = block.match(/(\d+)\s*day\s*\(\s*s\s*\)\s*since\s*last\s*ban/i) || block.match(/(\d+)\s*jour\s*\(\s*s\s*\)\s*depuis/i);
+  let daysSinceLastBan = null;
+  let lastBanDate = null;
+  if (dayMatch) {
+    daysSinceLastBan = parseInt(dayMatch[1], 10);
+    if (!Number.isNaN(daysSinceLastBan) && daysSinceLastBan >= 0) {
+      lastBanDate = new Date(Date.now() - daysSinceLastBan * 24 * 60 * 60 * 1000).toISOString();
+    }
+  }
+  return { vacBanned: true, vacCount, daysSinceLastBan: daysSinceLastBan ?? undefined, lastBanDate: lastBanDate ?? undefined };
+}
+
+/**
+ * Fetch Steam profile HTML (for scraping without API). Uses Decodo proxy if configured.
+ * @param {string} steamid64
+ * @param {{ delayMs?: number, sessionId?: string }} options - sessionId: Decodo sticky session (new ID = new IP)
+ * @returns {Promise<string | null>}
+ */
+/** Build a clear error message for logging (404, rate limit, proxy auth, etc.). */
+function profileFetchError(status, err) {
+  const s = status != null ? Number(status) : null;
+  if (s === 404) return '404 Not Found';
+  if (s === 407) return 'Proxy auth required (407)';
+  if (s === 429) return 'Rate limit (429)';
+  if (s === 503) return 'Service unavailable (503)';
+  if (s === 403) return 'Forbidden (403)';
+  if (status != null) return `HTTP ${status}`;
+  const code = err?.code;
+  const msg = err?.message || String(err);
+  if (code === 'ECONNREFUSED') return 'Connexion refusée';
+  if (code === 'ETIMEDOUT' || code === 'ECONNABORTED') return 'Timeout';
+  if (code === 'ENOTFOUND') return 'DNS / hôte introuvable';
+  if (msg) return 'Connexion: ' + msg;
+  return 'Erreur de connexion';
+}
+
+export async function fetchProfilePageHtml(steamid64, options = {}) {
+  const { delayMs = DELAY_MS, sessionId } = options;
+  const url = PROFILE_URL(steamid64);
+  const proxyConfig = getDecodoAxiosConfig(sessionId != null ? { sessionId } : {});
+  let lastStatus = null;
+  let lastErr = null;
+  for (let tryIndex = 0; tryIndex < 2; tryIndex++) {
+    try {
+      const { data, status } = await axios.get(url, {
+        timeout: 10000,
+        responseType: 'text',
+        headers: { 'Accept-Language': 'en-US,en;q=0.9' },
+        maxRedirects: 3,
+        validateStatus: () => true,
+        ...proxyConfig,
+      }).then((res) => ({ data: res.data, status: res.status }));
+      lastStatus = status;
+      if (isRateLimit({ status }) && tryIndex < 1) {
+        await sleep(RATE_LIMIT_RETRY_MS);
+        continue;
+      }
+      if (status !== 200) {
+        throw new Error(profileFetchError(status, null));
+      }
+      if (delayMs > 0) await sleep(delayMs);
+      return data;
+    } catch (err) {
+      lastErr = err;
+      if (err instanceof Error && err.message && /^(404|407|Rate limit|HTTP \d+|Connexion|Forbidden|Service unavailable|Proxy auth)/.test(err.message)) {
+        throw err;
+      }
+      const status = err?.response?.status ?? lastStatus;
+      throw new Error(profileFetchError(status, err));
+    }
+  }
+  throw new Error(profileFetchError(lastStatus, lastErr));
+}
+
+/**
+ * Get VAC ban status by scraping profile page (no Steam API).
+ * @param {string} steamid64
+ * @param {{ delayMs?: number, sessionId?: string }} options - sessionId: Decodo sticky session (new ID = new IP)
+ * @returns {Promise<{ vacBanned: boolean, vacCount: number, daysSinceLastBan?: number, lastBanDate?: string } | null>}
+ */
+export async function getVacBanFromProfilePage(steamid64, options = {}) {
+  const html = await fetchProfilePageHtml(steamid64, options);
+  if (html == null) return null;
+  return parseVacBanFromHtml(html);
+}
+
+/**
  * Parse "X day(s) since last ban" from HTML (EN) or "X jour(s) depuis..." (FR)
  * Must appear in a context that also mentions "game ban" to avoid VAC ban block
  * @param {string} html - Profile page HTML

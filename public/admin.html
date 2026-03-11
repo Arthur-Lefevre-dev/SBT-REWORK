@@ -201,6 +201,20 @@
         color: var(--text-muted);
         font-size: 0.9rem;
       }
+      .vac-verify-progress-bar {
+        height: 12px;
+        background: var(--bg);
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .vac-verify-progress-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--accent);
+        border-radius: 5px;
+        transition: width 0.2s ease;
+      }
     </style>
     <script src="/i18n.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -374,6 +388,29 @@
           </div>
           <div id="bot-status-errors" class="errors"></div>
         </div>
+      </div>
+
+      <div class="panel">
+        <h2>Vérification VAC</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
+          Revérifier les profils en base qui n’ont pas encore de VAC ban en scrapant les pages profil Steam (sans API).
+        </p>
+        <p id="vac-verify-total" style="font-size: 0.9rem; margin-bottom: 0.5rem;"></p>
+        <div id="vac-verify-progress-wrap" style="display: none; margin-bottom: 0.75rem;">
+          <div class="vac-verify-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div id="vac-verify-progress-fill" class="vac-verify-progress-fill"></div>
+          </div>
+          <div id="vac-verify-progress-text" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">0 %</div>
+        </div>
+        <button type="button" id="admin-vac-verify-start">Lancer la vérification</button>
+        <button type="button" id="admin-vac-verify-stop" class="danger" style="display: none;">Arrêter</button>
+        <div id="admin-vac-verify-status" class="bot-status" style="display: none; margin-top: 0.75rem;">
+          <div class="row"><span class="key">Statut</span><span id="vac-verify-status">—</span></div>
+          <div class="row"><span class="key">Vérifiés</span><span id="vac-verify-checked">—</span></div>
+          <div class="row"><span class="key">Nouveaux VAC</span><span id="vac-verify-updated">—</span></div>
+          <div class="row"><span class="key">Erreurs</span><span id="vac-verify-errors">—</span></div>
+        </div>
+        <div id="admin-vac-verify-console" class="admin-console" style="max-height: 160px; margin-top: 0.5rem;" data-placeholder="Logs de la vérification VAC." aria-live="polite"></div>
       </div>
 
       <div class="panel">
@@ -674,7 +711,8 @@
                 setTimeout(connectWs, 3000);
               };
               ws.onmessage = (ev) => {
-                const s = JSON.parse(ev.data);
+                const data = JSON.parse(ev.data);
+                const s = data.bot != null ? data.bot : data;
                 document.getElementById("admin-bot-status").style.display =
                   "block";
                 document.getElementById("bot-status-status").textContent =
@@ -753,6 +791,44 @@
                   if (chartData.times.length > 0) pushChartPoint(s);
                   chartBaseTime = null;
                 }
+
+                // VAC verification panel
+                const v = data.vacVerify;
+                if (v) {
+                  document.getElementById("admin-vac-verify-status").style.display = "block";
+                  document.getElementById("vac-verify-status").textContent = v.status || "—";
+                  document.getElementById("vac-verify-checked").textContent = v.stats?.checked ?? "—";
+                  document.getElementById("vac-verify-updated").textContent = v.stats?.updated ?? "—";
+                  document.getElementById("vac-verify-errors").textContent = v.stats?.errors ?? "—";
+                  const total = v.totalToVerify ?? 0;
+                  const checked = v.stats?.checked ?? 0;
+                  const pct = total > 0 ? Math.min(100, Math.round((checked / total) * 100)) : 0;
+                  const progressWrap = document.getElementById("vac-verify-progress-wrap");
+                  const progressFill = document.getElementById("vac-verify-progress-fill");
+                  const progressText = document.getElementById("vac-verify-progress-text");
+                  if (total > 0 && (checked > 0 || v.status === "running" || v.status === "stopping")) {
+                    progressWrap.style.display = "block";
+                    progressFill.style.width = pct + "%";
+                    progressText.textContent = pct + " % (" + checked + " / " + total + ")";
+                    const bar = document.querySelector(".vac-verify-progress-bar");
+                    if (bar) bar.setAttribute("aria-valuenow", pct);
+                  } else {
+                    progressWrap.style.display = "none";
+                  }
+                  const vacConsole = document.getElementById("admin-vac-verify-console");
+                  if (v.log && Array.isArray(v.log)) {
+                    vacConsole.innerHTML = v.log
+                      .map((e) => {
+                        const timeStr = e.t ? new Date(e.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : "";
+                        return "<div class=\"log-line\"><span class=\"log-time\">[" + timeStr + "]</span>" + escapeHtml(e.msg) + "</div>";
+                      })
+                      .join("");
+                    vacConsole.scrollTop = vacConsole.scrollHeight;
+                  }
+                  const running = v.status === "running" || v.status === "stopping";
+                  document.getElementById("admin-vac-verify-start").disabled = running;
+                  document.getElementById("admin-vac-verify-stop").style.display = running ? "inline-block" : "none";
+                }
               };
             })
             .catch(() => setTimeout(connectWs, 5000));
@@ -763,6 +839,70 @@
           return d.innerHTML;
         }
         connectWs();
+
+        // VAC verify: load state (total to verify) and button handlers
+        api("/api/admin/verify-vac/state")
+          .then((st) => {
+            const total = st.totalToVerify ?? 0;
+            document.getElementById("vac-verify-total").textContent =
+              total + " profil(s) sans VAC à vérifier.";
+            if (st.status && st.status !== "idle") {
+              document.getElementById("admin-vac-verify-status").style.display = "block";
+              document.getElementById("vac-verify-status").textContent = st.status;
+              document.getElementById("vac-verify-checked").textContent = st.stats?.checked ?? "—";
+              document.getElementById("vac-verify-updated").textContent = st.stats?.updated ?? "—";
+              document.getElementById("vac-verify-errors").textContent = st.stats?.errors ?? "—";
+              const running = st.status === "running" || st.status === "stopping";
+              document.getElementById("admin-vac-verify-start").disabled = running;
+              document.getElementById("admin-vac-verify-stop").style.display = running ? "inline-block" : "none";
+            }
+            const checked = st.stats?.checked ?? 0;
+            const pct = total > 0 ? Math.min(100, Math.round((checked / total) * 100)) : 0;
+            const progressWrap = document.getElementById("vac-verify-progress-wrap");
+            const progressFill = document.getElementById("vac-verify-progress-fill");
+            const progressText = document.getElementById("vac-verify-progress-text");
+            if (total > 0 && (checked > 0 || st.status === "running" || st.status === "stopping")) {
+              progressWrap.style.display = "block";
+              progressFill.style.width = pct + "%";
+              progressText.textContent = pct + " % (" + checked + " / " + total + ")";
+              const bar = document.querySelector(".vac-verify-progress-bar");
+              if (bar) bar.setAttribute("aria-valuenow", pct);
+            } else {
+              progressWrap.style.display = "none";
+            }
+          })
+          .catch(() => {});
+        document.getElementById("admin-vac-verify-start").addEventListener("click", () => {
+          const btn = document.getElementById("admin-vac-verify-start");
+          btn.disabled = true;
+          document.getElementById("admin-vac-verify-stop").style.display = "inline-block";
+          document.getElementById("admin-vac-verify-status").style.display = "block";
+          fetch("/api/admin/verify-vac/start", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+          })
+            .then((r) => r.json())
+            .then((res) => {
+              if (res && res.ok) return;
+              btn.disabled = false;
+              document.getElementById("admin-vac-verify-stop").style.display = "none";
+              alert((res && res.error) || "Erreur");
+            })
+            .catch(() => {
+              btn.disabled = false;
+              document.getElementById("admin-vac-verify-stop").style.display = "none";
+            });
+        });
+        document.getElementById("admin-vac-verify-stop").addEventListener("click", () => {
+          fetch("/api/admin/verify-vac/stop", { method: "POST", credentials: "include", body: "" })
+            .then((r) => r.json())
+            .then(() => {
+              document.getElementById("admin-vac-verify-stop").style.display = "none";
+            });
+          if (ws && ws.readyState === 1) ws.send(JSON.stringify({ cmd: "vacVerifyStop" }));
+        });
 
         // DB stats
         api("/api/stats")

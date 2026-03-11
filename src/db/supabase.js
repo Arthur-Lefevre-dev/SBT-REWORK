@@ -134,6 +134,30 @@ export async function getVacBannedCount() {
   return count ?? 0;
 }
 
+/** Profiles with vac_banned = 0 for VAC re-check (scrape profile page). */
+export async function getProfilesWithoutVacBan(limit = 100, offset = 0) {
+  const { data } = await sb()
+    .from('profiles')
+    .select('steamid64')
+    .eq('vac_banned', 0)
+    .order('steamid64', { ascending: true })
+    .range(offset, offset + limit - 1);
+  return data || [];
+}
+
+/** Update only VAC-related fields for a profile (e.g. after profile-page scrape). */
+export async function updateProfileVacStatus(steamid64, { vac_banned, vac_count, days_since_last_ban, last_ban_date }) {
+  await sb()
+    .from('profiles')
+    .update({
+      vac_banned: vac_banned ? 1 : 0,
+      vac_count: vac_count ?? 0,
+      days_since_last_ban: days_since_last_ban ?? null,
+      last_ban_date: last_ban_date ?? null,
+    })
+    .eq('steamid64', String(steamid64));
+}
+
 export async function getGameBanned(limit = 100, offset = 0) {
   const { data } = await sb()
     .from('profiles')
