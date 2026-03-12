@@ -215,6 +215,68 @@
         border-radius: 5px;
         transition: width 0.2s ease;
       }
+      .admin-layout-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.5rem;
+      }
+      .admin-layout-col {
+        flex: 1 1 340px;
+        min-width: 0;
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+      .toggle-label-main {
+        font-size: 0.9rem;
+      }
+      .toggle-switch {
+        position: relative;
+        width: 42px;
+        height: 22px;
+        flex: 0 0 auto;
+      }
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg);
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        transition: background 0.2s ease;
+      }
+      .toggle-slider::before {
+        content: "";
+        position: absolute;
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        top: 2px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        transition:
+          transform 0.2s ease,
+          background 0.2s ease;
+      }
+      .toggle-switch input:checked + .toggle-slider {
+        background: var(--accent);
+      }
+      .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(16px);
+        background: var(--bg);
+      }
     </style>
     <script src="/i18n.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -323,142 +385,287 @@
         </div>
       </div>
 
-      <div class="panel">
-        <h2 data-i18n="admin.bot.title">Contrôle du bot</h2>
-        <button type="button" id="admin-bot-start" data-i18n="admin.bot.start">
-          Démarrer
-        </button>
-        <button type="button" id="admin-bot-pause" data-i18n="admin.bot.pause">
-          Pause
-        </button>
-        <button
-          type="button"
-          id="admin-bot-resume"
-          data-i18n="admin.bot.resume"
-        >
-          Reprendre
-        </button>
-        <button
-          type="button"
-          id="admin-bot-stop"
-          class="danger"
-          data-i18n="admin.bot.stop"
-        >
-          Arrêter
-        </button>
-        <div
-          id="admin-bot-message"
-          style="
-            margin-top: 0.5rem;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-          "
-        ></div>
-        <div id="admin-bot-status" class="bot-status" style="display: none">
-          <div class="row">
-            <span class="key" data-i18n="admin.bot.status">Statut</span
-            ><span id="bot-status-status">—</span>
+      <div class="admin-layout-grid">
+        <div class="admin-layout-col">
+          <div class="panel">
+            <h2 data-i18n="admin.bot.title">Contrôle du bot</h2>
+            <button
+              type="button"
+              id="admin-bot-start"
+              data-i18n="admin.bot.start"
+            >
+              Démarrer
+            </button>
+            <button
+              type="button"
+              id="admin-bot-pause"
+              data-i18n="admin.bot.pause"
+            >
+              Pause
+            </button>
+            <button
+              type="button"
+              id="admin-bot-resume"
+              data-i18n="admin.bot.resume"
+            >
+              Reprendre
+            </button>
+            <button
+              type="button"
+              id="admin-bot-stop"
+              class="danger"
+              data-i18n="admin.bot.stop"
+            >
+              Arrêter
+            </button>
+            <div
+              id="admin-bot-message"
+              style="
+                margin-top: 0.5rem;
+                color: var(--text-muted);
+                font-size: 0.9rem;
+              "
+            ></div>
+            <div id="admin-bot-status" class="bot-status" style="display: none">
+              <div class="row">
+                <span class="key" data-i18n="admin.bot.status">Statut</span
+                ><span id="bot-status-status">—</span>
+              </div>
+              <div class="row">
+                <span class="key" data-i18n="admin.bot.status.profiles"
+                  >Profils scrapés</span
+                ><span id="bot-status-profiles">—</span>
+              </div>
+              <div class="row">
+                <span class="key" data-i18n="admin.bot.status.depth"
+                  >Profondeur actuelle</span
+                ><span id="bot-status-depth">—</span>
+              </div>
+              <div class="row">
+                <span class="key" data-i18n="admin.bot.status.batches"
+                  >Batches</span
+                ><span id="bot-status-batches">—</span>
+              </div>
+              <div class="row">
+                <span class="key" data-i18n="admin.bot.status.start">Début</span
+                ><span id="bot-status-start">—</span>
+              </div>
+              <div class="row">
+                <span class="key" data-i18n="admin.bot.status.end">Fin</span
+                ><span id="bot-status-end">—</span>
+              </div>
+              <div class="row">
+                <span class="key" data-i18n="admin.bot.status.ratelimit"
+                  >Pauses rate limit</span
+                ><span id="bot-status-ratelimit">—</span>
+              </div>
+              <div id="bot-status-errors" class="errors"></div>
+            </div>
           </div>
-          <div class="row">
-            <span class="key" data-i18n="admin.bot.status.profiles"
-              >Profils scrapés</span
-            ><span id="bot-status-profiles">—</span>
-          </div>
-          <div class="row">
-            <span class="key" data-i18n="admin.bot.status.depth"
-              >Profondeur actuelle</span
-            ><span id="bot-status-depth">—</span>
-          </div>
-          <div class="row">
-            <span class="key" data-i18n="admin.bot.status.batches">Batches</span
-            ><span id="bot-status-batches">—</span>
-          </div>
-          <div class="row">
-            <span class="key" data-i18n="admin.bot.status.start">Début</span
-            ><span id="bot-status-start">—</span>
-          </div>
-          <div class="row">
-            <span class="key" data-i18n="admin.bot.status.end">Fin</span
-            ><span id="bot-status-end">—</span>
-          </div>
-          <div class="row">
-            <span class="key" data-i18n="admin.bot.status.ratelimit"
-              >Pauses rate limit</span
-            ><span id="bot-status-ratelimit">—</span>
-          </div>
-          <div id="bot-status-errors" class="errors"></div>
-        </div>
-      </div>
 
-      <div class="panel">
-        <h2>Vérification VAC</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.75rem;">
-          Revérifier les profils en base qui n’ont pas encore de VAC ban en scrapant les pages profil Steam (sans API).
-        </p>
-        <p id="vac-verify-total" style="font-size: 0.9rem; margin-bottom: 0.5rem;"></p>
-        <label for="admin-vac-verify-limit" style="display: block; margin-bottom: 0.25rem; color: var(--text-muted); font-size: 0.9rem;">Limite (0 = illimité)</label>
-        <input type="number" id="admin-vac-verify-limit" min="0" value="0" style="width: 120px; padding: 0.35rem; margin-bottom: 0.5rem; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 4px;" />
-        <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.9rem;">
-          <input type="checkbox" id="admin-vac-verify-skip-proxy" />
-          <span>Sans proxy (ex. Decodo en maintenance — connexion directe, risque de rate limit)</span>
-        </label>
-        <div id="vac-verify-progress-wrap" style="display: none; margin-bottom: 0.75rem;">
-          <div class="vac-verify-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-            <div id="vac-verify-progress-fill" class="vac-verify-progress-fill"></div>
+          <div class="panel">
+            <h2 data-i18n="admin.bot.console.title">Console du bot</h2>
+            <div
+              id="admin-bot-console"
+              class="admin-console"
+              data-placeholder="Aucune activité pour le moment. Démarrez le bot pour voir les logs."
+              aria-live="polite"
+            ></div>
           </div>
-          <div id="vac-verify-progress-text" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">0 %</div>
         </div>
-        <button type="button" id="admin-vac-verify-start">Lancer la vérification</button>
-        <button type="button" id="admin-vac-verify-stop" class="danger" style="display: none;">Arrêter</button>
-        <div id="admin-vac-verify-status" class="bot-status" style="display: none; margin-top: 0.75rem;">
-          <div class="row"><span class="key">Statut</span><span id="vac-verify-status">—</span></div>
-          <div class="row"><span class="key">Vérifiés</span><span id="vac-verify-checked">—</span></div>
-          <div class="row"><span class="key">Nouveaux VAC</span><span id="vac-verify-updated">—</span></div>
-          <div class="row"><span class="key">Erreurs</span><span id="vac-verify-errors">—</span></div>
-        </div>
-        <div id="admin-vac-verify-console" class="admin-console" style="max-height: 160px; margin-top: 0.5rem;" data-placeholder="Logs de la vérification VAC." aria-live="polite"></div>
-        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
-          <span style="font-size: 0.9rem; color: var(--text-muted);">Export VAC bannis :</span>
-          <button type="button" id="admin-export-vac-csv" style="margin-left: 0.5rem;">Exporter CSV</button>
-          <button type="button" id="admin-export-vac-json">Exporter JSON</button>
-        </div>
-      </div>
 
-      <div class="panel">
-        <h2 data-i18n="admin.bot.chart.title">Activité du bot (graphique)</h2>
-        <div class="admin-chart-wrap">
-          <p
-            id="admin-chart-empty"
-            class="admin-empty-msg"
-            data-i18n="admin.bot.chart.empty"
-          >
-            Aucune donnée pour le moment. Démarrez le bot pour voir le
-            graphique.
-          </p>
-          <canvas id="admin-bot-chart" style="display: none"></canvas>
-        </div>
-      </div>
+        <div class="admin-layout-col">
+          <div class="panel">
+            <h2>Vérification VAC</h2>
+            <p
+              style="
+                color: var(--text-muted);
+                font-size: 0.9rem;
+                margin-bottom: 0.5rem;
+              "
+            >
+              Revérifier les profils en base qui n’ont pas encore de VAC ban en
+              scrapant les pages profil Steam (sans API).
+            </p>
+            <p
+              id="vac-verify-total"
+              style="font-size: 0.9rem; margin-bottom: 0.75rem"
+            ></p>
+            <div style="margin-bottom: 0.75rem">
+              <div class="toggle-row" style="margin-bottom: 0.25rem">
+                <span class="toggle-label-main"
+                  >Sans proxy (Decodo en maintenance)</span
+                >
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    id="admin-vac-verify-skip-proxy"
+                    aria-label="Sans proxy (Decodo en maintenance)"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <p
+                style="
+                  margin: 0 0 0.4rem;
+                  padding-left: 1.5rem;
+                  font-size: 0.85rem;
+                  color: var(--text-muted);
+                "
+              >
+                Connexion directe à Steam, risque de rate limit.
+              </p>
+              <label
+                for="admin-vac-verify-limit"
+                style="
+                  display: block;
+                  margin-bottom: 0.25rem;
+                  color: var(--text-muted);
+                  font-size: 0.9rem;
+                "
+                >Limite (0 = illimité)</label
+              >
+              <div style="display: flex; align-items: center; gap: 0.75rem">
+                <input
+                  type="number"
+                  id="admin-vac-verify-limit"
+                  min="0"
+                  value="0"
+                  style="
+                    width: 120px;
+                    padding: 0.35rem;
+                    margin-bottom: 0rem;
+                    background: var(--bg);
+                    border: 1px solid var(--border);
+                    color: var(--text);
+                    border-radius: 4px;
+                  "
+                />
+                <button
+                  type="button"
+                  id="admin-vac-verify-start"
+                  style="margin-top: 0"
+                >
+                  Lancer la vérification
+                </button>
+                <button
+                  type="button"
+                  id="admin-vac-verify-stop"
+                  class="danger"
+                  style="display: none"
+                >
+                  Arrêter
+                </button>
+              </div>
+            </div>
+            <div
+              id="vac-verify-progress-wrap"
+              style="display: none; margin-bottom: 0.75rem"
+            >
+              <div
+                class="vac-verify-progress-bar"
+                role="progressbar"
+                aria-valuenow="0"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                <div
+                  id="vac-verify-progress-fill"
+                  class="vac-verify-progress-fill"
+                ></div>
+              </div>
+              <div
+                id="vac-verify-progress-text"
+                style="
+                  font-size: 0.85rem;
+                  color: var(--text-muted);
+                  margin-top: 0.25rem;
+                "
+              >
+                0 %
+              </div>
+            </div>
+            <div
+              id="admin-vac-verify-status"
+              class="bot-status"
+              style="display: none; margin-top: 0.75rem"
+            >
+              <div class="row">
+                <span class="key">Statut</span
+                ><span id="vac-verify-status">—</span>
+              </div>
+              <div class="row">
+                <span class="key">Vérifiés</span
+                ><span id="vac-verify-checked">—</span>
+              </div>
+              <div class="row">
+                <span class="key">Nouveaux VAC</span
+                ><span id="vac-verify-updated">—</span>
+              </div>
+              <div class="row">
+                <span class="key">Erreurs</span
+                ><span id="vac-verify-errors">—</span>
+              </div>
+            </div>
+            <div
+              id="admin-vac-verify-console"
+              class="admin-console"
+              style="max-height: 160px; margin-top: 0.5rem"
+              data-placeholder="Logs de la vérification VAC."
+              aria-live="polite"
+            ></div>
+            <div
+              style="
+                margin-top: 1rem;
+                padding-top: 0.75rem;
+                border-top: 1px solid var(--border);
+              "
+            >
+              <span style="font-size: 0.9rem; color: var(--text-muted)"
+                >Export VAC bannis :</span
+              >
+              <button
+                type="button"
+                id="admin-export-vac-csv"
+                style="margin-left: 0.5rem"
+              >
+                Exporter CSV
+              </button>
+              <button type="button" id="admin-export-vac-json">
+                Exporter JSON
+              </button>
+            </div>
+          </div>
 
-      <div class="panel">
-        <h2 data-i18n="admin.bot.console.title">Console du bot</h2>
-        <div
-          id="admin-bot-console"
-          class="admin-console"
-          data-placeholder="Aucune activité pour le moment. Démarrez le bot pour voir les logs."
-          aria-live="polite"
-        ></div>
-      </div>
+          <div class="panel">
+            <h2 data-i18n="admin.dbStats.title">
+              Stats globales (base de données)
+            </h2>
+            <div
+              id="admin-db-stats"
+              class="bot-status"
+              data-i18n="admin.dbStats.loading"
+            >
+              Chargement…
+            </div>
+          </div>
 
-      <div class="panel">
-        <h2 data-i18n="admin.dbStats.title">
-          Stats globales (base de données)
-        </h2>
-        <div
-          id="admin-db-stats"
-          class="bot-status"
-          data-i18n="admin.dbStats.loading"
-        >
-          Chargement…
+          <div class="panel">
+            <h2 data-i18n="admin.bot.chart.title">
+              Activité du bot (graphique)
+            </h2>
+            <div class="admin-chart-wrap">
+              <p
+                id="admin-chart-empty"
+                class="admin-empty-msg"
+                data-i18n="admin.bot.chart.empty"
+              >
+                Aucune donnée pour le moment. Démarrez le bot pour voir le
+                graphique.
+              </p>
+              <canvas id="admin-bot-chart" style="display: none"></canvas>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -806,39 +1013,81 @@
                 // VAC verification panel
                 const v = data.vacVerify;
                 if (v) {
-                  document.getElementById("admin-vac-verify-status").style.display = "block";
-                  document.getElementById("vac-verify-status").textContent = v.status || "—";
-                  document.getElementById("vac-verify-checked").textContent = v.stats?.checked ?? "—";
-                  document.getElementById("vac-verify-updated").textContent = v.stats?.updated ?? "—";
-                  document.getElementById("vac-verify-errors").textContent = v.stats?.errors ?? "—";
+                  document.getElementById(
+                    "admin-vac-verify-status",
+                  ).style.display = "block";
+                  document.getElementById("vac-verify-status").textContent =
+                    v.status || "—";
+                  document.getElementById("vac-verify-checked").textContent =
+                    v.stats?.checked ?? "—";
+                  document.getElementById("vac-verify-updated").textContent =
+                    v.stats?.updated ?? "—";
+                  document.getElementById("vac-verify-errors").textContent =
+                    v.stats?.errors ?? "—";
                   const total = v.totalToVerify ?? 0;
                   const checked = v.stats?.checked ?? 0;
-                  const pct = total > 0 ? Math.min(100, Math.round((checked / total) * 100)) : 0;
-                  const progressWrap = document.getElementById("vac-verify-progress-wrap");
-                  const progressFill = document.getElementById("vac-verify-progress-fill");
-                  const progressText = document.getElementById("vac-verify-progress-text");
-                  if (total > 0 && (checked > 0 || v.status === "running" || v.status === "stopping")) {
+                  const pct =
+                    total > 0
+                      ? Math.min(100, Math.round((checked / total) * 100))
+                      : 0;
+                  const progressWrap = document.getElementById(
+                    "vac-verify-progress-wrap",
+                  );
+                  const progressFill = document.getElementById(
+                    "vac-verify-progress-fill",
+                  );
+                  const progressText = document.getElementById(
+                    "vac-verify-progress-text",
+                  );
+                  if (
+                    total > 0 &&
+                    (checked > 0 ||
+                      v.status === "running" ||
+                      v.status === "stopping")
+                  ) {
                     progressWrap.style.display = "block";
                     progressFill.style.width = pct + "%";
-                    progressText.textContent = pct + " % (" + checked + " / " + total + ")";
-                    const bar = document.querySelector(".vac-verify-progress-bar");
+                    progressText.textContent =
+                      pct + " % (" + checked + " / " + total + ")";
+                    const bar = document.querySelector(
+                      ".vac-verify-progress-bar",
+                    );
                     if (bar) bar.setAttribute("aria-valuenow", pct);
                   } else {
                     progressWrap.style.display = "none";
                   }
-                  const vacConsole = document.getElementById("admin-vac-verify-console");
+                  const vacConsole = document.getElementById(
+                    "admin-vac-verify-console",
+                  );
                   if (v.log && Array.isArray(v.log)) {
                     vacConsole.innerHTML = v.log
                       .map((e) => {
-                        const timeStr = e.t ? new Date(e.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : "";
-                        return "<div class=\"log-line\"><span class=\"log-time\">[" + timeStr + "]</span>" + escapeHtml(e.msg) + "</div>";
+                        const timeStr = e.t
+                          ? new Date(e.t).toLocaleTimeString("fr-FR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                              hour12: false,
+                            })
+                          : "";
+                        return (
+                          '<div class="log-line"><span class="log-time">[' +
+                          timeStr +
+                          "]</span>" +
+                          escapeHtml(e.msg) +
+                          "</div>"
+                        );
                       })
                       .join("");
                     vacConsole.scrollTop = vacConsole.scrollHeight;
                   }
-                  const running = v.status === "running" || v.status === "stopping";
-                  document.getElementById("admin-vac-verify-start").disabled = running;
-                  document.getElementById("admin-vac-verify-stop").style.display = running ? "inline-block" : "none";
+                  const running =
+                    v.status === "running" || v.status === "stopping";
+                  document.getElementById("admin-vac-verify-start").disabled =
+                    running;
+                  document.getElementById(
+                    "admin-vac-verify-stop",
+                  ).style.display = running ? "inline-block" : "none";
                 }
               };
             })
@@ -858,24 +1107,47 @@
             document.getElementById("vac-verify-total").textContent =
               total + " profil(s) sans VAC à vérifier.";
             if (st.status && st.status !== "idle") {
-              document.getElementById("admin-vac-verify-status").style.display = "block";
-              document.getElementById("vac-verify-status").textContent = st.status;
-              document.getElementById("vac-verify-checked").textContent = st.stats?.checked ?? "—";
-              document.getElementById("vac-verify-updated").textContent = st.stats?.updated ?? "—";
-              document.getElementById("vac-verify-errors").textContent = st.stats?.errors ?? "—";
-              const running = st.status === "running" || st.status === "stopping";
-              document.getElementById("admin-vac-verify-start").disabled = running;
-              document.getElementById("admin-vac-verify-stop").style.display = running ? "inline-block" : "none";
+              document.getElementById("admin-vac-verify-status").style.display =
+                "block";
+              document.getElementById("vac-verify-status").textContent =
+                st.status;
+              document.getElementById("vac-verify-checked").textContent =
+                st.stats?.checked ?? "—";
+              document.getElementById("vac-verify-updated").textContent =
+                st.stats?.updated ?? "—";
+              document.getElementById("vac-verify-errors").textContent =
+                st.stats?.errors ?? "—";
+              const running =
+                st.status === "running" || st.status === "stopping";
+              document.getElementById("admin-vac-verify-start").disabled =
+                running;
+              document.getElementById("admin-vac-verify-stop").style.display =
+                running ? "inline-block" : "none";
             }
             const checked = st.stats?.checked ?? 0;
-            const pct = total > 0 ? Math.min(100, Math.round((checked / total) * 100)) : 0;
-            const progressWrap = document.getElementById("vac-verify-progress-wrap");
-            const progressFill = document.getElementById("vac-verify-progress-fill");
-            const progressText = document.getElementById("vac-verify-progress-text");
-            if (total > 0 && (checked > 0 || st.status === "running" || st.status === "stopping")) {
+            const pct =
+              total > 0
+                ? Math.min(100, Math.round((checked / total) * 100))
+                : 0;
+            const progressWrap = document.getElementById(
+              "vac-verify-progress-wrap",
+            );
+            const progressFill = document.getElementById(
+              "vac-verify-progress-fill",
+            );
+            const progressText = document.getElementById(
+              "vac-verify-progress-text",
+            );
+            if (
+              total > 0 &&
+              (checked > 0 ||
+                st.status === "running" ||
+                st.status === "stopping")
+            ) {
               progressWrap.style.display = "block";
               progressFill.style.width = pct + "%";
-              progressText.textContent = pct + " % (" + checked + " / " + total + ")";
+              progressText.textContent =
+                pct + " % (" + checked + " / " + total + ")";
               const bar = document.querySelector(".vac-verify-progress-bar");
               if (bar) bar.setAttribute("aria-valuenow", pct);
             } else {
@@ -883,49 +1155,75 @@
             }
           })
           .catch(() => {});
-        document.getElementById("admin-vac-verify-start").addEventListener("click", () => {
-          const btn = document.getElementById("admin-vac-verify-start");
-          const limitInput = document.getElementById("admin-vac-verify-limit");
-          const limit = limitInput ? parseInt(limitInput.value, 10) : 0;
-          const skipProxy = document.getElementById("admin-vac-verify-skip-proxy")?.checked ?? false;
-          btn.disabled = true;
-          document.getElementById("admin-vac-verify-stop").style.display = "inline-block";
-          document.getElementById("admin-vac-verify-status").style.display = "block";
-          fetch("/api/admin/verify-vac/start", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ limit: Number.isNaN(limit) ? 0 : limit, skipProxy }),
-          })
-            .then((r) => r.json())
-            .then((res) => {
-              if (res && res.ok) return;
-              btn.disabled = false;
-              document.getElementById("admin-vac-verify-stop").style.display = "none";
-              alert((res && res.error) || "Erreur");
+        document
+          .getElementById("admin-vac-verify-start")
+          .addEventListener("click", () => {
+            const btn = document.getElementById("admin-vac-verify-start");
+            const limitInput = document.getElementById(
+              "admin-vac-verify-limit",
+            );
+            const limit = limitInput ? parseInt(limitInput.value, 10) : 0;
+            const skipProxy =
+              document.getElementById("admin-vac-verify-skip-proxy")?.checked ??
+              false;
+            btn.disabled = true;
+            document.getElementById("admin-vac-verify-stop").style.display =
+              "inline-block";
+            document.getElementById("admin-vac-verify-status").style.display =
+              "block";
+            fetch("/api/admin/verify-vac/start", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                limit: Number.isNaN(limit) ? 0 : limit,
+                skipProxy,
+              }),
             })
-            .catch(() => {
-              btn.disabled = false;
-              document.getElementById("admin-vac-verify-stop").style.display = "none";
-            });
-        });
-        document.getElementById("admin-vac-verify-stop").addEventListener("click", () => {
-          fetch("/api/admin/verify-vac/stop", { method: "POST", credentials: "include", body: "" })
-            .then((r) => r.json())
-            .then(() => {
-              document.getElementById("admin-vac-verify-stop").style.display = "none";
-            });
-          if (ws && ws.readyState === 1) ws.send(JSON.stringify({ cmd: "vacVerifyStop" }));
-        });
+              .then((r) => r.json())
+              .then((res) => {
+                if (res && res.ok) return;
+                btn.disabled = false;
+                document.getElementById("admin-vac-verify-stop").style.display =
+                  "none";
+                alert((res && res.error) || "Erreur");
+              })
+              .catch(() => {
+                btn.disabled = false;
+                document.getElementById("admin-vac-verify-stop").style.display =
+                  "none";
+              });
+          });
+        document
+          .getElementById("admin-vac-verify-stop")
+          .addEventListener("click", () => {
+            fetch("/api/admin/verify-vac/stop", {
+              method: "POST",
+              credentials: "include",
+              body: "",
+            })
+              .then((r) => r.json())
+              .then(() => {
+                document.getElementById("admin-vac-verify-stop").style.display =
+                  "none";
+              });
+            if (ws && ws.readyState === 1)
+              ws.send(JSON.stringify({ cmd: "vacVerifyStop" }));
+          });
 
         function downloadExport(format) {
-          fetch("/api/admin/export/vac-banned?format=" + format, { credentials: "include" })
+          fetch("/api/admin/export/vac-banned?format=" + format, {
+            credentials: "include",
+          })
             .then((r) => {
               if (!r.ok) throw new Error(r.statusText);
               return format === "json" ? r.json() : r.text();
             })
             .then((data) => {
-              const blob = new Blob([format === "json" ? JSON.stringify(data) : data], { type: format === "json" ? "application/json" : "text/csv" });
+              const blob = new Blob(
+                [format === "json" ? JSON.stringify(data) : data],
+                { type: format === "json" ? "application/json" : "text/csv" },
+              );
               const a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
               a.download = "vac-banned." + format;
@@ -934,8 +1232,12 @@
             })
             .catch((e) => alert("Export échoué : " + (e.message || e)));
         }
-        document.getElementById("admin-export-vac-csv").addEventListener("click", () => downloadExport("csv"));
-        document.getElementById("admin-export-vac-json").addEventListener("click", () => downloadExport("json"));
+        document
+          .getElementById("admin-export-vac-csv")
+          .addEventListener("click", () => downloadExport("csv"));
+        document
+          .getElementById("admin-export-vac-json")
+          .addEventListener("click", () => downloadExport("json"));
 
         // DB stats
         api("/api/stats")

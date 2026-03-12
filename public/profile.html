@@ -400,19 +400,23 @@
             }
 
             const steamUrl = "https://steamcommunity.com/profiles/" + steamid64;
-            const faceitName = (data.persona_name || "").replace(/\s+/g, "_");
             const faceitUrl =
               data.faceit_url ||
-              "https://www.faceit.com/en/players/" +
-                encodeURIComponent(faceitName);
+              (data.steamid64
+                ? "https://www.faceit.com/en/players/" +
+                  encodeURIComponent(String(data.steamid64))
+                : null);
 
             var linksHtml =
               '<a href="' +
               steamUrl +
-              '" class="profile-link-icon" target="_blank" rel="noopener" title="Profil Steam"><img src="/img/static/steam-logo.svg" alt="Profil Steam"></a>' +
-              '<a href="' +
-              faceitUrl +
-              '" class="profile-link-icon" target="_blank" rel="noopener" title="Faceit"><img src="/img/static/faceit-logo.svg" alt="Faceit"></a>';
+              '" class="profile-link-icon" target="_blank" rel="noopener" title="Profil Steam"><img src="/img/static/steam-logo.svg" alt="Profil Steam"></a>';
+            if (faceitUrl) {
+              linksHtml +=
+                '<a href="' +
+                faceitUrl +
+                '" class="profile-link-icon" target="_blank" rel="noopener" title="Faceit"><img src="/img/static/faceit-logo.svg" alt="Faceit"></a>';
+            }
             if (data.leetify && data.leetify.profile_url) {
               linksHtml +=
                 '<a href="' +
