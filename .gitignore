@@ -1,10 +1,12 @@
 node_modules/
-output/
 dist/
+drizzle/meta/
 .env
 *.log
-steam-data-bu.db
 steam-data.db
 steam-data.db-wal
 steam-data.db-shm
+steam-data-bu.db
 *.db
+output/
+.DS_Store

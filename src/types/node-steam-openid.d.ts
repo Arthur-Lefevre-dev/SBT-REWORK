@@ -1,0 +1,11 @@
+declare module "node-steam-openid" {
+  export default class SteamAuth {
+    constructor(options: {
+      realm: string;
+      returnUrl: string;
+      apiKey: string;
+    });
+    getRedirectUrl(): Promise<string>;
+    authenticate(req: unknown): Promise<{ steamid: string }>;
+  }
+}
