@@ -140,12 +140,33 @@ export type ScrapeOptions = {
   delayMs?: number;
   parallelBatches?: number;
   knownIds?: Set<string> | null;
+  /** Extra known profile IDs to expand (friend-list only) when resuming. */
+  resumeExpandIds?: string[] | null;
   saveInterval?: number;
   onSave?: (graph: FriendshipGraph) => Promise<void>;
   verbose?: boolean;
   controller?: ScrapeController | null;
   onLog?: ((msg: string) => void) | null;
 };
+
+/** Expand a known profile via GetFriendList only (no summaries/bans re-fetch). */
+async function expandKnownProfile(
+  apiKey: string,
+  steamId64: string,
+  knownIds: Set<string>,
+  visited: Set<string>,
+  depth: number,
+): Promise<{ steamId64: string; depth: number }[]> {
+  const friends = await getFriendList(apiKey, steamId64);
+  const next: { steamId64: string; depth: number }[] = [];
+  for (const f of friends) {
+    const id = String(f.steamid);
+    if (!knownIds.has(id) && !visited.has(id)) {
+      next.push({ steamId64: id, depth });
+    }
+  }
+  return next;
+}
 
 export async function scrape(
   apiKey: string,
@@ -164,13 +185,15 @@ export async function scrape(
     verbose = true,
     controller = null,
     onLog = null,
+    resumeExpandIds = null,
   } = options;
 
   const knownIds: Set<string> =
     knownIdsOption instanceof Set ? knownIdsOption : new Set<string>();
   const graph = new FriendshipGraph();
   const visited = new Set<string>();
-  const queue = [{ steamId64: String(startSteamId64), depth: 0 }];
+  const start = String(startSteamId64);
+  const queue: { steamId64: string; depth: number }[] = [];
   let lastSaveCount = 0;
   let pendingSavePromise: Promise<void> | null = null;
   let pendingSaveCount = 0;
@@ -182,6 +205,61 @@ export async function scrape(
     log(msg);
     onLog?.(msg);
   };
+
+  // Resume: never re-scrape profiles already in DB (avoids rate-limits / IP blocks)
+  if (knownIds.has(start)) {
+    out(
+      `Resume: ${start} already in DB — skipping re-scrape, expanding friends…`,
+    );
+    try {
+      const fromStart = await expandKnownProfile(
+        apiKey,
+        start,
+        knownIds,
+        visited,
+        1,
+      );
+      queue.push(...fromStart);
+      out(`  → ${fromStart.length} new friend(s) from start profile`);
+    } catch (err) {
+      out(
+        `  → Friend expand failed for start: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+
+    // If start's friends are all known, expand a few other known hubs
+    const hubs = (resumeExpandIds ?? [])
+      .map(String)
+      .filter((id) => id !== start && knownIds.has(id))
+      .slice(0, 12);
+    for (const hub of hubs) {
+      if (controller?.aborted) break;
+      if (queue.length >= batchSize) break;
+      try {
+        const more = await expandKnownProfile(
+          apiKey,
+          hub,
+          knownIds,
+          visited,
+          1,
+        );
+        if (more.length) {
+          queue.push(...more);
+          out(`  → +${more.length} new from hub ${hub}`);
+        }
+        await sleep(delayMs);
+      } catch {
+        /* skip hub */
+      }
+    }
+
+    if (!queue.length) {
+      out("Resume: no unknown friends to crawl. Done.");
+      return graph;
+    }
+  } else {
+    queue.push({ steamId64: start, depth: 0 });
+  }
 
   while (
     queue.length > 0 &&

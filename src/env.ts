@@ -24,6 +24,18 @@ const envSchema = z.object({
 
   TURNSTILE_SITE_KEY: z.string().optional(),
   TURNSTILE_SECRET_KEY: z.string().optional(),
+
+  /** Auto recheck non-VAC profiles every VAC_VERIFY_INTERVAL_MS (default 24h). */
+  VAC_VERIFY_AUTO: z
+    .enum(["true", "false", "1", "0"])
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
+  VAC_VERIFY_INTERVAL_MS: z.coerce.number().default(24 * 60 * 60 * 1000),
+  VAC_VERIFY_CONCURRENCY: z.coerce.number().default(2),
+  /** Delay after each profile HTML fetch (ms) */
+  VAC_VERIFY_DELAY_MS: z.coerce.number().default(800),
+  /** 0 = up to 10000 profiles per pass */
+  VAC_VERIFY_LIMIT: z.coerce.number().default(0),
 });
 
 const parsed = envSchema.safeParse(process.env);

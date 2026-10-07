@@ -6,8 +6,10 @@ import {
   eq,
   gt,
   gte,
+  inArray,
   like,
   lte,
+  ne,
   or,
   sql,
 } from "drizzle-orm";
@@ -106,6 +108,28 @@ export async function getExistingSteamIds(): Promise<Set<string>> {
   return new Set(rows.map((r) => String(r.id)));
 }
 
+/** Recent profiles useful as resume hubs (expand friend lists without re-scrape). */
+export async function getResumeHubIds(
+  excludeId: string,
+  limit = 12,
+): Promise<string[]> {
+  const rows = excludeId
+    ? db
+        .select({ id: profiles.steamid64 })
+        .from(profiles)
+        .where(ne(profiles.steamid64, excludeId))
+        .orderBy(desc(profiles.scrapedAt))
+        .limit(limit)
+        .all()
+    : db
+        .select({ id: profiles.steamid64 })
+        .from(profiles)
+        .orderBy(desc(profiles.scrapedAt))
+        .limit(limit)
+        .all();
+  return rows.map((r) => String(r.id));
+}
+
 export async function getStats(): Promise<StatsSummary> {
   const totalProfiles =
     db.select({ c: count() }).from(profiles).get()?.c ?? 0;
@@ -136,6 +160,162 @@ export async function getStats(): Promise<StatsSummary> {
     gameBannedCount,
     communityBannedCount,
   };
+}
+
+/** Connected-component labels (0..k-1), sized by component size. */
+function assignGroups(
+  ids: string[],
+  links: { source: string; target: string }[],
+): Map<string, number> {
+  const parent = new Map<string, string>();
+  const find = (x: string): string => {
+    let p = parent.get(x) ?? x;
+    if (p !== x) {
+      p = find(p);
+      parent.set(x, p);
+    }
+    return p;
+  };
+  const union = (a: string, b: string) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  };
+  for (const id of ids) parent.set(id, id);
+  for (const l of links) union(l.source, l.target);
+
+  const rootSize = new Map<string, number>();
+  for (const id of ids) {
+    const r = find(id);
+    rootSize.set(r, (rootSize.get(r) ?? 0) + 1);
+  }
+  // Largest components first → group 0, 1, …
+  const roots = [...rootSize.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([r]) => r);
+  const rootToGroup = new Map(roots.map((r, i) => [r, i]));
+  const groups = new Map<string, number>();
+  for (const id of ids) groups.set(id, rootToGroup.get(find(id)) ?? 0);
+  return groups;
+}
+
+/** VAC profiles + friendships; sized by VAC-friend degree; grouped by components. */
+export async function getVacCloudGraph(limit = 150) {
+  // 0 = unlimited (hard cap for safety / memory)
+  const HARD_MAX = 50_000;
+  const raw = Math.floor(Number(limit));
+  const capped =
+    raw === 0
+      ? HARD_MAX
+      : Math.min(Math.max(Number.isFinite(raw) ? raw : 150, 10), HARD_MAX);
+
+  // Prefer profiles with the most VAC friends (degree in VAC↔VAC graph)
+  const ranked = db.all<{
+    id: string;
+    name: string | null;
+    avatar: string | null;
+    vacCount: number;
+    lastBanDate: string | null;
+    daysSinceLastBan: number | null;
+    vacFriends: number;
+  }>(sql`
+    SELECT p.steamid64 AS id,
+      p.persona_name AS name,
+      p.avatar AS avatar,
+      p.vac_count AS vacCount,
+      p.last_ban_date AS lastBanDate,
+      p.days_since_last_ban AS daysSinceLastBan,
+      COALESCE(d.vac_friends, 0) AS vacFriends
+    FROM profiles p
+    LEFT JOIN (
+      SELECT steamid64, COUNT(*) AS vac_friends FROM (
+        SELECT f.steamid64_a AS steamid64
+        FROM friendships f
+        INNER JOIN profiles pa ON pa.steamid64 = f.steamid64_a AND pa.vac_banned = 1
+        INNER JOIN profiles pb ON pb.steamid64 = f.steamid64_b AND pb.vac_banned = 1
+        UNION ALL
+        SELECT f.steamid64_b AS steamid64
+        FROM friendships f
+        INNER JOIN profiles pa ON pa.steamid64 = f.steamid64_a AND pa.vac_banned = 1
+        INNER JOIN profiles pb ON pb.steamid64 = f.steamid64_b AND pb.vac_banned = 1
+      ) edges
+      GROUP BY steamid64
+    ) d ON d.steamid64 = p.steamid64
+    WHERE p.vac_banned = 1
+    ORDER BY vacFriends DESC, p.vac_count DESC, p.days_since_last_ban ASC
+    LIMIT ${capped}
+  `);
+
+  if (!ranked.length) {
+    return {
+      nodes: [] as Array<{
+        id: string;
+        name: string;
+        avatar: string | null;
+        vacCount: number;
+        vacFriends: number;
+        group: number;
+        lastBanDate: string | null;
+        daysSinceLastBan: number | null;
+      }>,
+      links: [] as { source: string; target: string }[],
+      groups: [] as { id: number; size: number }[],
+    };
+  }
+
+  const ids = ranked.map((r) => r.id);
+  const idSet = new Set(ids);
+  const edgeRows = db
+    .select({
+      a: friendships.steamid64A,
+      b: friendships.steamid64B,
+    })
+    .from(friendships)
+    .where(
+      or(
+        inArray(friendships.steamid64A, ids),
+        inArray(friendships.steamid64B, ids),
+      ),
+    )
+    .all();
+
+  const links: { source: string; target: string }[] = [];
+  const seen = new Set<string>();
+  const degree = new Map<string, number>();
+  for (const id of ids) degree.set(id, 0);
+
+  for (const e of edgeRows) {
+    if (!idSet.has(e.a) || !idSet.has(e.b)) continue;
+    const key = `${e.a}|${e.b}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    links.push({ source: e.a, target: e.b });
+    degree.set(e.a, (degree.get(e.a) ?? 0) + 1);
+    degree.set(e.b, (degree.get(e.b) ?? 0) + 1);
+  }
+
+  const groupOf = assignGroups(ids, links);
+  const groupSizes = new Map<number, number>();
+  for (const g of groupOf.values()) {
+    groupSizes.set(g, (groupSizes.get(g) ?? 0) + 1);
+  }
+
+  const nodes = ranked.map((r) => ({
+    id: r.id,
+    name: r.name || r.id,
+    avatar: r.avatar,
+    vacCount: Number(r.vacCount) || 1,
+    vacFriends: degree.get(r.id) ?? (Number(r.vacFriends) || 0),
+    group: groupOf.get(r.id) ?? 0,
+    lastBanDate: r.lastBanDate,
+    daysSinceLastBan: r.daysSinceLastBan,
+  }));
+
+  const groups = [...groupSizes.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([id, size]) => ({ id, size }));
+
+  return { nodes, links, groups };
 }
 
 function searchClause(search: string | null | undefined) {
@@ -545,14 +725,20 @@ export async function getBanStatsYearsByBanDate() {
     .sort((a, b) => b - a);
 }
 
-export async function getProfilesWithoutVacBan(limit = 100, offset = 0) {
+export async function getProfilesWithoutVacBan(
+  limit = 100,
+  offset = 0,
+  afterSteamId = "",
+) {
+  const clauses = [eq(profiles.vacBanned, 0)];
+  if (afterSteamId) clauses.push(gt(profiles.steamid64, afterSteamId));
   return db
     .select({ steamid64: profiles.steamid64 })
     .from(profiles)
-    .where(eq(profiles.vacBanned, 0))
+    .where(and(...clauses))
     .orderBy(asc(profiles.steamid64))
     .limit(limit)
-    .offset(offset)
+    .offset(afterSteamId ? 0 : offset)
     .all();
 }
 

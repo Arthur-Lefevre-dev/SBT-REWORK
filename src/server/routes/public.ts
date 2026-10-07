@@ -20,6 +20,7 @@ import {
   getStats,
   getVacBanned,
   getVacBannedCount,
+  getVacCloudGraph,
 } from "../../db/queries.js";
 import { getDbBackend, pingDb } from "../../db/index.js";
 import { env } from "../../env.js";
@@ -148,6 +149,18 @@ export function publicRoutes() {
       const q = String(req.query.q || "").trim();
       const limit = Math.min(parseInt(String(req.query.limit ?? "12"), 10), 20);
       res.json(q.length >= 2 ? await getSearchProfiles(q, limit) : []);
+    }),
+  );
+
+  router.get(
+    "/api/vac-cloud",
+    asyncHandler(async (req, res) => {
+      const raw = String(req.query.limit ?? "150");
+      const limit =
+        raw === "0" || raw.toLowerCase() === "unlimited"
+          ? 0
+          : parseInt(raw, 10);
+      res.json(await getVacCloudGraph(Number.isNaN(limit) ? 150 : limit));
     }),
   );
 

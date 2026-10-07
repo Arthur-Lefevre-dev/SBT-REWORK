@@ -8,7 +8,7 @@ export default function AdminDenied() {
       <h2>{t("admin.denied")}</h2>
       <p className="muted">{t("admin.denied.hint")}</p>
       <Link className="btn" to="/">
-        Home
+        {t("nav.home")}
       </Link>
     </div>
   );

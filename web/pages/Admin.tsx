@@ -117,10 +117,10 @@ export default function AdminPage() {
         <div className="row">
           <span className="muted mono">{me.steamId}</span>
           <a className="btn ghost" href="/admin/logout">
-            Logout
+            {t("admin.logout")}
           </a>
           <Link className="btn ghost" to="/">
-            Home
+            {t("nav.home")}
           </Link>
         </div>
       </div>
@@ -130,40 +130,42 @@ export default function AdminPage() {
           <h3>{t("admin.settings")}</h3>
           <div className="form-row">
             <label>
-              Steam API key{" "}
-              {settings?.steam_api_key_set ? "(set)" : "(not set)"}
+              {t("admin.apiKey")}{" "}
+              {settings?.steam_api_key_set
+                ? t("admin.apiKey.set")
+                : t("admin.apiKey.unset")}
             </label>
             <input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Leave blank to keep"
+              placeholder={t("admin.apiKey.keep")}
             />
           </div>
           <div className="form-row">
-            <label>Start SteamID64</label>
+            <label>{t("admin.startId")}</label>
             <input value={startId} onChange={(e) => setStartId(e.target.value)} />
           </div>
           <div className="form-row">
-            <label>Max depth</label>
+            <label>{t("admin.maxDepth")}</label>
             <input value={maxDepth} onChange={(e) => setMaxDepth(e.target.value)} />
           </div>
           <div className="form-row">
-            <label>Max profiles</label>
+            <label>{t("admin.maxProfiles")}</label>
             <input
               value={maxProfiles}
               onChange={(e) => setMaxProfiles(e.target.value)}
             />
           </div>
           <button className="btn" onClick={saveSettings}>
-            Save
+            {t("admin.save")}
           </button>
         </div>
 
         <div className="card">
           <h3>{t("admin.bot")}</h3>
           <p>
-            Status: <strong>{bot?.status ?? "—"}</strong>
+            {t("admin.status")}: <strong>{bot?.status ?? "—"}</strong>
           </p>
           <p className="muted mono">
             profiles={bot?.stats?.profilesCount ?? 0} depth=
@@ -181,7 +183,7 @@ export default function AdminPage() {
                 })
               }
             >
-              Start
+              {t("admin.start")}
             </button>
             <button
               className="btn ghost"
@@ -189,7 +191,7 @@ export default function AdminPage() {
                 fetchJson("/api/admin/bot/pause", { method: "POST" })
               }
             >
-              Pause
+              {t("admin.pause")}
             </button>
             <button
               className="btn ghost"
@@ -197,7 +199,7 @@ export default function AdminPage() {
                 fetchJson("/api/admin/bot/resume", { method: "POST" })
               }
             >
-              Resume
+              {t("admin.resume")}
             </button>
             <button
               className="btn danger"
@@ -205,7 +207,7 @@ export default function AdminPage() {
                 fetchJson("/api/admin/bot/stop", { method: "POST" })
               }
             >
-              Stop
+              {t("admin.stop")}
             </button>
           </div>
           <div className="console" style={{ marginTop: "0.75rem" }}>
@@ -222,6 +224,19 @@ export default function AdminPage() {
           status={String(vac?.status ?? "—")} checked=
           {String(vac?.checked ?? 0)} found={String(vac?.found ?? 0)} /{" "}
           {String(vac?.totalToVerify ?? "?")}
+          {vac?.concurrency != null ? ` · ×${String(vac.concurrency)}` : ""}
+        </p>
+        <p className="muted" style={{ fontSize: "0.85rem" }}>
+          {vac?.autoEnabled
+            ? t("admin.vac.autoOn", {
+                next: vac.nextAutoRun
+                  ? String(vac.nextAutoRun).slice(0, 19).replace("T", " ")
+                  : "—",
+                last: vac.lastAutoRun
+                  ? String(vac.lastAutoRun).slice(0, 19).replace("T", " ")
+                  : "—",
+              })
+            : t("admin.vac.autoOff")}
         </p>
         <div className="row">
           <input
@@ -237,11 +252,12 @@ export default function AdminPage() {
                 body: JSON.stringify({
                   limit: parseInt(vacLimit, 10),
                   confirmWithApi: true,
+                  concurrency: 4,
                 }),
               })
             }
           >
-            Start verify
+            {t("admin.verifyStart")}
           </button>
           <button
             className="btn danger"
@@ -249,10 +265,10 @@ export default function AdminPage() {
               fetchJson("/api/admin/verify-vac/stop", { method: "POST" })
             }
           >
-            Stop
+            {t("admin.stop")}
           </button>
           <a className="btn ghost" href="/api/admin/export/vac-banned?format=csv">
-            Export CSV
+            {t("admin.exportCsv")}
           </a>
         </div>
       </div>

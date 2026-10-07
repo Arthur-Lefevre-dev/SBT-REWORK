@@ -1,5 +1,6 @@
 import {
   getExistingSteamIds,
+  getResumeHubIds,
   getSetting,
   saveGraph,
 } from "../db/queries.js";
@@ -169,11 +170,20 @@ export async function startBot(opts: {
   void (async () => {
     try {
       const knownIds = await getExistingSteamIds();
-      knownIds.delete(String(start));
+      // Keep start in knownIds so we never re-scrape it (resume via friend expand)
+      const resumeExpandIds = knownIds.has(String(start))
+        ? await getResumeHubIds(String(start), 12)
+        : [];
+      if (knownIds.has(String(start))) {
+        addLog(
+          `Start profile already scraped — resuming (${knownIds.size} known, ${resumeExpandIds.length} hubs)`,
+        );
+      }
       const graph = await scrape(apiKey, start, {
         maxDepth: maxDepth === 0 ? Infinity : maxDepth,
         maxProfiles: maxProfiles === 0 ? Infinity : maxProfiles,
         knownIds,
+        resumeExpandIds,
         saveInterval: 800,
         onSave: (g) => saveGraph(g),
         controller: ctrl,

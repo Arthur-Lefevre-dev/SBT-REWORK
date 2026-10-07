@@ -37,7 +37,20 @@ type Row = Record<string, unknown> & {
 
 type Tab = "banned" | "vac" | "game" | "community" | "profiles" | "chart";
 
+type VacFilters = {
+  minVac: string;
+  maxVac: string;
+  dateFrom: string;
+  dateTo: string;
+};
+
 const PAGE = 10;
+const EMPTY_VAC: VacFilters = {
+  minVac: "",
+  maxVac: "",
+  dateFrom: "",
+  dateTo: "",
+};
 
 export default function HomePage() {
   const { t } = useI18n();
@@ -57,6 +70,7 @@ export default function HomePage() {
   >([]);
   const [error, setError] = useState<string | null>(null);
   const [listLoading, setListLoading] = useState(true);
+  const [vacFilters, setVacFilters] = useState<VacFilters>(EMPTY_VAC);
 
   useEffect(() => {
     fetchJson<Stats>("/api/stats")
@@ -80,6 +94,12 @@ export default function HomePage() {
     if (q.trim() && (tab === "banned" || tab === "profiles" || tab === "vac")) {
       params.set("search", q.trim());
     }
+    if (tab === "vac") {
+      if (vacFilters.minVac) params.set("min_vac_count", vacFilters.minVac);
+      if (vacFilters.maxVac) params.set("max_vac_count", vacFilters.maxVac);
+      if (vacFilters.dateFrom) params.set("date_from", vacFilters.dateFrom);
+      if (vacFilters.dateTo) params.set("date_to", vacFilters.dateTo);
+    }
     let cancelled = false;
     setListLoading(true);
     fetchJson<{ rows: Row[]; total: number }>(
@@ -99,7 +119,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [tab, page, q]);
+  }, [tab, page, q, vacFilters]);
 
   useEffect(() => {
     if (tab !== "chart") return;
@@ -191,6 +211,7 @@ export default function HomePage() {
   );
 
   const pages = Math.max(1, Math.ceil(total / PAGE));
+  const colCount = tab === "vac" ? 5 : 4;
 
   return (
     <div>
@@ -268,7 +289,72 @@ export default function HomePage() {
             {t(key)}
           </button>
         ))}
+        <Link to="/cloud" className="tab-link">
+          {t("nav.cloud")}
+        </Link>
       </div>
+
+      {tab === "vac" && (
+        <div className="filters-bar">
+          <span className="filters-title">{t("home.filters.title")}</span>
+          <label>
+            {t("home.filters.min")}
+            <input
+              type="number"
+              min={0}
+              value={vacFilters.minVac}
+              onChange={(e) => {
+                setVacFilters((f) => ({ ...f, minVac: e.target.value }));
+                setPage(0);
+              }}
+            />
+          </label>
+          <label>
+            {t("home.filters.max")}
+            <input
+              type="number"
+              min={0}
+              value={vacFilters.maxVac}
+              onChange={(e) => {
+                setVacFilters((f) => ({ ...f, maxVac: e.target.value }));
+                setPage(0);
+              }}
+            />
+          </label>
+          <label>
+            {t("home.filters.from")}
+            <input
+              type="date"
+              value={vacFilters.dateFrom}
+              onChange={(e) => {
+                setVacFilters((f) => ({ ...f, dateFrom: e.target.value }));
+                setPage(0);
+              }}
+            />
+          </label>
+          <label>
+            {t("home.filters.to")}
+            <input
+              type="date"
+              value={vacFilters.dateTo}
+              onChange={(e) => {
+                setVacFilters((f) => ({ ...f, dateTo: e.target.value }));
+                setPage(0);
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={() => {
+              setVacFilters(EMPTY_VAC);
+              setPage(0);
+            }}
+          >
+            {t("home.filters.reset")}
+          </button>
+        </div>
+      )}
 
       {tab === "chart" ? (
         <div className="panel" style={{ padding: "1rem" }}>
@@ -309,15 +395,22 @@ export default function HomePage() {
             <thead>
               <tr>
                 <th></th>
-                <th>Name</th>
-                <th>SteamID64</th>
-                <th>Bans</th>
+                <th>{t("home.col.name")}</th>
+                <th>{t("home.col.steamid")}</th>
+                {tab === "vac" ? (
+                  <>
+                    <th>{t("home.col.vacCount")}</th>
+                    <th>{t("home.col.lastBan")}</th>
+                  </>
+                ) : (
+                  <th>{t("home.col.bans")}</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {listLoading ? (
                 <tr>
-                  <td colSpan={4} className="muted">
+                  <td colSpan={colCount} className="muted">
                     {t("home.loading")}
                   </td>
                 </tr>
@@ -343,23 +436,34 @@ export default function HomePage() {
                       </Link>
                     </td>
                     <td className="mono">{r.steamid64}</td>
-                    <td>
-                      {!!(r.vac_banned || r.vac_count) && (
-                        <span className="badge vac">VAC</span>
-                      )}
-                      {Number(r.game_ban_count) > 0 && (
-                        <span className="badge game">Game</span>
-                      )}
-                      {!!r.community_banned && (
-                        <span className="badge community">Community</span>
-                      )}
-                    </td>
+                    {tab === "vac" ? (
+                      <>
+                        <td className="mono">{String(r.vac_count ?? "—")}</td>
+                        <td className="muted">
+                          {r.last_ban_date
+                            ? String(r.last_ban_date).slice(0, 10)
+                            : "—"}
+                        </td>
+                      </>
+                    ) : (
+                      <td>
+                        {!!(r.vac_banned || r.vac_count) && (
+                          <span className="badge vac">VAC</span>
+                        )}
+                        {Number(r.game_ban_count) > 0 && (
+                          <span className="badge game">Game</span>
+                        )}
+                        {!!r.community_banned && (
+                          <span className="badge community">Community</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
               {!listLoading && !rows.length && (
                 <tr>
-                  <td colSpan={4} className="muted">
+                  <td colSpan={colCount} className="muted">
                     {t("home.empty")}
                   </td>
                 </tr>
@@ -372,7 +476,7 @@ export default function HomePage() {
               disabled={page <= 0}
               onClick={() => setPage((p) => p - 1)}
             >
-              Prev
+              {t("home.prev")}
             </button>
             <span>
               {page + 1} / {pages} ({total})
@@ -382,7 +486,7 @@ export default function HomePage() {
               disabled={page + 1 >= pages}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next
+              {t("home.next")}
             </button>
           </div>
         </div>

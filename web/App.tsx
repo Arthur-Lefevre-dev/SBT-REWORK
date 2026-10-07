@@ -5,6 +5,7 @@ import AdminDenied from "./pages/AdminDenied";
 import AdminLogin from "./pages/AdminLogin";
 import HomePage from "./pages/Home";
 import ProfilePage from "./pages/Profile";
+import VacCloudPage from "./pages/VacCloud";
 
 function Shell() {
   const { lang, setLang, t } = useI18n();
@@ -29,15 +30,21 @@ function Shell() {
                 <option value="en">English</option>
               </select>
             </label>
-            <Link to="/admin" className="btn ghost">
-              {t("nav.admin")}
-            </Link>
+            <nav className="header-nav">
+              <Link to="/cloud" className="btn">
+                {t("nav.cloud")}
+              </Link>
+              <Link to="/admin" className="btn ghost">
+                {t("nav.admin")}
+              </Link>
+            </nav>
           </div>
         </div>
       </header>
-      <main className="container">
+      <main className="container container-wide">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/cloud" element={<VacCloudPage />} />
           <Route path="/profile/:steamid64" element={<ProfilePage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/login-ui" element={<AdminLogin />} />

@@ -1,0 +1,17 @@
+services:
+  sbt:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      SQLITE_PATH: /data/steam-data.db
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+    volumes:
+      - sbt-data:/data
+    restart: unless-stopped
+
+volumes:
+  sbt-data:

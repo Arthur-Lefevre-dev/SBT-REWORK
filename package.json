@@ -15,7 +15,8 @@
     "scrape": "node --max-old-space-size=8192 --import tsx src/scraper/cli.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.web.json --noEmit"
+    "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "test": "tsx --test src/scraper/steam-api.test.ts src/scraper/graph.test.ts src/scraper/profile-html.test.ts src/server/ws-tokens.test.ts src/db/secrets.test.ts src/shared/async.test.ts"
   },
   "keywords": [
     "steam",

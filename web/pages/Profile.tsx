@@ -161,15 +161,17 @@ export default function ProfilePage() {
           </p>
           {p.vac_banned && p.days_since_last_ban != null && (
             <p className="muted">
-              Last ban ~{p.days_since_last_ban} days ago
+              {t("profile.lastBan", { days: p.days_since_last_ban })}
               {p.last_ban_date
                 ? ` (${String(p.last_ban_date).slice(0, 10)})`
                 : ""}
             </p>
           )}
           <p className="muted">
-            Friends: {p.friend_count ?? 0} — banned:{" "}
-            {p.friend_banned_count ?? 0}
+            {t("profile.friends", {
+              total: p.friend_count ?? 0,
+              banned: p.friend_banned_count ?? 0,
+            })}
             {p.friend_ban_percentage != null
               ? ` (${p.friend_ban_percentage}%)`
               : ""}
@@ -177,7 +179,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="card">
-          <h3>CS stats</h3>
+          <h3>{t("profile.csStats")}</h3>
           {p.faceit_elo != null ? (
             <div className="row" style={{ marginBottom: "0.5rem" }}>
               {faceitIcon && (
@@ -194,13 +196,14 @@ export default function ProfilePage() {
               </span>
             </div>
           ) : (
-            <p className="muted">No Faceit data</p>
+            <p className="muted">{t("profile.noFaceit")}</p>
           )}
           {p.leetify ? (
             <>
               <p>
-                Winrate <strong>{p.leetify.winrate ?? "—"}%</strong> · matches{" "}
-                {p.leetify.total_matches ?? "—"}
+                {t("profile.winrate")}{" "}
+                <strong>{p.leetify.winrate ?? "—"}%</strong> ·{" "}
+                {t("profile.matches")} {p.leetify.total_matches ?? "—"}
                 {p.leetify.ranks?.premier != null &&
                   ` · Premier ${p.leetify.ranks.premier}`}
                 {p.leetify.ranks?.leetify_rating != null &&
@@ -216,26 +219,26 @@ export default function ProfilePage() {
                 </div>
               )}
               <p className="muted" style={{ fontSize: "0.8rem" }}>
-                Data provided by Leetify
+                {t("profile.leetifyCredit")}
               </p>
             </>
           ) : (
-            <p className="muted">No Leetify data</p>
+            <p className="muted">{t("profile.noLeetify")}</p>
           )}
         </div>
       </div>
 
       {matches.length > 0 && (
         <div className="card" style={{ marginTop: "1rem" }}>
-          <h3>Last matches</h3>
+          <h3>{t("profile.lastMatches")}</h3>
           <table>
             <thead>
               <tr>
-                <th>Map</th>
-                <th>Result</th>
-                <th>Score</th>
-                <th>Mode</th>
-                <th>Date</th>
+                <th>{t("profile.map")}</th>
+                <th>{t("profile.result")}</th>
+                <th>{t("profile.score")}</th>
+                <th>{t("profile.mode")}</th>
+                <th>{t("profile.date")}</th>
               </tr>
             </thead>
             <tbody>
@@ -300,9 +303,9 @@ export default function ProfilePage() {
               setFriendSort(e.target.value as "name" | "vac" | "game")
             }
           >
-            <option value="name">Sort: name</option>
-            <option value="vac">Sort: VAC</option>
-            <option value="game">Sort: Game ban</option>
+            <option value="name">{t("profile.sort.name")}</option>
+            <option value="vac">{t("profile.sort.vac")}</option>
+            <option value="game">{t("profile.sort.game")}</option>
           </select>
         </div>
         <table>

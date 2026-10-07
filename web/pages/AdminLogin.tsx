@@ -34,14 +34,14 @@ export default function AdminLogin() {
   return (
     <div className="card" style={{ maxWidth: 420, margin: "2rem auto" }}>
       <h2>{t("admin.login")}</h2>
-      <p className="muted">Steam OpenID — admin allowlist only.</p>
+      <p className="muted">{t("admin.login.hint")}</p>
       {error && <p className="error">{error}</p>}
       <div className="row">
         <button className="btn" onClick={login}>
           {t("admin.login")}
         </button>
         <Link className="btn ghost" to="/">
-          Home
+          {t("nav.home")}
         </Link>
       </div>
     </div>

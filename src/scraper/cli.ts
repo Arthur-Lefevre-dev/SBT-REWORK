@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 import { closeDb, getDbBackend } from "../db/index.js";
-import { getExistingSteamIds, getStats, saveGraph } from "../db/queries.js";
+import {
+  getExistingSteamIds,
+  getResumeHubIds,
+  getStats,
+  saveGraph,
+} from "../db/queries.js";
 import { env } from "../env.js";
 import { isDecodoProxyEnabled, verifyDecodoProxy } from "./proxy.js";
 import { scrape } from "./scrape.js";
@@ -41,10 +46,15 @@ console.log(
 );
 
 let knownIds = new Set<string>();
+let resumeExpandIds: string[] = [];
 try {
   knownIds = await getExistingSteamIds();
-  knownIds.delete(String(startSteamId64));
-  if (knownIds.size) {
+  if (knownIds.has(String(startSteamId64))) {
+    resumeExpandIds = await getResumeHubIds(String(startSteamId64), 12);
+    console.log(
+      `Resume mode: start already in DB. ${knownIds.size} known, ${resumeExpandIds.length} expand hubs.\n`,
+    );
+  } else if (knownIds.size) {
     console.log(`${knownIds.size} profiles already in DB (skipped).\n`);
   }
 } catch (e) {
@@ -56,6 +66,7 @@ const graph = await scrape(apiKey, startSteamId64, {
   maxDepth,
   maxProfiles,
   knownIds,
+  resumeExpandIds,
   parallelBatches: 5,
   saveInterval: 800,
   onSave: async (g) => {

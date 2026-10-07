@@ -25,8 +25,18 @@ npm run scrape -- [steamId64] [depth] [maxProfiles]   # CLI scraper
 npm run dev                                          # UI http://localhost:3000 (API :3001)
 npm run build && npm start                           # production on http://localhost:3000
 npm run typecheck
+npm test
 npm run db:studio                                    # Drizzle Studio
 ```
+
+## Deploy (Docker)
+
+```bash
+# .env must include SESSION_SECRET, ADMIN_STEAM_IDS, STEAM_API_KEY, BASE_URL
+docker compose up -d --build
+```
+
+App listens on `:3000`, SQLite persisted in the `sbt-data` volume (`/data/steam-data.db`).
 
 
 

@@ -18,7 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <div className="card" style={{ margin: "2rem auto", maxWidth: 520 }}>
-          <h2>Something went wrong</h2>
+          <h2>Something went wrong / Une erreur est survenue</h2>
           <p className="error mono">{this.state.error.message}</p>
           <button
             className="btn"
@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
               window.location.href = "/";
             }}
           >
-            Reload
+            Reload / Recharger
           </button>
         </div>
       );

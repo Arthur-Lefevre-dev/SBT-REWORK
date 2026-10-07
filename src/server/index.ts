@@ -14,6 +14,7 @@ import {
 import {
   getVacVerifyState,
   setBroadcast as setVacBroadcast,
+  startVacVerifyScheduler,
   stopVacVerify,
 } from "./vac-verify.js";
 import { consumeToken } from "./ws-tokens.js";
@@ -86,6 +87,7 @@ async function start() {
     if (getAdminIds().size) {
       console.log(`Admin auth routes on :${PORT}`);
     }
+    void startVacVerifyScheduler();
   });
 }
 
