@@ -116,6 +116,9 @@ export function adminRoutes(baseUrl: string) {
         start_steamid64: (await getSetting("start_steamid64")) || "",
         max_depth: (await getSetting("max_depth")) || "2",
         max_profiles: (await getSetting("max_profiles")) || "500",
+        turbo_mode:
+          (await getSetting("turbo_mode")) === "1" ||
+          (await getSetting("turbo_mode")) === "true",
       });
     }),
   );
@@ -124,8 +127,13 @@ export function adminRoutes(baseUrl: string) {
     "/api/admin/settings",
     requireAdmin,
     asyncHandler(async (req, res) => {
-      const { steam_api_key, start_steamid64, max_depth, max_profiles } =
-        req.body || {};
+      const {
+        steam_api_key,
+        start_steamid64,
+        max_depth,
+        max_profiles,
+        turbo_mode,
+      } = req.body || {};
       if (steam_api_key !== undefined && steam_api_key !== "") {
         await setSetting("steam_api_key", steam_api_key);
       }
@@ -137,6 +145,9 @@ export function adminRoutes(baseUrl: string) {
       }
       if (max_profiles !== undefined) {
         await setSetting("max_profiles", String(max_profiles));
+      }
+      if (turbo_mode !== undefined) {
+        await setSetting("turbo_mode", turbo_mode ? "1" : "0");
       }
       res.json({ ok: true });
     }),

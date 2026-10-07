@@ -101,6 +101,9 @@ const dict = {
     "admin.startId": "SteamID64 de départ",
     "admin.maxDepth": "Profondeur max",
     "admin.maxProfiles": "Profils max",
+    "admin.turbo": "Mode turbo",
+    "admin.turbo.hint":
+      "pas de GetPlayerBans — bans VAC/game via HTML profil uniquement",
     "admin.save": "Enregistrer",
     "admin.status": "Statut",
     "admin.start": "Démarrer",
@@ -207,6 +210,9 @@ const dict = {
     "admin.startId": "Start SteamID64",
     "admin.maxDepth": "Max depth",
     "admin.maxProfiles": "Max profiles",
+    "admin.turbo": "Turbo mode",
+    "admin.turbo.hint":
+      "no GetPlayerBans — VAC/game bans from profile HTML only",
     "admin.save": "Save",
     "admin.status": "Status",
     "admin.start": "Start",

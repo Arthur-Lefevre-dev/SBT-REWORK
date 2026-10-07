@@ -42,10 +42,39 @@ function profileToRow(p: ScrapedProfile) {
   };
 }
 
+const PROFILE_META_ON_CONFLICT = {
+  steamid: sql`excluded.steamid`,
+  personaName: sql`excluded.persona_name`,
+  profileUrl: sql`excluded.profile_url`,
+  friendsPageUrl: sql`excluded.friends_page_url`,
+  avatar: sql`excluded.avatar`,
+  timeCreated: sql`excluded.time_created`,
+  scrapedAt: sql`excluded.scraped_at`,
+} as const;
+
+const PROFILE_BAN_ON_CONFLICT = {
+  vacBanned: sql`excluded.vac_banned`,
+  vacCount: sql`excluded.vac_count`,
+  daysSinceLastBan: sql`excluded.days_since_last_ban`,
+  lastBanDate: sql`excluded.last_ban_date`,
+  gameBanCount: sql`excluded.game_ban_count`,
+  gameBanDaysSinceLast: sql`excluded.game_ban_days_since_last`,
+  gameLastBanDate: sql`excluded.game_last_ban_date`,
+  communityBanned: sql`excluded.community_banned`,
+  economyBan: sql`excluded.economy_ban`,
+} as const;
+
 export async function saveGraph(graph: FriendshipGraph): Promise<void> {
   const json = graph.toJSON();
   const profileIds = new Set(Object.keys(json.profiles));
-  const rows = Object.values(json.profiles).map(profileToRow);
+  type ProfileInsert = ReturnType<typeof profileToRow>;
+  const withBan: ProfileInsert[] = [];
+  const withoutBan: ProfileInsert[] = [];
+  for (const p of Object.values(json.profiles)) {
+    const row = profileToRow(p);
+    if (p.ban != null) withBan.push(row);
+    else withoutBan.push(row);
+  }
 
   const friendshipRows: { steamid64A: string; steamid64B: string }[] = [];
   const seen = new Set<string>();
@@ -64,34 +93,27 @@ export async function saveGraph(graph: FriendshipGraph): Promise<void> {
   // Single transaction reduces Statement churn (important on Node 24)
   db.transaction((tx) => {
     const BATCH = 200;
-    for (let i = 0; i < rows.length; i += BATCH) {
-      const chunk = rows.slice(i, i + BATCH);
-      if (chunk.length) {
-        tx.insert(profiles)
-          .values(chunk)
-          .onConflictDoUpdate({
-            target: profiles.steamid64,
-            set: {
-              steamid: sql`excluded.steamid`,
-              personaName: sql`excluded.persona_name`,
-              profileUrl: sql`excluded.profile_url`,
-              friendsPageUrl: sql`excluded.friends_page_url`,
-              avatar: sql`excluded.avatar`,
-              timeCreated: sql`excluded.time_created`,
-              vacBanned: sql`excluded.vac_banned`,
-              vacCount: sql`excluded.vac_count`,
-              daysSinceLastBan: sql`excluded.days_since_last_ban`,
-              lastBanDate: sql`excluded.last_ban_date`,
-              gameBanCount: sql`excluded.game_ban_count`,
-              gameBanDaysSinceLast: sql`excluded.game_ban_days_since_last`,
-              gameLastBanDate: sql`excluded.game_last_ban_date`,
-              communityBanned: sql`excluded.community_banned`,
-              economyBan: sql`excluded.economy_ban`,
-              scrapedAt: sql`excluded.scraped_at`,
-            },
-          })
-          .run();
-      }
+    const upsert = (
+      chunk: ReturnType<typeof profileToRow>[],
+      includeBans: boolean,
+    ) => {
+      if (!chunk.length) return;
+      tx.insert(profiles)
+        .values(chunk)
+        .onConflictDoUpdate({
+          target: profiles.steamid64,
+          set: includeBans
+            ? { ...PROFILE_META_ON_CONFLICT, ...PROFILE_BAN_ON_CONFLICT }
+            : { ...PROFILE_META_ON_CONFLICT },
+        })
+        .run();
+    };
+
+    for (let i = 0; i < withBan.length; i += BATCH) {
+      upsert(withBan.slice(i, i + BATCH), true);
+    }
+    for (let i = 0; i < withoutBan.length; i += BATCH) {
+      upsert(withoutBan.slice(i, i + BATCH), false);
     }
 
     for (let i = 0; i < friendshipRows.length; i += 500) {

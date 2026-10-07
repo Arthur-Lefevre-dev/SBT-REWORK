@@ -115,6 +115,7 @@ export async function startBot(opts: {
   startSteamId64?: string;
   maxDepth?: number;
   maxProfiles?: number;
+  turbo?: boolean;
 }) {
   if (state.status === "running" || state.status === "paused") {
     return { ok: false, error: "Bot already running" };
@@ -132,12 +133,16 @@ export async function startBot(opts: {
     "76561198011775992";
   const maxDepthSetting = await getSetting("max_depth");
   const maxProfilesSetting = await getSetting("max_profiles");
+  const turboSetting = await getSetting("turbo_mode");
   const maxDepth =
     opts.maxDepth ??
     (maxDepthSetting ? parseInt(maxDepthSetting, 10) : 2);
   const maxProfiles =
     opts.maxProfiles ??
     (maxProfilesSetting ? parseInt(maxProfilesSetting, 10) : 500);
+  const turbo =
+    opts.turbo ??
+    (turboSetting === "1" || turboSetting === "true");
 
   controller = null;
   const ctrl = getController();
@@ -161,9 +166,9 @@ export async function startBot(opts: {
   };
   logLines = [];
   addLog(
-    `Starting scrape from ${start} (depth=${maxDepth}, max=${maxProfiles})${
-      isDecodoProxyEnabled() ? " [proxy]" : ""
-    }`,
+    `Starting scrape from ${start} (depth=${maxDepth}, max=${maxProfiles}${
+      turbo ? ", TURBO" : ""
+    })${isDecodoProxyEnabled() ? " [proxy]" : ""}`,
   );
   broadcastFn?.();
 
@@ -184,10 +189,11 @@ export async function startBot(opts: {
         maxProfiles: maxProfiles === 0 ? Infinity : maxProfiles,
         knownIds,
         resumeExpandIds,
-        saveInterval: 800,
+        saveInterval: turbo ? 1200 : 800,
         onSave: (g) => saveGraph(g),
         controller: ctrl,
         onLog: addLog,
+        turbo,
       });
       if (!ctrl.aborted) {
         await saveGraph(graph);

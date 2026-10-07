@@ -175,7 +175,8 @@ export async function startVacVerify(body: {
     Math.max(body.concurrency ?? autoConcurrency(), 1),
     8,
   );
-  const confirmWithApi = body.confirmWithApi !== false;
+  // HTML-only by default — no Steam API confirm on recheck
+  const confirmWithApi = body.confirmWithApi === true;
   const useProxy = !body.skipProxy;
   const delayMs = delayBetweenMs();
   aborted = false;
@@ -301,7 +302,7 @@ async function runScheduledPass() {
   await startVacVerify({
     limit: autoLimit(),
     concurrency: autoConcurrency(),
-    confirmWithApi: true,
+    confirmWithApi: false,
     scheduled: true,
   });
   scheduleNext(intervalMs());

@@ -9,6 +9,7 @@ type Settings = {
   start_steamid64: string;
   max_depth: string;
   max_profiles: string;
+  turbo_mode: boolean;
 };
 type BotState = {
   status: string;
@@ -28,6 +29,7 @@ export default function AdminPage() {
   const [startId, setStartId] = useState("");
   const [maxDepth, setMaxDepth] = useState("2");
   const [maxProfiles, setMaxProfiles] = useState("500");
+  const [turbo, setTurbo] = useState(false);
   const [vacLimit, setVacLimit] = useState("100");
   const [flash, setFlash] = useState<string | null>(null);
   const [flashError, setFlashError] = useState<string | null>(null);
@@ -50,6 +52,7 @@ export default function AdminPage() {
       setStartId(s.start_steamid64);
       setMaxDepth(s.max_depth);
       setMaxProfiles(s.max_profiles);
+      setTurbo(!!s.turbo_mode);
     });
     fetchJson<BotState>("/api/admin/bot/state").then(setBot);
     fetchJson<Record<string, unknown>>("/api/admin/verify-vac/state").then(
@@ -93,10 +96,13 @@ export default function AdminPage() {
           start_steamid64: startId,
           max_depth: maxDepth,
           max_profiles: maxProfiles,
+          turbo_mode: turbo,
         }),
       });
       setApiKey("");
-      setSettings(await fetchJson("/api/admin/settings"));
+      const s = await fetchJson<Settings>("/api/admin/settings");
+      setSettings(s);
+      setTurbo(!!s.turbo_mode);
       setFlash(t("admin.saved"));
     } catch (e) {
       setFlashError(e instanceof Error ? e.message : t("admin.saveError"));
@@ -157,6 +163,17 @@ export default function AdminPage() {
               onChange={(e) => setMaxProfiles(e.target.value)}
             />
           </div>
+          <label className="turbo-toggle">
+            <input
+              type="checkbox"
+              checked={turbo}
+              onChange={(e) => setTurbo(e.target.checked)}
+            />
+            <span>
+              <strong>{t("admin.turbo")}</strong>
+              <span className="muted"> — {t("admin.turbo.hint")}</span>
+            </span>
+          </label>
           <button className="btn" onClick={saveSettings}>
             {t("admin.save")}
           </button>
@@ -166,6 +183,11 @@ export default function AdminPage() {
           <h3>{t("admin.bot")}</h3>
           <p>
             {t("admin.status")}: <strong>{bot?.status ?? "—"}</strong>
+            {turbo ? (
+              <span className="badge vac" style={{ marginLeft: 8 }}>
+                TURBO
+              </span>
+            ) : null}
           </p>
           <p className="muted mono">
             profiles={bot?.stats?.profilesCount ?? 0} depth=
@@ -179,7 +201,7 @@ export default function AdminPage() {
               onClick={() =>
                 fetchJson("/api/admin/bot/start", {
                   method: "POST",
-                  body: "{}",
+                  body: JSON.stringify({ turbo }),
                 })
               }
             >
@@ -251,8 +273,8 @@ export default function AdminPage() {
                 method: "POST",
                 body: JSON.stringify({
                   limit: parseInt(vacLimit, 10),
-                  confirmWithApi: true,
-                  concurrency: 4,
+                  confirmWithApi: false,
+                  concurrency: 2,
                 }),
               })
             }

@@ -2,7 +2,10 @@ import { pLimit, sleep } from "../shared/async.js";
 import type { ScrapedProfile } from "../shared/types.js";
 import { FriendshipGraph } from "./graph.js";
 import { checkAndLogProxyIpChange, isDecodoProxyEnabled } from "./proxy.js";
-import { getGameBanDaysFromProfile } from "./profile-html.js";
+import {
+  getBansFromProfilePage,
+  getGameBanDaysFromProfile,
+} from "./profile-html.js";
 import {
   getFriendList,
   getPlayerBans,
@@ -12,28 +15,40 @@ import {
 } from "./steam-api.js";
 
 const BATCH_PROFILES = 50;
-const FRIEND_CONCURRENCY = 18;
-const DELAY_MS = 100;
-const PARALLEL_BATCHES = 3;
+/** Friend fetches are serialized by the Steam API throttle; keep modest. */
+const FRIEND_CONCURRENCY = 6;
+const DELAY_MS = 150;
+const PARALLEL_BATCHES = 2;
 const GAME_BAN_SCRAPE_CONCURRENCY = 4;
+
+/** Turbo: skip GetPlayerBans — ban status from Steam Community HTML only. */
+const TURBO = {
+  batchSize: 40,
+  friendConcurrency: 8,
+  delayMs: 80,
+  parallelBatches: 2,
+  htmlConcurrency: 3,
+  htmlDelayMs: 350,
+} as const;
 
 async function processBatch(
   apiKey: string,
   batch: { steamId64: string; depth: number }[],
+  opts: { turbo?: boolean; friendConcurrency?: number } = {},
 ) {
   if (!batch.length) return { profiles: [] as ScrapedProfile[], friendsData: [] as { steamId64: string; depth: number; friendIds: string[] }[] };
 
+  const turbo = !!opts.turbo;
+  const friendConcurrency = opts.friendConcurrency ?? FRIEND_CONCURRENCY;
   const ids = batch.map((b) => b.steamId64);
-  const [summaries, bans] = await Promise.all([
-    getPlayerSummaries(apiKey, ids),
-    getPlayerBans(apiKey, ids),
-  ]);
+  const summaries = await getPlayerSummaries(apiKey, ids);
+  const bans = turbo ? [] : await getPlayerBans(apiKey, ids);
   const summaryMap = new Map(summaries.map((s) => [String(s.steamid), s]));
   const banMap = new Map(bans.map((b) => [String(b.SteamId), b]));
 
   const friendsResults = await pLimit(
     batch.map((b) => () => getFriendList(apiKey, b.steamId64)),
-    FRIEND_CONCURRENCY,
+    friendConcurrency,
   );
 
   const profiles: ScrapedProfile[] = [];
@@ -80,24 +95,54 @@ async function processBatch(
     });
   }
 
-  const gameBanProfiles = profiles.filter((p) => (p.ban?.numberOfGameBans ?? 0) > 0);
-  if (gameBanProfiles.length) {
+  if (turbo) {
+    // Bans from HTML only (no Steam Web API GetPlayerBans)
     await pLimit(
-      gameBanProfiles.map((p) => async () => {
+      profiles.map((p) => async () => {
         try {
-          const extra = await getGameBanDaysFromProfile(p.steamId64, {
-            delayMs: 0,
+          const { vac, game } = await getBansFromProfilePage(p.steamId64, {
+            delayMs: TURBO.htmlDelayMs,
           });
-          if (extra && p.ban) {
-            p.ban.gameBanDaysSinceLast = extra.gameBanDaysSinceLast;
-            p.ban.gameLastBanDate = extra.gameLastBanDate;
-          }
+          p.ban = {
+            communityBanned: false,
+            vacBanned: !!vac?.vacBanned,
+            numberOfVACBans: vac?.vacCount ?? 0,
+            daysSinceLastBan:
+              vac?.daysSinceLastBan != null ? vac.daysSinceLastBan : null,
+            lastBanDate: vac?.lastBanDate ?? null,
+            numberOfGameBans: game ? 1 : 0,
+            economyBan: "none",
+            gameBanDaysSinceLast: game?.gameBanDaysSinceLast ?? null,
+            gameLastBanDate: game?.gameLastBanDate ?? null,
+          };
         } catch {
-          /* ignore */
+          /* leave ban null — VAC recheck can retry later */
         }
       }),
-      GAME_BAN_SCRAPE_CONCURRENCY,
+      TURBO.htmlConcurrency,
     );
+  } else {
+    const gameBanProfiles = profiles.filter(
+      (p) => (p.ban?.numberOfGameBans ?? 0) > 0,
+    );
+    if (gameBanProfiles.length) {
+      await pLimit(
+        gameBanProfiles.map((p) => async () => {
+          try {
+            const extra = await getGameBanDaysFromProfile(p.steamId64, {
+              delayMs: 0,
+            });
+            if (extra && p.ban) {
+              p.ban.gameBanDaysSinceLast = extra.gameBanDaysSinceLast;
+              p.ban.gameLastBanDate = extra.gameLastBanDate;
+            }
+          } catch {
+            /* ignore */
+          }
+        }),
+        GAME_BAN_SCRAPE_CONCURRENCY,
+      );
+    }
   }
 
   return { profiles, friendsData };
@@ -147,6 +192,11 @@ export type ScrapeOptions = {
   verbose?: boolean;
   controller?: ScrapeController | null;
   onLog?: ((msg: string) => void) | null;
+  /**
+   * Faster crawl: skip GetPlayerBans (Steam API).
+   * VAC / game bans come from Steam Community HTML instead.
+   */
+  turbo?: boolean;
 };
 
 /** Expand a known profile via GetFriendList only (no summaries/bans re-fetch). */
@@ -173,12 +223,13 @@ export async function scrape(
   startSteamId64: string,
   options: ScrapeOptions = {},
 ) {
+  const turbo = !!options.turbo;
   const {
     maxDepth = 2,
     maxProfiles = 500,
-    batchSize = BATCH_PROFILES,
-    delayMs = DELAY_MS,
-    parallelBatches = PARALLEL_BATCHES,
+    batchSize = turbo ? TURBO.batchSize : BATCH_PROFILES,
+    delayMs = turbo ? TURBO.delayMs : DELAY_MS,
+    parallelBatches = turbo ? TURBO.parallelBatches : PARALLEL_BATCHES,
     knownIds: knownIdsOption = null,
     saveInterval = 0,
     onSave = null,
@@ -187,6 +238,9 @@ export async function scrape(
     onLog = null,
     resumeExpandIds = null,
   } = options;
+  const friendConcurrency = turbo
+    ? TURBO.friendConcurrency
+    : FRIEND_CONCURRENCY;
 
   const knownIds: Set<string> =
     knownIdsOption instanceof Set ? knownIdsOption : new Set<string>();
@@ -205,6 +259,12 @@ export async function scrape(
     log(msg);
     onLog?.(msg);
   };
+
+  if (turbo) {
+    out(
+      "TURBO mode: no GetPlayerBans — VAC/game bans from profile HTML only",
+    );
+  }
 
   // Resume: never re-scrape profiles already in DB (avoids rate-limits / IP blocks)
   if (knownIds.has(start)) {
@@ -298,7 +358,9 @@ export async function scrape(
 
     try {
       const results = await Promise.all(
-        batches.map((batch) => processBatch(apiKey, batch)),
+        batches.map((batch) =>
+          processBatch(apiKey, batch, { turbo, friendConcurrency }),
+        ),
       );
 
       for (const { profiles, friendsData } of results) {

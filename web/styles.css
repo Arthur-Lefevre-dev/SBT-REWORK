@@ -529,6 +529,17 @@ th {
   gap: 0.35rem;
   margin-bottom: 0.75rem;
 }
+.turbo-toggle {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0.75rem 0 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.turbo-toggle input {
+  margin-top: 0.25rem;
+}
 .form-row input {
   background: var(--bg);
   border: 1px solid var(--border);

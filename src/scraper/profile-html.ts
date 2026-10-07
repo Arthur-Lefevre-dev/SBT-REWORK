@@ -113,6 +113,17 @@ export async function getVacBanFromProfilePage(
   return parseVacBanFromHtml(html);
 }
 
+/** One HTML fetch → VAC + game-ban days (no Steam Web API). */
+export async function getBansFromProfilePage(
+  steamid64: string,
+  options: { delayMs?: number; sessionId?: string; useProxy?: boolean } = {},
+) {
+  const html = await fetchProfilePageHtml(steamid64, options);
+  const vac = parseVacBanFromHtml(html);
+  const game = parseGameBanDaysFromHtml(html);
+  return { vac, game };
+}
+
 export async function getGameBanDaysFromProfile(
   steamid64: string,
   options: { delayMs?: number } = {},

@@ -36,6 +36,16 @@ const envSchema = z.object({
   VAC_VERIFY_DELAY_MS: z.coerce.number().default(800),
   /** 0 = up to 10000 profiles per pass */
   VAC_VERIFY_LIMIT: z.coerce.number().default(0),
+
+  /**
+   * Steam Web API pacing (Valve: ~100k calls/key/day; burst undocumented).
+   * Default 400ms ≈ 2.5 req/s — safe for long scrapes.
+   */
+  STEAM_API_MIN_INTERVAL_MS: z.coerce.number().default(400),
+  STEAM_CACHE_TTL_SUMMARIES_MS: z.coerce.number().default(6 * 3600_000),
+  STEAM_CACHE_TTL_BANS_MS: z.coerce.number().default(3600_000),
+  STEAM_CACHE_TTL_FRIENDS_MS: z.coerce.number().default(3600_000),
+  STEAM_CACHE_TTL_VANITY_MS: z.coerce.number().default(24 * 3600_000),
 });
 
 const parsed = envSchema.safeParse(process.env);
