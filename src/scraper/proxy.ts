@@ -37,7 +37,9 @@ export async function proxyFetch(
 ): Promise<Response> {
   const { sessionId, useProxy = true, ...rest } = init;
   if (!useProxy || !isDecodoProxyEnabled()) {
-    return fetch(url, rest);
+    // Always bound hangs — Steam Community can stall without responding
+    const signal = rest.signal ?? AbortSignal.timeout(20_000);
+    return fetch(url, { ...rest, signal });
   }
   const agent = getProxyAgent(sessionId);
   // Node fetch accepts dispatcher via undici; https-proxy-agent works with node:https.

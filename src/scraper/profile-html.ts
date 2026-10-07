@@ -4,7 +4,32 @@ import { proxyFetch } from "./proxy.js";
 const PROFILE_URL = (id: string) =>
   `https://steamcommunity.com/profiles/${id}`;
 const DELAY_MS = 500;
-const RATE_LIMIT_BACKOFF_MS = [20_000, 45_000, 90_000];
+/** Short backoffs — long sleeps look like a frozen scrape. */
+const RATE_LIMIT_BACKOFF_MS = [8_000, 20_000];
+const FETCH_TIMEOUT_MS = 20_000;
+
+/** Shared cooldown so parallel HTML workers do not stampede after 429. */
+let htmlCooldownUntil = 0;
+let htmlLogger: ((msg: string) => void) | null = null;
+
+export function setProfileHtmlLogger(fn: ((msg: string) => void) | null) {
+  htmlLogger = fn;
+}
+
+async function waitHtmlCooldown() {
+  const wait = htmlCooldownUntil - Date.now();
+  if (wait > 0) await sleep(wait);
+}
+
+function triggerHtmlCooldown(ms: number, status: number) {
+  const until = Date.now() + ms;
+  if (until > htmlCooldownUntil) {
+    htmlCooldownUntil = until;
+    htmlLogger?.(
+      `[HTML] HTTP ${status} — pause ${Math.round(ms / 1000)}s before next profile page`,
+    );
+  }
+}
 
 export class ProfileRateLimitError extends Error {
   status: number;
@@ -85,14 +110,30 @@ export async function fetchProfilePageHtml(
   const { delayMs = DELAY_MS, sessionId, useProxy = true } = options;
   const url = PROFILE_URL(steamid64);
   for (let tryIndex = 0; tryIndex <= RATE_LIMIT_BACKOFF_MS.length; tryIndex++) {
-    const res = await proxyFetch(url, {
-      sessionId,
-      useProxy,
-      headers: { "Accept-Language": "en-US,en;q=0.9" },
-    });
+    await waitHtmlCooldown();
+    let res: Response;
+    try {
+      res = await proxyFetch(url, {
+        sessionId,
+        useProxy,
+        headers: { "Accept-Language": "en-US,en;q=0.9" },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (/abort|timeout/i.test(msg) && tryIndex < RATE_LIMIT_BACKOFF_MS.length) {
+        triggerHtmlCooldown(RATE_LIMIT_BACKOFF_MS[tryIndex], 0);
+        continue;
+      }
+      throw err;
+    }
     if (isRateLimit(res.status)) {
+      const waitMs =
+        RATE_LIMIT_BACKOFF_MS[tryIndex] ??
+        RATE_LIMIT_BACKOFF_MS[RATE_LIMIT_BACKOFF_MS.length - 1];
+      triggerHtmlCooldown(waitMs, res.status);
       if (tryIndex < RATE_LIMIT_BACKOFF_MS.length) {
-        await sleep(RATE_LIMIT_BACKOFF_MS[tryIndex]);
+        await sleep(waitMs);
         continue;
       }
       throw new ProfileRateLimitError(res.status);

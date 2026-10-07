@@ -5,12 +5,14 @@ import { checkAndLogProxyIpChange, isDecodoProxyEnabled } from "./proxy.js";
 import {
   getBansFromProfilePage,
   getGameBanDaysFromProfile,
+  setProfileHtmlLogger,
 } from "./profile-html.js";
 import {
   getFriendList,
   getPlayerBans,
   getPlayerSummaries,
   isSteamRateLimitError,
+  setSteamApiLogger,
   steamId64ToSteamId,
 } from "./steam-api.js";
 
@@ -19,35 +21,56 @@ const BATCH_PROFILES = 50;
 const FRIEND_CONCURRENCY = 6;
 const DELAY_MS = 150;
 const PARALLEL_BATCHES = 2;
-const GAME_BAN_SCRAPE_CONCURRENCY = 4;
+const GAME_BAN_SCRAPE_CONCURRENCY = 2;
 
 /** Turbo: skip GetPlayerBans — ban status from Steam Community HTML only. */
 const TURBO = {
   batchSize: 40,
-  friendConcurrency: 8,
+  friendConcurrency: 6,
   delayMs: 80,
   parallelBatches: 2,
-  htmlConcurrency: 3,
-  htmlDelayMs: 350,
+  /** Low concurrency without proxy — Steam Community 429s hard. */
+  htmlConcurrency: 2,
+  htmlDelayMs: 500,
 } as const;
+
+type BatchLog = ((msg: string) => void) | null;
 
 async function processBatch(
   apiKey: string,
   batch: { steamId64: string; depth: number }[],
-  opts: { turbo?: boolean; friendConcurrency?: number } = {},
+  opts: {
+    turbo?: boolean;
+    friendConcurrency?: number;
+    onLog?: BatchLog;
+    batchLabel?: string;
+  } = {},
 ) {
   if (!batch.length) return { profiles: [] as ScrapedProfile[], friendsData: [] as { steamId64: string; depth: number; friendIds: string[] }[] };
 
   const turbo = !!opts.turbo;
   const friendConcurrency = opts.friendConcurrency ?? FRIEND_CONCURRENCY;
+  const log = opts.onLog ?? (() => {});
+  const label = opts.batchLabel ?? "batch";
   const ids = batch.map((b) => b.steamId64);
+
+  log(`  → ${label}: summaries (${ids.length})…`);
   const summaries = await getPlayerSummaries(apiKey, ids);
   const bans = turbo ? [] : await getPlayerBans(apiKey, ids);
+  if (!turbo) log(`  → ${label}: bans OK (${bans.length})`);
   const summaryMap = new Map(summaries.map((s) => [String(s.steamid), s]));
   const banMap = new Map(bans.map((b) => [String(b.SteamId), b]));
 
+  let friendsDone = 0;
   const friendsResults = await pLimit(
-    batch.map((b) => () => getFriendList(apiKey, b.steamId64)),
+    batch.map((b) => async () => {
+      const friends = await getFriendList(apiKey, b.steamId64);
+      friendsDone += 1;
+      if (friendsDone === 1 || friendsDone === batch.length || friendsDone % 10 === 0) {
+        log(`  → ${label}: friends ${friendsDone}/${batch.length}`);
+      }
+      return friends;
+    }),
     friendConcurrency,
   );
 
@@ -96,7 +119,9 @@ async function processBatch(
   }
 
   if (turbo) {
-    // Bans from HTML only (no Steam Web API GetPlayerBans)
+    log(`  → ${label}: HTML bans (${profiles.length}, concurrency ${TURBO.htmlConcurrency})…`);
+    let htmlDone = 0;
+    let htmlOk = 0;
     await pLimit(
       profiles.map((p) => async () => {
         try {
@@ -115,8 +140,14 @@ async function processBatch(
             gameBanDaysSinceLast: game?.gameBanDaysSinceLast ?? null,
             gameLastBanDate: game?.gameLastBanDate ?? null,
           };
+          htmlOk += 1;
         } catch {
           /* leave ban null — VAC recheck can retry later */
+        } finally {
+          htmlDone += 1;
+          if (htmlDone === 1 || htmlDone === profiles.length || htmlDone % 5 === 0) {
+            log(`  → ${label}: HTML ${htmlDone}/${profiles.length} (ok ${htmlOk})`);
+          }
         }
       }),
       TURBO.htmlConcurrency,
@@ -126,11 +157,12 @@ async function processBatch(
       (p) => (p.ban?.numberOfGameBans ?? 0) > 0,
     );
     if (gameBanProfiles.length) {
+      log(`  → ${label}: game-ban HTML (${gameBanProfiles.length})…`);
       await pLimit(
         gameBanProfiles.map((p) => async () => {
           try {
             const extra = await getGameBanDaysFromProfile(p.steamId64, {
-              delayMs: 0,
+              delayMs: 400,
             });
             if (extra && p.ban) {
               p.ban.gameBanDaysSinceLast = extra.gameBanDaysSinceLast;
@@ -145,6 +177,7 @@ async function processBatch(
     }
   }
 
+  log(`  → ${label}: done`);
   return { profiles, friendsData };
 }
 
@@ -224,12 +257,19 @@ export async function scrape(
   options: ScrapeOptions = {},
 ) {
   const turbo = !!options.turbo;
+  // Without proxy, one batch at a time avoids Steam Community 429 storms
+  const defaultParallel =
+    turbo && !isDecodoProxyEnabled()
+      ? 1
+      : turbo
+        ? TURBO.parallelBatches
+        : PARALLEL_BATCHES;
   const {
     maxDepth = 2,
     maxProfiles = 500,
     batchSize = turbo ? TURBO.batchSize : BATCH_PROFILES,
     delayMs = turbo ? TURBO.delayMs : DELAY_MS,
-    parallelBatches = turbo ? TURBO.parallelBatches : PARALLEL_BATCHES,
+    parallelBatches = defaultParallel,
     knownIds: knownIdsOption = null,
     saveInterval = 0,
     onSave = null,
@@ -260,185 +300,204 @@ export async function scrape(
     onLog?.(msg);
   };
 
-  if (turbo) {
-    out(
-      "TURBO mode: no GetPlayerBans — VAC/game bans from profile HTML only",
-    );
-  }
+  setSteamApiLogger(out);
+  setProfileHtmlLogger(out);
 
-  // Resume: never re-scrape profiles already in DB (avoids rate-limits / IP blocks)
-  if (knownIds.has(start)) {
-    out(
-      `Resume: ${start} already in DB — skipping re-scrape, expanding friends…`,
-    );
-    try {
-      const fromStart = await expandKnownProfile(
-        apiKey,
-        start,
-        knownIds,
-        visited,
-        1,
-      );
-      queue.push(...fromStart);
-      out(`  → ${fromStart.length} new friend(s) from start profile`);
-    } catch (err) {
+  try {
+    if (turbo) {
       out(
-        `  → Friend expand failed for start: ${err instanceof Error ? err.message : err}`,
+        "TURBO mode: no GetPlayerBans — VAC/game bans from profile HTML only",
       );
+      if (!isDecodoProxyEnabled()) {
+        out(
+          "TURBO tip: no Decodo proxy — HTML is slower (rate-limits). Expect progress logs every few profiles.",
+        );
+      }
     }
 
-    // If start's friends are all known, expand a few other known hubs
-    const hubs = (resumeExpandIds ?? [])
-      .map(String)
-      .filter((id) => id !== start && knownIds.has(id))
-      .slice(0, 12);
-    for (const hub of hubs) {
-      if (controller?.aborted) break;
-      if (queue.length >= batchSize) break;
+    // Resume: never re-scrape profiles already in DB (avoids rate-limits / IP blocks)
+    if (knownIds.has(start)) {
+      out(
+        `Resume: ${start} already in DB — skipping re-scrape, expanding friends…`,
+      );
       try {
-        const more = await expandKnownProfile(
+        const fromStart = await expandKnownProfile(
           apiKey,
-          hub,
+          start,
           knownIds,
           visited,
           1,
         );
-        if (more.length) {
-          queue.push(...more);
-          out(`  → +${more.length} new from hub ${hub}`);
-        }
-        await sleep(delayMs);
-      } catch {
-        /* skip hub */
+        queue.push(...fromStart);
+        out(`  → ${fromStart.length} new friend(s) from start profile`);
+      } catch (err) {
+        out(
+          `  → Friend expand failed for start: ${err instanceof Error ? err.message : err}`,
+        );
       }
+
+      // If start's friends are all known, expand a few other known hubs
+      const hubs = (resumeExpandIds ?? [])
+        .map(String)
+        .filter((id) => id !== start && knownIds.has(id))
+        .slice(0, 12);
+      for (const hub of hubs) {
+        if (controller?.aborted) break;
+        if (queue.length >= batchSize) break;
+        try {
+          const more = await expandKnownProfile(
+            apiKey,
+            hub,
+            knownIds,
+            visited,
+            1,
+          );
+          if (more.length) {
+            queue.push(...more);
+            out(`  → +${more.length} new from hub ${hub}`);
+          }
+          await sleep(delayMs);
+        } catch {
+          /* skip hub */
+        }
+      }
+
+      if (!queue.length) {
+        out("Resume: no unknown friends to crawl. Done.");
+        return graph;
+      }
+    } else {
+      queue.push({ steamId64: start, depth: 0 });
     }
 
-    if (!queue.length) {
-      out("Resume: no unknown friends to crawl. Done.");
-      return graph;
-    }
-  } else {
-    queue.push({ steamId64: start, depth: 0 });
-  }
+    while (
+      queue.length > 0 &&
+      (maxProfiles === Infinity || visited.size < maxProfiles)
+    ) {
+      if (controller?.aborted) break;
+      while (controller?.paused) await sleep(1000);
+      if (controller?.aborted) break;
 
-  while (
-    queue.length > 0 &&
-    (maxProfiles === Infinity || visited.size < maxProfiles)
-  ) {
-    if (controller?.aborted) break;
-    while (controller?.paused) await sleep(1000);
-    if (controller?.aborted) break;
+      const batches = [];
+      for (let p = 0; p < parallelBatches; p++) {
+        const batch = popBatch(
+          queue,
+          visited,
+          knownIds,
+          batchSize,
+          maxProfiles,
+          maxDepth,
+        );
+        if (batch.length) batches.push(batch);
+      }
+      if (!batches.length) break;
 
-    const batches = [];
-    for (let p = 0; p < parallelBatches; p++) {
-      const batch = popBatch(
-        queue,
-        visited,
-        knownIds,
-        batchSize,
-        maxProfiles,
-        maxDepth,
+      const totalInBatches = batches.reduce((s, b) => s + b.length, 0);
+      const currentDepth = batches[0]?.[0]?.depth ?? 0;
+      controller?.setStats?.({
+        profilesCount: visited.size,
+        currentDepth,
+        batchCount: batchRoundIndex + 1,
+        lastSaveCount,
+        pendingSaves: pendingSaveCount,
+      });
+      out(
+        `[${visited.size}${maxProfiles === Infinity ? "" : "/" + maxProfiles}] ${batches.length} batch(es) × ${totalInBatches} profiles (depth ${currentDepth})`,
       );
-      if (batch.length) batches.push(batch);
-    }
-    if (!batches.length) break;
 
-    const totalInBatches = batches.reduce((s, b) => s + b.length, 0);
-    const currentDepth = batches[0]?.[0]?.depth ?? 0;
-    controller?.setStats?.({
-      profilesCount: visited.size,
-      currentDepth,
-      batchCount: batchRoundIndex + 1,
-      lastSaveCount,
-      pendingSaves: pendingSaveCount,
-    });
-    out(
-      `[${visited.size}${maxProfiles === Infinity ? "" : "/" + maxProfiles}] ${batches.length} batch(es) × ${totalInBatches} profiles (depth ${currentDepth})`,
-    );
+      try {
+        const results = await Promise.all(
+          batches.map((batch, i) =>
+            processBatch(apiKey, batch, {
+              turbo,
+              friendConcurrency,
+              onLog: out,
+              batchLabel: `B${batchRoundIndex + 1}.${i + 1}`,
+            }),
+          ),
+        );
 
-    try {
-      const results = await Promise.all(
-        batches.map((batch) =>
-          processBatch(apiKey, batch, { turbo, friendConcurrency }),
-        ),
-      );
-
-      for (const { profiles, friendsData } of results) {
-        for (const profile of profiles) graph.addProfile(profile.steamId64, profile);
-        for (const { steamId64, depth, friendIds } of friendsData) {
-          graph.setFriends(steamId64, friendIds);
-          for (const fid of friendIds) graph.addFriendship(steamId64, fid);
-          if (depth < maxDepth) {
-            for (const fid of friendIds) {
-              const id = String(fid);
-              if (!visited.has(id) && !knownIds.has(id)) {
-                queue.push({ steamId64: id, depth: depth + 1 });
+        for (const { profiles, friendsData } of results) {
+          for (const profile of profiles)
+            graph.addProfile(profile.steamId64, profile);
+          for (const { steamId64, depth, friendIds } of friendsData) {
+            graph.setFriends(steamId64, friendIds);
+            for (const fid of friendIds) graph.addFriendship(steamId64, fid);
+            if (depth < maxDepth) {
+              for (const fid of friendIds) {
+                const id = String(fid);
+                if (!visited.has(id) && !knownIds.has(id)) {
+                  queue.push({ steamId64: id, depth: depth + 1 });
+                }
               }
             }
           }
         }
-      }
 
-      batchRoundIndex += 1;
-      if (isDecodoProxyEnabled() && batchRoundIndex % 5 === 0) {
-        await checkAndLogProxyIpChange({ onLog: onLog ?? undefined });
-      }
-
-      while (
-        saveInterval > 0 &&
-        onSave &&
-        visited.size >= lastSaveCount + saveInterval
-      ) {
-        while (pendingSaveCount >= MAX_PENDING_SAVES) await sleep(2000);
-        lastSaveCount += saveInterval;
-        const count = visited.size;
-        pendingSaveCount += 1;
-        out(`  → DB save (${count} profiles) background`);
-        const doSave = () =>
-          onSave(graph)
-            .then(() => {
-              pendingSaveCount -= 1;
-              out(`  → DB save OK (${count})`);
-            })
-            .catch((err: Error) => {
-              pendingSaveCount -= 1;
-              out(`  → DB save failed: ${err?.message || err}`);
-            });
-        pendingSavePromise = pendingSavePromise
-          ? pendingSavePromise.then(
-              () => doSave(),
-              () => doSave(),
-            )
-          : doSave();
-      }
-
-      await sleep(delayMs);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      controller?.setStats?.({ lastError: message });
-      if (isSteamRateLimitError(err)) {
-        controller?.setStats?.({ rateLimitPauses: 1 });
-        out("  → Steam rate limit, pause 90s then retry...");
-        await sleep(90_000);
-        for (const batch of batches) {
-          for (const { steamId64, depth } of batch) {
-            visited.delete(steamId64);
-            queue.unshift({ steamId64, depth });
-          }
+        batchRoundIndex += 1;
+        if (isDecodoProxyEnabled() && batchRoundIndex % 5 === 0) {
+          await checkAndLogProxyIpChange({ onLog: onLog ?? undefined });
         }
-      } else {
-        out("Batch error: " + message);
-        for (const batch of batches) {
-          for (const { steamId64 } of batch) visited.delete(steamId64);
+
+        while (
+          saveInterval > 0 &&
+          onSave &&
+          visited.size >= lastSaveCount + saveInterval
+        ) {
+          while (pendingSaveCount >= MAX_PENDING_SAVES) await sleep(2000);
+          lastSaveCount += saveInterval;
+          const count = visited.size;
+          pendingSaveCount += 1;
+          out(`  → DB save (${count} profiles) background`);
+          const doSave = () =>
+            onSave(graph)
+              .then(() => {
+                pendingSaveCount -= 1;
+                out(`  → DB save OK (${count})`);
+              })
+              .catch((err: Error) => {
+                pendingSaveCount -= 1;
+                out(`  → DB save failed: ${err?.message || err}`);
+              });
+          pendingSavePromise = pendingSavePromise
+            ? pendingSavePromise.then(
+                () => doSave(),
+                () => doSave(),
+              )
+            : doSave();
+        }
+
+        await sleep(delayMs);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        controller?.setStats?.({ lastError: message });
+        if (isSteamRateLimitError(err)) {
+          controller?.setStats?.({ rateLimitPauses: 1 });
+          out("  → Steam rate limit, pause 90s then retry...");
+          await sleep(90_000);
+          for (const batch of batches) {
+            for (const { steamId64, depth } of batch) {
+              visited.delete(steamId64);
+              queue.unshift({ steamId64, depth });
+            }
+          }
+        } else {
+          out("Batch error: " + message);
+          for (const batch of batches) {
+            for (const { steamId64 } of batch) visited.delete(steamId64);
+          }
         }
       }
     }
-  }
 
-  if (pendingSavePromise) {
-    await pendingSavePromise.catch((err: Error) => {
-      out(`  → Final DB save failed: ${err?.message || err}`);
-    });
+    if (pendingSavePromise) {
+      await pendingSavePromise.catch((err: Error) => {
+        out(`  → Final DB save failed: ${err?.message || err}`);
+      });
+    }
+    return graph;
+  } finally {
+    setSteamApiLogger(null);
+    setProfileHtmlLogger(null);
   }
-  return graph;
 }

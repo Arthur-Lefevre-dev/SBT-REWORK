@@ -51,6 +51,16 @@ export function isSteamRateLimitError(err: unknown): boolean {
 let chain: Promise<unknown> = Promise.resolve();
 let lastRequestAt = 0;
 let cooldownUntil = 0;
+let apiLogger: ((msg: string) => void) | null = null;
+
+export function setSteamApiLogger(fn: ((msg: string) => void) | null) {
+  apiLogger = fn;
+}
+
+function logApi(msg: string) {
+  console.warn(msg);
+  apiLogger?.(msg);
+}
 
 function enqueueSteam<T>(fn: () => Promise<T>): Promise<T> {
   const run = chain.then(async () => {
@@ -106,7 +116,7 @@ async function steamGetRaw(
             : (BACKOFF_MS[retryIndex] ?? 120_000);
         setCooldown(waitMs);
         if (retryIndex < MAX_RETRIES) {
-          console.warn(
+          logApi(
             `[Steam API] ${res.status} — pause ${Math.round(waitMs / 1000)}s (${retryIndex + 1}/${MAX_RETRIES}) cache=${JSON.stringify(cacheStats())}`,
           );
           await sleep(waitMs);
