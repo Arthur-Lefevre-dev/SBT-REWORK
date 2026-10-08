@@ -43,4 +43,4 @@ export function decryptSecret(stored: string): string | null {
   }
 }
 
-export const SECRET_KEYS = new Set(["steam_api_key"]);
+export const SECRET_KEYS = new Set(["steam_api_key", "proxy_urls"]);

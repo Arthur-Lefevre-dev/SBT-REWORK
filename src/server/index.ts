@@ -11,6 +11,7 @@ import {
   setBroadcast,
   stopBot,
 } from "./bot-runner.js";
+import { loadProxiesFromSettings } from "./load-proxies.js";
 import {
   getVacVerifyState,
   setBroadcast as setVacBroadcast,
@@ -18,6 +19,7 @@ import {
   stopVacVerify,
 } from "./vac-verify.js";
 import { consumeToken } from "./ws-tokens.js";
+import { getProxyPoolStatus } from "../scraper/proxy.js";
 
 const PORT = env.PORT;
 
@@ -28,6 +30,12 @@ async function start() {
   } catch (e) {
     console.error("DB connection failed:", e instanceof Error ? e.message : e);
     process.exit(1);
+  }
+
+  await loadProxiesFromSettings();
+  const proxy = getProxyPoolStatus();
+  if (proxy.enabled) {
+    console.log(`Proxy pool: ${proxy.count} endpoint(s) ready`);
   }
 
   const app = createApp(PORT);

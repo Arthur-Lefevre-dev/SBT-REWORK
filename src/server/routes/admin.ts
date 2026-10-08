@@ -7,6 +7,12 @@ import {
   setSetting,
 } from "../../db/queries.js";
 import { env, getAdminIds } from "../../env.js";
+import {
+  getProxyPoolStatus,
+  parseProxyList,
+  testAllProxies,
+  testProxyUrl,
+} from "../../scraper/proxy.js";
 import { asyncHandler } from "../async-handler.js";
 import { getSteamAuth, isAdmin, requireAdmin } from "../auth.js";
 import {
@@ -16,6 +22,7 @@ import {
   startBot,
   stopBot,
 } from "../bot-runner.js";
+import { loadProxiesFromSettings } from "../load-proxies.js";
 import {
   getVacVerifyState,
   startVacVerify,
@@ -111,6 +118,7 @@ export function adminRoutes(baseUrl: string) {
     requireAdmin,
     asyncHandler(async (_req, res) => {
       const steamApiKey = await getSetting("steam_api_key");
+      const proxyUrls = (await getSetting("proxy_urls")) || "";
       res.json({
         steam_api_key_set: !!steamApiKey,
         start_steamid64: (await getSetting("start_steamid64")) || "",
@@ -119,6 +127,8 @@ export function adminRoutes(baseUrl: string) {
         turbo_mode:
           (await getSetting("turbo_mode")) === "1" ||
           (await getSetting("turbo_mode")) === "true",
+        proxy_urls: proxyUrls,
+        proxy_status: getProxyPoolStatus(),
       });
     }),
   );
@@ -133,6 +143,7 @@ export function adminRoutes(baseUrl: string) {
         max_depth,
         max_profiles,
         turbo_mode,
+        proxy_urls,
       } = req.body || {};
       if (steam_api_key !== undefined && steam_api_key !== "") {
         await setSetting("steam_api_key", steam_api_key);
@@ -149,8 +160,80 @@ export function adminRoutes(baseUrl: string) {
       if (turbo_mode !== undefined) {
         await setSetting("turbo_mode", turbo_mode ? "1" : "0");
       }
-      res.json({ ok: true });
+      if (proxy_urls !== undefined) {
+        const text = String(proxy_urls);
+        // Validate lines early so bad URLs do not enter the pool silently
+        parseProxyList(text);
+        await setSetting("proxy_urls", text);
+        await loadProxiesFromSettings();
+      }
+      res.json({ ok: true, proxy_status: getProxyPoolStatus() });
     }),
+  );
+
+  router.get(
+    "/api/admin/proxy/status",
+    requireAdmin,
+    (_req, res) => {
+      res.json(getProxyPoolStatus());
+    },
+  );
+
+  router.post(
+    "/api/admin/proxy/test",
+    requireAdmin,
+    asyncHandler(async (req, res) => {
+      const url =
+        typeof req.body?.url === "string" && req.body.url.trim()
+          ? String(req.body.url).trim()
+          : undefined;
+      if (url) {
+        res.json(await testProxyUrl(url));
+        return;
+      }
+      // Always probe every endpoint in the pool
+      res.json(await testAllProxies());
+    }),
+  );
+
+  /** SSE stream — live progress for the admin proxy test modal */
+  router.get(
+    "/api/admin/proxy/test-stream",
+    requireAdmin,
+    async (req, res) => {
+      res.status(200);
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+      if (typeof (res as { flushHeaders?: () => void }).flushHeaders === "function") {
+        (res as { flushHeaders: () => void }).flushHeaders();
+      }
+
+      let closed = false;
+      req.on("close", () => {
+        closed = true;
+      });
+
+      const send = (event: string, data: unknown) => {
+        if (closed) return;
+        res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      };
+
+      try {
+        await loadProxiesFromSettings();
+        await testAllProxies({
+          onProgress: (ev) => send(ev.type, ev),
+        });
+      } catch (e) {
+        // Use "fail" — EventSource reserves the "error" event for connection issues
+        send("fail", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+      } finally {
+        if (!closed) res.end();
+      }
+    },
   );
 
   router.get("/api/admin/bot/state", requireAdmin, (_req, res) => {

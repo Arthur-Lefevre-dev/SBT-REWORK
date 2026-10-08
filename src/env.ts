@@ -19,6 +19,13 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().optional(),
   ENCRYPTION_KEY: z.string().optional(),
 
+  /**
+   * HTTP(S) proxies for Steam Community HTML (bypass rate limits).
+   * Comma / newline / semicolon separated full URLs:
+   *   http://user:pass@host:port
+   */
+  PROXY_URLS: z.string().optional(),
+  /** Decodo residential shorthand (merged into the same proxy pool). */
   DECODO_PROXY_USER: z.string().optional(),
   DECODO_PROXY_PASSWORD: z.string().optional(),
 

@@ -1,7 +1,12 @@
 import { pLimit, sleep } from "../shared/async.js";
 import type { ScrapedProfile } from "../shared/types.js";
 import { FriendshipGraph } from "./graph.js";
-import { checkAndLogProxyIpChange, isDecodoProxyEnabled } from "./proxy.js";
+import {
+  checkAndLogProxyIpChange,
+  getProxyPoolStatus,
+  isProxyEnabled,
+  setProxyLogger,
+} from "./proxy.js";
 import {
   getBansFromProfilePage,
   getGameBanDaysFromProfile,
@@ -29,9 +34,11 @@ const TURBO = {
   friendConcurrency: 6,
   delayMs: 80,
   parallelBatches: 2,
-  /** Low concurrency without proxy — Steam Community 429s hard. */
+  /** Without proxy keep low — Steam Community 429s hard. */
   htmlConcurrency: 2,
+  htmlConcurrencyWithProxy: 6,
   htmlDelayMs: 500,
+  htmlDelayMsWithProxy: 200,
 } as const;
 
 type BatchLog = ((msg: string) => void) | null;
@@ -119,14 +126,20 @@ async function processBatch(
   }
 
   if (turbo) {
-    log(`  → ${label}: HTML bans (${profiles.length}, concurrency ${TURBO.htmlConcurrency})…`);
+    const htmlConc = isProxyEnabled()
+      ? TURBO.htmlConcurrencyWithProxy
+      : TURBO.htmlConcurrency;
+    const htmlDelay = isProxyEnabled()
+      ? TURBO.htmlDelayMsWithProxy
+      : TURBO.htmlDelayMs;
+    log(`  → ${label}: HTML bans (${profiles.length}, concurrency ${htmlConc})…`);
     let htmlDone = 0;
     let htmlOk = 0;
     await pLimit(
       profiles.map((p) => async () => {
         try {
           const { vac, game } = await getBansFromProfilePage(p.steamId64, {
-            delayMs: TURBO.htmlDelayMs,
+            delayMs: htmlDelay,
           });
           p.ban = {
             communityBanned: false,
@@ -150,7 +163,7 @@ async function processBatch(
           }
         }
       }),
-      TURBO.htmlConcurrency,
+      htmlConc,
     );
   } else {
     const gameBanProfiles = profiles.filter(
@@ -259,7 +272,7 @@ export async function scrape(
   const turbo = !!options.turbo;
   // Without proxy, one batch at a time avoids Steam Community 429 storms
   const defaultParallel =
-    turbo && !isDecodoProxyEnabled()
+    turbo && !isProxyEnabled()
       ? 1
       : turbo
         ? TURBO.parallelBatches
@@ -302,15 +315,27 @@ export async function scrape(
 
   setSteamApiLogger(out);
   setProfileHtmlLogger(out);
+  setProxyLogger(out);
 
   try {
     if (turbo) {
       out(
         "TURBO mode: no GetPlayerBans — VAC/game bans from profile HTML only",
       );
-      if (!isDecodoProxyEnabled()) {
+      if (isProxyEnabled()) {
+        const st = getProxyPoolStatus();
         out(
-          "TURBO tip: no Decodo proxy — HTML is slower (rate-limits). Expect progress logs every few profiles.",
+          `Proxy pool: ${st.count}/${st.configured} active` +
+            (st.validatedOnly ? " (validated only)" : "") +
+            " — HTML concurrency boosted",
+        );
+        for (const p of st.proxies) {
+          if (!p.active) continue;
+          out(`  · ${p.label ?? p.url}${p.cooling ? " (cooling)" : ""}`);
+        }
+      } else {
+        out(
+          "TURBO tip: no active proxy — HTML is slower. Configure proxies and run the reachability test.",
         );
       }
     }
@@ -435,7 +460,7 @@ export async function scrape(
         }
 
         batchRoundIndex += 1;
-        if (isDecodoProxyEnabled() && batchRoundIndex % 5 === 0) {
+        if (isProxyEnabled() && batchRoundIndex % 5 === 0) {
           await checkAndLogProxyIpChange({ onLog: onLog ?? undefined });
         }
 
@@ -499,5 +524,6 @@ export async function scrape(
   } finally {
     setSteamApiLogger(null);
     setProfileHtmlLogger(null);
+    setProxyLogger(null);
   }
 }

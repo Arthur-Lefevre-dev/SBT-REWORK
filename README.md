@@ -75,7 +75,8 @@ web/                  React SPA (dashboard, profile, admin)
 |-----|---------|
 | `FACEIT_API_KEY` | Faceit ELO on profile |
 | `LEETIFY_API_KEY` | Leetify stats on profile |
-| `DECODO_PROXY_*` | Proxy for Steam Community HTML |
+| `PROXY_URLS` | HTTP(S) proxy list for Steam Community HTML (rate-limit bypass) |
+| `DECODO_PROXY_*` | Decodo shorthand (merged into the same proxy pool) |
 | `TURNSTILE_*` | Captcha on admin login |
 
 ## License

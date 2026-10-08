@@ -24,7 +24,11 @@ import {
 } from "../../db/queries.js";
 import { getDbBackend, pingDb } from "../../db/index.js";
 import { env } from "../../env.js";
-import { getCurrentProxyIp, isDecodoProxyEnabled } from "../../scraper/proxy.js";
+import {
+  getCurrentProxyIp,
+  getProxyPoolStatus,
+  isProxyEnabled,
+} from "../../scraper/proxy.js";
 import { resolveVanityUrl } from "../../scraper/steam-api.js";
 import { asyncHandler } from "../async-handler.js";
 import { enrichProfile } from "../enrich.js";
@@ -37,11 +41,18 @@ export function publicRoutes() {
     asyncHandler(async (_req, res) => {
       await pingDb();
       let proxy = "not configured";
-      if (isDecodoProxyEnabled()) {
+      const pool = getProxyPoolStatus();
+      if (isProxyEnabled()) {
         const ip = await getCurrentProxyIp();
         proxy = ip ? "ok" : "error";
       }
-      res.json({ ok: true, db: "ok", backend: getDbBackend(), proxy });
+      res.json({
+        ok: true,
+        db: "ok",
+        backend: getDbBackend(),
+        proxy,
+        proxyCount: pool.count,
+      });
     }),
   );
 

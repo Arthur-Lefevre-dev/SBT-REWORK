@@ -104,6 +104,29 @@ const dict = {
     "admin.turbo": "Mode turbo",
     "admin.turbo.hint":
       "pas de GetPlayerBans — bans VAC/game via HTML profil uniquement",
+    "admin.proxy": "Proxies HTML (anti rate-limit)",
+    "admin.proxy.placeholder":
+      "http://user:pass@host:port\nhttp://user2:pass2@host2:port",
+    "admin.proxy.hint":
+      "Une URL par ligne (HTTP/HTTPS). Utilisés pour Steam Community uniquement — rotation auto sur 429. Ou PROXY_URLS / DECODO_* dans .env.",
+    "admin.proxy.statusOn":
+      "Actifs : {n}/{configured} (seuls les proxies validés sont utilisés)",
+    "admin.proxy.statusOff": "Aucun proxy actif — HTML en IP directe",
+    "admin.proxy.statusUntested":
+      "Configurés : {configured} — lance un test pour n’activer que les OK",
+    "admin.proxy.test": "Tester tous les proxies",
+    "admin.proxy.testing": "Test en cours…",
+    "admin.proxy.modalTitle": "Test des proxies",
+    "admin.proxy.modalHint": "Vérification de la joignabilité (ipify)…",
+    "admin.proxy.modalProgress": "{done}/{total} testés · {passed} OK · {failed} KO",
+    "admin.proxy.modalEmpty": "Aucun proxy configuré",
+    "admin.proxy.modalClose": "Fermer",
+    "admin.proxy.pending": "En attente",
+    "admin.proxy.running": "Test…",
+    "admin.proxy.testSummary":
+      "Résultat : {passed}/{total} joignables · {failed} en échec",
+    "admin.proxy.testOk": "✓ {url} → IP {ip} ({ms}ms)",
+    "admin.proxy.testFail": "✗ {url} — {error} ({ms}ms)",
     "admin.save": "Enregistrer",
     "admin.status": "Statut",
     "admin.start": "Démarrer",
@@ -213,6 +236,29 @@ const dict = {
     "admin.turbo": "Turbo mode",
     "admin.turbo.hint":
       "no GetPlayerBans — VAC/game bans from profile HTML only",
+    "admin.proxy": "HTML proxies (rate-limit bypass)",
+    "admin.proxy.placeholder":
+      "http://user:pass@host:port\nhttp://user2:pass2@host2:port",
+    "admin.proxy.hint":
+      "One URL per line (HTTP/HTTPS). Used for Steam Community only — auto-rotate on 429. Or set PROXY_URLS / DECODO_* in .env.",
+    "admin.proxy.statusOn":
+      "Active: {n}/{configured} (only validated proxies are used)",
+    "admin.proxy.statusOff": "No active proxy — HTML uses your IP",
+    "admin.proxy.statusUntested":
+      "Configured: {configured} — run a test to keep only OK ones",
+    "admin.proxy.test": "Test all proxies",
+    "admin.proxy.testing": "Testing…",
+    "admin.proxy.modalTitle": "Proxy test",
+    "admin.proxy.modalHint": "Checking reachability (ipify)…",
+    "admin.proxy.modalProgress": "{done}/{total} tested · {passed} OK · {failed} failed",
+    "admin.proxy.modalEmpty": "No proxies configured",
+    "admin.proxy.modalClose": "Close",
+    "admin.proxy.pending": "Pending",
+    "admin.proxy.running": "Testing…",
+    "admin.proxy.testSummary":
+      "Result: {passed}/{total} reachable · {failed} failed",
+    "admin.proxy.testOk": "✓ {url} → IP {ip} ({ms}ms)",
+    "admin.proxy.testFail": "✗ {url} — {error} ({ms}ms)",
     "admin.save": "Save",
     "admin.status": "Status",
     "admin.start": "Start",

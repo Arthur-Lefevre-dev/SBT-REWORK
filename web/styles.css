@@ -540,13 +540,141 @@ th {
 .turbo-toggle input {
   margin-top: 0.25rem;
 }
-.form-row input {
+.form-row input,
+.form-row textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
   padding: 0.5rem 0.65rem;
   font: inherit;
+  width: 100%;
+  resize: vertical;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(1, 4, 9, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  animation: modal-fade 0.18s ease-out;
+}
+
+.modal {
+  width: min(560px, 100%);
+  max-height: min(80vh, 640px);
+  overflow: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  padding: 1.1rem 1.25rem 1.25rem;
+  animation: modal-pop 0.2s ease-out;
+}
+
+.modal h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.modal-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #010409;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.modal-progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #3fb950);
+  transition: width 0.25s ease;
+}
+
+.proxy-test-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.proxy-test-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.55rem;
+  align-items: start;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #010409;
+  font-size: 0.85rem;
+}
+
+.proxy-test-item.testing {
+  border-color: rgba(88, 166, 255, 0.55);
+}
+
+.proxy-test-item.ok {
+  border-color: rgba(63, 185, 80, 0.45);
+}
+
+.proxy-test-item.fail {
+  border-color: rgba(248, 81, 73, 0.45);
+}
+
+.proxy-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-top: 0.35rem;
+  background: var(--text-muted);
+}
+
+.proxy-test-item.testing .proxy-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+  animation: proxy-pulse 1s ease-in-out infinite;
+}
+
+.proxy-test-item.ok .proxy-dot {
+  background: var(--ok);
+}
+
+.proxy-test-item.fail .proxy-dot {
+  background: var(--warn);
+}
+
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes proxy-pulse {
+  50% {
+    transform: scale(1.25);
+  }
 }
 .stack {
   display: flex;

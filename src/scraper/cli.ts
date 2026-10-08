@@ -7,8 +7,9 @@ import {
   saveGraph,
 } from "../db/queries.js";
 import { env } from "../env.js";
-import { isDecodoProxyEnabled, verifyDecodoProxy } from "./proxy.js";
+import { isProxyEnabled, verifyProxyPool } from "./proxy.js";
 import { scrape } from "./scrape.js";
+import { loadProxiesFromSettings } from "../server/load-proxies.js";
 
 const apiKey = env.STEAM_API_KEY;
 if (!apiKey) {
@@ -17,9 +18,10 @@ if (!apiKey) {
 }
 
 console.log(`Database: ${getDbBackend()} (${env.SQLITE_PATH})`);
-if (isDecodoProxyEnabled()) {
+await loadProxiesFromSettings();
+if (isProxyEnabled()) {
   try {
-    await verifyDecodoProxy();
+    await verifyProxyPool();
   } catch (e) {
     console.error(e instanceof Error ? e.message : e);
     process.exit(1);

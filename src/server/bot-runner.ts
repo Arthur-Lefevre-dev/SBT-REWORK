@@ -5,7 +5,12 @@ import {
   saveGraph,
 } from "../db/queries.js";
 import { env } from "../env.js";
-import { isDecodoProxyEnabled } from "../scraper/proxy.js";
+import {
+  getProxyPoolStatus,
+  isProxyEnabled,
+  testAllProxies,
+} from "../scraper/proxy.js";
+import { loadProxiesFromSettings } from "./load-proxies.js";
 import { scrape, type ScrapeController } from "../scraper/scrape.js";
 import type { BotState } from "../shared/types.js";
 
@@ -165,15 +170,25 @@ export async function startBot(opts: {
     },
   };
   logLines = [];
+  await loadProxiesFromSettings();
+  const proxyStatus = getProxyPoolStatus();
   addLog(
     `Starting scrape from ${start} (depth=${maxDepth}, max=${maxProfiles}${
       turbo ? ", TURBO" : ""
-    })${isDecodoProxyEnabled() ? " [proxy]" : ""}`,
+    })${isProxyEnabled() ? ` [proxy×${proxyStatus.count}]` : ""}`,
   );
   broadcastFn?.();
 
   void (async () => {
     try {
+      if (isProxyEnabled()) {
+        const report = await testAllProxies({ onLog: addLog });
+        if (!report.ok) {
+          addLog(
+            `[Proxy] warning: no reachable proxy (${report.failed}/${report.total} failed) — HTML may use direct IP / cooled endpoints`,
+          );
+        }
+      }
       const knownIds = await getExistingSteamIds();
       // Keep start in knownIds so we never re-scrape it (resume via friend expand)
       const resumeExpandIds = knownIds.has(String(start))

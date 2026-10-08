@@ -1,5 +1,11 @@
 import { sleep } from "../shared/async.js";
-import { proxyFetch } from "./proxy.js";
+import {
+  coolProxy,
+  isProxyEnabled,
+  maskProxyUrl,
+  proxyFetch,
+  shortProxyLabel,
+} from "./proxy.js";
 
 const PROFILE_URL = (id: string) =>
   `https://steamcommunity.com/profiles/${id}`;
@@ -7,6 +13,7 @@ const DELAY_MS = 500;
 /** Short backoffs — long sleeps look like a frozen scrape. */
 const RATE_LIMIT_BACKOFF_MS = [8_000, 20_000];
 const FETCH_TIMEOUT_MS = 20_000;
+const PROXY_COOL_MS = 30_000;
 
 /** Shared cooldown so parallel HTML workers do not stampede after 429. */
 let htmlCooldownUntil = 0;
@@ -107,32 +114,62 @@ export async function fetchProfilePageHtml(
   steamid64: string,
   options: { delayMs?: number; sessionId?: string; useProxy?: boolean } = {},
 ): Promise<string> {
-  const { delayMs = DELAY_MS, sessionId, useProxy = true } = options;
+  const { delayMs = DELAY_MS, useProxy = true } = options;
   const url = PROFILE_URL(steamid64);
-  for (let tryIndex = 0; tryIndex <= RATE_LIMIT_BACKOFF_MS.length; tryIndex++) {
-    await waitHtmlCooldown();
-    let res: Response;
+  // Extra retries when a proxy pool can rotate away from 429s
+  const maxTries = isProxyEnabled()
+    ? RATE_LIMIT_BACKOFF_MS.length + 3
+    : RATE_LIMIT_BACKOFF_MS.length;
+  // Sticky per profile; bumped on 429 to force a new residential exit IP
+  let stickySession =
+    options.sessionId ?? (isProxyEnabled() ? steamid64 : undefined);
+
+  for (let tryIndex = 0; tryIndex <= maxTries; tryIndex++) {
+    if (!isProxyEnabled()) await waitHtmlCooldown();
+    let res: Response & { proxyUrl?: string | null };
     try {
       res = await proxyFetch(url, {
-        sessionId,
+        sessionId: stickySession,
         useProxy,
         headers: { "Accept-Language": "en-US,en;q=0.9" },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (/abort|timeout/i.test(msg) && tryIndex < RATE_LIMIT_BACKOFF_MS.length) {
-        triggerHtmlCooldown(RATE_LIMIT_BACKOFF_MS[tryIndex], 0);
+      if (/abort|timeout/i.test(msg) && tryIndex < maxTries) {
+        if (isProxyEnabled()) {
+          stickySession = `t${Date.now()}_${tryIndex}`;
+          htmlLogger?.(`[HTML] timeout — retry with another proxy/session`);
+          await sleep(500);
+        } else {
+          triggerHtmlCooldown(
+            RATE_LIMIT_BACKOFF_MS[
+              Math.min(tryIndex, RATE_LIMIT_BACKOFF_MS.length - 1)
+            ] ?? 8_000,
+            0,
+          );
+        }
         continue;
       }
       throw err;
     }
     if (isRateLimit(res.status)) {
+      const used = res.proxyUrl;
+      if (used && isProxyEnabled()) {
+        coolProxy(used, PROXY_COOL_MS);
+        stickySession = `r${Date.now()}_${tryIndex}`;
+        htmlLogger?.(
+          `[HTML] HTTP ${res.status} on ${shortProxyLabel(used)} (${maskProxyUrl(used)}) — rotating (try ${tryIndex + 1}/${maxTries + 1})`,
+        );
+        await sleep(300);
+        continue;
+      }
       const waitMs =
-        RATE_LIMIT_BACKOFF_MS[tryIndex] ??
-        RATE_LIMIT_BACKOFF_MS[RATE_LIMIT_BACKOFF_MS.length - 1];
+        RATE_LIMIT_BACKOFF_MS[
+          Math.min(tryIndex, RATE_LIMIT_BACKOFF_MS.length - 1)
+        ] ?? 20_000;
       triggerHtmlCooldown(waitMs, res.status);
-      if (tryIndex < RATE_LIMIT_BACKOFF_MS.length) {
+      if (tryIndex < maxTries) {
         await sleep(waitMs);
         continue;
       }

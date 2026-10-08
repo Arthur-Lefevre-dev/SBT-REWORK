@@ -19,7 +19,13 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       // Use /api/ (with slash) so Vite does not proxy frontend modules like /api.ts
-      "/api/": { target: api, changeOrigin: true },
+      "/api/": {
+        target: api,
+        changeOrigin: true,
+        // Keep SSE (proxy test stream) open without premature timeout
+        timeout: 0,
+        proxyTimeout: 0,
+      },
       "/admin/login": { target: api, changeOrigin: true },
       "/admin/callback": { target: api, changeOrigin: true },
       "/admin/logout": { target: api, changeOrigin: true },
